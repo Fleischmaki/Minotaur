@@ -111,7 +111,15 @@ def remove_cycle(graph, cycle, seed):
     numb_to_remove = int(numb_backedges*proportion_rm)
     graph.remove_backedges(graph_labels, numb_to_remove, seed)
 
-def render_program(c_file, maze, maze_funcs, width, height, generator, sln, smt_file):
+def get_bug(bugtype):
+    if bugtype == "abort":
+        return "abort();", ""
+    elif bugtype == "assert":
+        return "assert(0);", "#incldue <stdio.h>\n"
+    elif bugtype == "ve":
+        return "__VERIFIER_error();", "extern void __VERIFIER_error(void);\n"
+
+def render_program(c_file, maze, maze_funcs, width, height, generator, sln, bugtype, smt_file):
     f = open(c_file, 'w')
     generator = generator.Generator(width*height, maze.graph, sln, smt_file)
     logic_def = generator.get_logic_def()
@@ -119,13 +127,14 @@ def render_program(c_file, maze, maze_funcs, width, height, generator, sln, smt_
     numb_bytes = generator.get_numb_bytes()
     total_bytes = generator.get_total_bytes()
     guard = generator.get_guard()
-    bug = generator.get_bug()
+    bug, bug_headers = get_bug(bugtype)
 
     f.write("#include <stdio.h>\n" \
     "#include <stdlib.h>\n" \
     "#include <string.h>\n" \
     "#include <unistd.h>\n" \
     "#include <stdint.h>\n")
+    f.write(bug_headers)
     f.write("""#define MAX_LIMIT {}\n\n""".format(total_bytes))
     function_format_declaration = """void func_{}(char *input, int index, int length);\n"""
     function_declarations = ""
@@ -194,28 +203,29 @@ def render_program(c_file, maze, maze_funcs, width, height, generator, sln, smt_
     func_{}(input, index, input_length);\n}}\n""".format(maze_funcs[(0, 0)]))
     f.close()
 
-def main(maze_file, width, height, cycle, seed, generator, smt_file, CVE_name):
+def main(maze_file, width, height, cycle, seed, generator, bugtype, smt_file, CVE_name):
     matrix = get_maze(maze_file)
     sln = get_solution(maze_file)
     maze_exit = get_exit(sln)
     maze_funcs = get_functions(width, height, maze_exit)
     graph = generate_graph(width, height, maze_exit, maze_funcs, matrix)
     remove_cycle(graph, cycle, seed)
-    c_file = maze_file + "_" + str(cycle) + "percent_" + CVE_name + ".c"
-    render_program(c_file, graph, maze_funcs, width, height, generator, sln, smt_file)
+    c_file = maze_file + "_" + str(cycle) + "percent_" + CVE_name + "_" + bugtype + ".c"
+    render_program(c_file, graph, maze_funcs, width, height, generator, sln, bugtype, smt_file)
 
 if __name__ == '__main__':
     maze_file = sys.argv[1]
     width, height = int(sys.argv[2]), int(sys.argv[3])
     cycle = int(sys.argv[4])
     seed = int(sys.argv[5])
-    generator_file = sys.argv[6]
+    bugtype = sys.argv[6]
+    generator_file = sys.argv[7]
     generator = importlib.import_module(generator_file)
     if "CVE" in generator_file:
-        smt_file = sys.argv[7]
+        smt_file = sys.argv[8]
         CVE_name = os.path.basename(smt_file)
         CVE_name = os.path.splitext(CVE_name)[0] + "_gen"
     else:
         smt_file = ""
         CVE_name = generator_file
-    main(maze_file, width, height, cycle, seed, generator, smt_file, CVE_name)
+    main(maze_file, width, height, cycle, seed, generator, bugtype, smt_file, CVE_name)

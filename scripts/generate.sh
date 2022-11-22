@@ -1,6 +1,6 @@
 #!/bin/bash
 
-while getopts a:w:h:o:r:n:c:g:s:e: option
+while getopts a:w:h:o:r:n:c:g:s:e:b: option
 do
     case "${option}"
     in
@@ -14,6 +14,7 @@ do
     g) GEN=${OPTARG};;
     s) SMT_PATH=${OPTARG};;
     e) EXIT=${OPTARG};;
+    b) BUGTYPE=${OPTARG};;
     esac
 done
 
@@ -70,6 +71,11 @@ if [ -z ${CYCLE+x} ]; then
     CYCLE="100"
 fi
 
+if [ -z ${BUGTYPE} ]; then
+    echo "NOTE: The bugtype was not specified. Default function abort() will be used."
+    BUGTYPE="abort"
+fi
+
 if [ -z ${EXIT+x} ]; then
     EXIT="default"
 fi
@@ -79,6 +85,7 @@ if [ -z ${GEN+x} ]; then
     GEN="default_gen"
 fi
 
+
 echo "Generating mazes..."
 echo "##############################################"
 echo "Algorithm: "$ALGORITHM
@@ -87,6 +94,7 @@ echo "Maze exit: "$EXIT
 echo "Pseudo-random seed: "$SEED
 echo "Remaining cycles: "$CYCLE"%"
 echo "Number of mazes: "$NUMB
+echo "Bugtype: "$BUGTYPE
 echo "Generator used: "$GEN
 echo "Output directory: "$OUTPUT_DIR
 echo "##############################################"
@@ -104,11 +112,11 @@ do
     fi
     if [[ "$GEN" == *"CVE"* ]]; then
         SMT_NAME=$(basename $SMT_PATH .smt2)
-        NAME_P=$NAME"_"$CYCLE"percent_"$SMT_NAME"_gen"
-        python3 $MAZEGEN_DIR/array_to_code.py $NAME $WIDTH $HEIGHT $CYCLE $SEED $GEN $SMT_PATH
+        NAME_P=$NAME"_"$CYCLE"percent_"$SMT_NAME"_gen_"$BUGTYPE
+        python3 $MAZEGEN_DIR/array_to_code.py $NAME $WIDTH $HEIGHT $CYCLE $SEED $BUGTYPE $GEN $SMT_PATH $
     else
-        NAME_P=$NAME"_"$CYCLE"percent_"$GEN
-        python3 $MAZEGEN_DIR/array_to_code.py $NAME $WIDTH $HEIGHT $CYCLE $SEED $GEN
+        NAME_P=$NAME"_"$CYCLE"percent_"$GEN"_"$BUGTYPE
+        python3 $MAZEGEN_DIR/array_to_code.py $NAME $WIDTH $HEIGHT $CYCLE $SEED $BUGTYPE $GEN
     fi
     gcc -O3 -w -o $NAME_P".bin" $NAME_P".c"
     mv $NAME".png" $OUTPUT_DIR/png
