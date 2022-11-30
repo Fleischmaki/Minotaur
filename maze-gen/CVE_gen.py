@@ -96,6 +96,3 @@ class Generator:
 
     def get_total_bytes(self):
         return sum(self.get_numb_bytes())
-
-    def get_bug(self):
-        return "abort();"
