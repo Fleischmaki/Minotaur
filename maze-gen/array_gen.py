@@ -1,4 +1,5 @@
 import sys
+import random
 import numpy as np
 import matplotlib.pyplot as plt
 from mazelib import Maze
@@ -59,7 +60,7 @@ def generate_maze(algorithm, width, height, seed, maze_exit):
 def store_maze(maze, label):
     np.set_printoptions(threshold=sys.maxsize, linewidth=310)
     with open(label + ".txt", 'w') as f:
-        print(maze.grid, file = f)
+        print(maze, file = f)
 
 # print solution path to a file
 def store_solution(maze, label, width, height):
@@ -80,18 +81,47 @@ def store_solution(maze, label, width, height):
 # generate a simple image of the maze
 def show_png(maze, label):
     plt.figure(figsize=(width/10, height/10))
-    plt.imshow(maze.grid, cmap=plt.cm.binary, interpolation='nearest')
+    plt.imshow(maze, cmap=plt.cm.binary, interpolation='nearest')
     plt.xticks([]), plt.yticks([])
     plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, hspace = 0, wspace = 0)
     plt.margins(0,0)
     plt.savefig(label)
 
-def main(algorithm, width, height, seed, maze_exit, index):
+def apply_transforms(ttype, width, height, matrix):
+    tranformations = ttype.split("_")
+    for t in tranformations:
+        if t.startswith("rw"):
+            matrix = t_remove_walls(width, height, matrix, int(t[2:]))
+    return matrix
+
+def t_remove_walls(width, height, matrix, proportion):
+    ones = []
+    for i in range(1,height*2-1):
+        for j in range(1,width*2-2,1):
+            if((i+j)%2 == 1):
+                if(matrix[i, j] == 1):
+                    ones.append((i, j))
+    total = len(ones)
+    rm = int(total*proportion/100)
+    while (rm > 0):
+        r = random.randrange(0,total)
+        i, j = ones.pop(r)
+        matrix[i,j] = 0
+        total -= 1
+        rm -= 1
+    return matrix
+
+def main(algorithm, width, height, seed, maze_exit, index, t_type, t_numb):
     maze = generate_maze(algorithm, width, height, seed, maze_exit)
-    label = algorithm + "_" + str(width) + "x" + str(height) + "_" + str(seed) + "_" + index
-    store_maze(maze, label)
+    label = algorithm + "_" + str(width) + "x" + str(height) + "_" + str(seed) + "_" + index + "_" + t_type
     store_solution(maze, label, width, height)
-    show_png(maze, label)
+    random.seed(seed)
+    for t_index in range(t_numb+1):
+        grid = maze.grid.copy()
+        if t_index != 0:
+            grid = apply_transforms(t_type, width, height, grid)
+        store_maze(grid, label+"_"+str(t_index))
+        show_png(grid, label+"_"+str(t_index))
 
 if __name__ == '__main__':
     algorithm = sys.argv[1]
@@ -99,4 +129,6 @@ if __name__ == '__main__':
     seed = sys.argv[4]
     maze_exit = sys.argv[5]
     index = sys.argv[6]
-    main(algorithm, width, height, seed, maze_exit, index)
+    t_type = sys.argv[7]
+    t_numb = int(sys.argv[8])
+    main(algorithm, width, height, seed, maze_exit, index, t_type, t_numb)

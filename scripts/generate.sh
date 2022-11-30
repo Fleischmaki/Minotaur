@@ -1,6 +1,6 @@
 #!/bin/bash
 
-while getopts a:w:h:o:r:n:c:g:s:e:b: option
+while getopts a:w:h:o:r:n:c:g:s:e:b:m:t: option
 do
     case "${option}"
     in
@@ -15,6 +15,8 @@ do
     s) SMT_PATH=${OPTARG};;
     e) EXIT=${OPTARG};;
     b) BUGTYPE=${OPTARG};;
+    m) T_NUMB=${OPTARG};;
+    t) T_TYPE=${OPTARG};;
     esac
 done
 
@@ -85,6 +87,15 @@ if [ -z ${GEN+x} ]; then
     GEN="default_gen"
 fi
 
+if [ -z ${T_NUMB} ]; then
+    echo "NOTE: The number of transformed mazes was not specified. No transformations will be performed"
+    T_NUMBFORMS=0
+fi
+
+if [ -z ${T_TYPE} ]; then
+    echo "NOTE: No transformations where specified. No transformations will be performed"
+    T_TYPE = "id"
+fi
 
 echo "Generating mazes..."
 echo "##############################################"
@@ -94,6 +105,8 @@ echo "Maze exit: "$EXIT
 echo "Pseudo-random seed: "$SEED
 echo "Remaining cycles: "$CYCLE"%"
 echo "Number of mazes: "$NUMB
+echo "Types of transformations used: "$T_TYPE
+echo "Number of transformations per maze: "$T_NUMB
 echo "Bugtype: "$BUGTYPE
 echo "Generator used: "$GEN
 echo "Output directory: "$OUTPUT_DIR
@@ -104,25 +117,31 @@ MAZEGEN_DIR=$(readlink -f $(dirname "$0")/..)/maze-gen
 
 for (( INDEX=1; INDEX<=$NUMB; INDEX++ ))
 do
-    NAME=$ALGORITHM"_"$WIDTH"x"$HEIGHT"_"$SEED"_"$INDEX
-    python3 $MAZEGEN_DIR/array_gen.py $ALGORITHM $WIDTH $HEIGHT $SEED $EXIT $INDEX
+    NAME=$ALGORITHM"_"$WIDTH"x"$HEIGHT"_"$SEED"_"$INDEX"_"$T_TYPE
+    python3 $MAZEGEN_DIR/array_gen.py $ALGORITHM $WIDTH $HEIGHT $SEED $EXIT $INDEX $T_TYPE $T_NUMB 
     if [ $? -eq 1 ]; then
         echo "Select one of the following algorithms: Backtracking, Kruskal, Prims, Wilsons, Sidewinder"
         exit 1
     fi
     if [[ "$GEN" == *"CVE"* ]]; then
         SMT_NAME=$(basename $SMT_PATH .smt2)
-        NAME_P=$NAME"_"$CYCLE"percent_"$SMT_NAME"_gen_"$BUGTYPE
-        python3 $MAZEGEN_DIR/array_to_code.py $NAME $WIDTH $HEIGHT $CYCLE $SEED $BUGTYPE $GEN $SMT_PATH $
+        NAME_EXT="_"$CYCLE"percent_"$SMT_NAME"_gen_"$BUGTYPE
+        echo $NAME $WIDTH $HEIGHT $CYCLE $SEED $BUGTYPE $T_INDEX $GEN $SMT_PATH
+        python3 $MAZEGEN_DIR/array_to_code.py $NAME $WIDTH $HEIGHT $CYCLE $SEED $BUGTYPE $T_TYPE $T_NUMB $GEN $SMT_PATH 
     else
-        NAME_P=$NAME"_"$CYCLE"percent_"$GEN"_"$BUGTYPE
-        python3 $MAZEGEN_DIR/array_to_code.py $NAME $WIDTH $HEIGHT $CYCLE $SEED $BUGTYPE $GEN
+        NAME_EXT="_"$CYCLE"percent_"$GEN"_"$BUGTYPE
+        echo $NAME $WIDTH $HEIGHT $CYCLE $SEED $BUGTYPE $T_ $T_INDEX $GEN $SMT_PATH
+        python3 $MAZEGEN_DIR/array_to_code.py $NAME $WIDTH $HEIGHT $CYCLE $SEED $BUGTYPE $T_TYPE $T_NUMB $GEN 
     fi
-    gcc -O3 -w -o $NAME_P".bin" $NAME_P".c"
-    mv $NAME".png" $OUTPUT_DIR/png
-    mv $NAME".txt" $OUTPUT_DIR/txt
-    mv $NAME_P".c" $OUTPUT_DIR/src
-    mv $NAME_P".bin" $OUTPUT_DIR/bin
+    for (( T_INDEX=0; T_INDEX<=$T_NUMB; T_INDEX++ ))
+    do
+        NAME_P=$NAME"_"$T_INDEX$NAME_EXT;
+        gcc -O3 -w -o $NAME_P".bin" $NAME_P".c"
+        mv $NAME"_"$T_INDEX".png" $OUTPUT_DIR/png
+        mv $NAME"_"$T_INDEX".txt" $OUTPUT_DIR/txt
+        mv $NAME_P".c" $OUTPUT_DIR/src
+        mv $NAME_P".bin" $OUTPUT_DIR/bin
+    done
     mv $NAME"_solution.txt" $OUTPUT_DIR/sln
 done
 

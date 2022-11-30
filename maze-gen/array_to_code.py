@@ -21,8 +21,8 @@ def get_maze(maze_file):
     f.close()
     return matrix
 
-def get_solution(maze_file):
-    with open(maze_file + "_solution.txt", 'r') as f_sln:
+def get_solution(sol_file):
+    with open(sol_file + "_solution.txt", 'r') as f_sln:
         sln = f_sln.readlines()
     for i in range(len(sln)):
         sln[i] = int(sln[i].strip("\n"))
@@ -63,8 +63,7 @@ class DirGraph:
                     count = count + 1
         return count
 
-    def remove_backedges(self, labels, n, seed):
-        random.seed(seed)
+    def remove_backedges(self, labels, n):
         while n > 0:
             idx = random.randrange(0, width*height)
             for neighbour in self.graph[idx]:
@@ -104,24 +103,26 @@ def generate_graph(width, height, maze_exit, maze_functions, matrix):
             graph.add_edge(node, maze_functions[(x, y+1)])
     return graph
 
-def remove_cycle(graph, cycle, seed):
+def remove_cycle(graph, cycle):
     graph_labels = graph.df_search(0)
     numb_backedges = graph.count_backedges(graph_labels)
     proportion_rm = float(1 - (cycle/100))
     numb_to_remove = int(numb_backedges*proportion_rm)
-    graph.remove_backedges(graph_labels, numb_to_remove, seed)
+    graph.remove_backedges(graph_labels, numb_to_remove)
 
 def get_bug(bugtype):
     if bugtype == "abort":
         return "abort();", ""
     elif bugtype == "assert":
-        return "assert(0);", "#incldue <stdio.h>\n"
+        return "assert(0);", "#include <assert.h>\n"
     elif bugtype == "ve":
         return "__VERIFIER_error();", "extern void __VERIFIER_error(void);\n"
 
-def render_program(c_file, maze, maze_funcs, width, height, generator, sln, bugtype, smt_file):
+
+
+def render_program(c_file, maze, maze_funcs, width, height, generator, sln, bugtype, smt_file, t_type):
     f = open(c_file, 'w')
-    generator = generator.Generator(width*height, maze.graph, sln, smt_file)
+    generator = generator.Generator(width*height, maze.graph, sln, smt_file)     
     logic_def = generator.get_logic_def()
     logic_c = generator.get_logic_c()
     numb_bytes = generator.get_numb_bytes()
@@ -135,6 +136,7 @@ def render_program(c_file, maze, maze_funcs, width, height, generator, sln, bugt
     "#include <unistd.h>\n" \
     "#include <stdint.h>\n")
     f.write(bug_headers)
+    f.write("extern char __VERIFIER_nondet_char(void);\n")
     f.write("""#define MAX_LIMIT {}\n\n""".format(total_bytes))
     function_format_declaration = """void func_{}(char *input, int index, int length);\n"""
     function_declarations = ""
@@ -145,13 +147,10 @@ def render_program(c_file, maze, maze_funcs, width, height, generator, sln, bugt
     f.write("""void func_bug(char *input, int index, int length){{ {} }}\n""".format(bug))
     f.write(logic_def)
     f.write("""char* copy_input(char *input, int index, int bytes_to_use){
-    char *copy;
-    copy = (char*)malloc(bytes_to_use);
-    if (copy == NULL){
-    \tprintf("Failed memory allocation");
-    \texit(1);
+    char copy[bytes_to_use];
+    for(int i = 0; i < bytes_to_use; i++){
+        \tcopy[i] = __VERIFIER_nondet_char();
     }
-    memcpy(copy, input + index, bytes_to_use);
     return (char*)copy;\n}\n""")
     f.write("""int is_within_limit(char *input, int index, int bytes_to_use, int length){
     if (index + (bytes_to_use - 1) >= MAX_LIMIT || index + (bytes_to_use - 1) >= length){
@@ -165,7 +164,6 @@ def render_program(c_file, maze, maze_funcs, width, height, generator, sln, bugt
     if (is_within_limit(input, index, bytes_to_use, length)){{
     \tchar *copy;
     \tcopy = copy_input(input, index, bytes_to_use);\n {}
-    \tfree(copy);
     \tcopy = NULL;
     """
     function_format = """\t{} ({}) {{
@@ -198,34 +196,38 @@ def render_program(c_file, maze, maze_funcs, width, height, generator, sln, bugt
 
     f.write("""int main(){{
     char input[MAX_LIMIT];
-    int input_length = read(0, input, MAX_LIMIT);
     int index = 0;
-    func_{}(input, index, input_length);\n}}\n""".format(maze_funcs[(0, 0)]))
+    func_{}(input, index, MAX_LIMIT);\n}}\n""".format(maze_funcs[(0, 0)]))
     f.close()
 
-def main(maze_file, width, height, cycle, seed, generator, bugtype, smt_file, CVE_name):
-    matrix = get_maze(maze_file)
-    sln = get_solution(maze_file)
-    maze_exit = get_exit(sln)
-    maze_funcs = get_functions(width, height, maze_exit)
-    graph = generate_graph(width, height, maze_exit, maze_funcs, matrix)
-    remove_cycle(graph, cycle, seed)
-    c_file = maze_file + "_" + str(cycle) + "percent_" + CVE_name + "_" + bugtype + ".c"
-    render_program(c_file, graph, maze_funcs, width, height, generator, sln, bugtype, smt_file)
+def main(sol_file, width, height, cycle, seed, generator, bugtype, t_type, t_numb, smt_file, CVE_name):
+    random.seed(seed)
+    for t_index in range(t_numb+1):
+        maze_file = sol_file + "_" + str(t_index)
+        matrix = get_maze(maze_file)
+        sln = get_solution(sol_file)
+        maze_exit = get_exit(sln)
+        maze_funcs = get_functions(width, height, maze_exit)
+        graph = generate_graph(width, height, maze_exit, maze_funcs, matrix)
+        remove_cycle(graph, cycle)
+        c_file = maze_file + "_" + str(cycle) + "percent_" + CVE_name + "_" + bugtype + ".c"
+        render_program(c_file, graph, maze_funcs, width, height, generator, sln, bugtype, smt_file, t_type)
 
 if __name__ == '__main__':
-    maze_file = sys.argv[1]
+    sol_file = sys.argv[1]
     width, height = int(sys.argv[2]), int(sys.argv[3])
     cycle = int(sys.argv[4])
     seed = int(sys.argv[5])
     bugtype = sys.argv[6]
-    generator_file = sys.argv[7]
+    t_type = sys.argv[7]
+    t_numb = int(sys.argv[8])
+    generator_file = sys.argv[9]
     generator = importlib.import_module(generator_file)
     if "CVE" in generator_file:
-        smt_file = sys.argv[8]
+        smt_file = sys.argv[10]
         CVE_name = os.path.basename(smt_file)
         CVE_name = os.path.splitext(CVE_name)[0] + "_gen"
     else:
         smt_file = ""
         CVE_name = generator_file
-    main(maze_file, width, height, cycle, seed, generator, bugtype, smt_file, CVE_name)
+    main(sol_file, width, height, cycle, seed, generator, bugtype, t_type, t_numb, smt_file, CVE_name)
