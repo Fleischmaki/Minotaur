@@ -122,7 +122,8 @@ def get_bug(bugtype):
 
 def render_program(c_file, maze, maze_funcs, width, height, generator, sln, bugtype, smt_file, t_type):
     f = open(c_file, 'w')
-    generator = generator.Generator(width*height, maze.graph, sln, smt_file)     
+    transformations = t_type.split("_")
+    generator = generator.Generator(width*height, maze.graph, sln, smt_file, "sh" in transformations)     
     logic_def = generator.get_logic_def()
     logic_c = generator.get_logic_c()
     numb_bytes = generator.get_numb_bytes()
@@ -211,7 +212,10 @@ def main(sol_file, width, height, cycle, seed, generator, bugtype, t_type, t_num
         graph = generate_graph(width, height, maze_exit, maze_funcs, matrix)
         remove_cycle(graph, cycle)
         c_file = maze_file + "_" + str(cycle) + "percent_" + CVE_name + "_" + bugtype + ".c"
-        render_program(c_file, graph, maze_funcs, width, height, generator, sln, bugtype, smt_file, t_type)
+        if t_index != 0:
+            render_program(c_file, graph, maze_funcs, width, height, generator, sln, bugtype, smt_file, t_type)
+        else:
+            render_program(c_file, graph, maze_funcs, width, height, generator, sln, bugtype, smt_file, "")
 
 if __name__ == '__main__':
     sol_file = sys.argv[1]

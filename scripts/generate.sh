@@ -89,12 +89,12 @@ fi
 
 if [ -z ${T_NUMB} ]; then
     echo "NOTE: The number of transformed mazes was not specified. No transformations will be performed"
-    T_NUMBFORMS=0
+    T_NUMB=0
 fi
 
 if [ -z ${T_TYPE} ]; then
     echo "NOTE: No transformations where specified. No transformations will be performed"
-    T_TYPE = "id"
+    T_TYPE="id"
 fi
 
 echo "Generating mazes..."
@@ -126,21 +126,19 @@ do
     if [[ "$GEN" == *"CVE"* ]]; then
         SMT_NAME=$(basename $SMT_PATH .smt2)
         NAME_EXT="_"$CYCLE"percent_"$SMT_NAME"_gen_"$BUGTYPE
-        echo $NAME $WIDTH $HEIGHT $CYCLE $SEED $BUGTYPE $T_INDEX $GEN $SMT_PATH
         python3 $MAZEGEN_DIR/array_to_code.py $NAME $WIDTH $HEIGHT $CYCLE $SEED $BUGTYPE $T_TYPE $T_NUMB $GEN $SMT_PATH 
     else
         NAME_EXT="_"$CYCLE"percent_"$GEN"_"$BUGTYPE
-        echo $NAME $WIDTH $HEIGHT $CYCLE $SEED $BUGTYPE $T_ $T_INDEX $GEN $SMT_PATH
         python3 $MAZEGEN_DIR/array_to_code.py $NAME $WIDTH $HEIGHT $CYCLE $SEED $BUGTYPE $T_TYPE $T_NUMB $GEN 
     fi
     for (( T_INDEX=0; T_INDEX<=$T_NUMB; T_INDEX++ ))
     do
         NAME_P=$NAME"_"$T_INDEX$NAME_EXT;
-        gcc -O3 -w -o $NAME_P".bin" $NAME_P".c"
+        #gcc -O3 -w -o $NAME_P".bin" $NAME_P".c"
         mv $NAME"_"$T_INDEX".png" $OUTPUT_DIR/png
         mv $NAME"_"$T_INDEX".txt" $OUTPUT_DIR/txt
         mv $NAME_P".c" $OUTPUT_DIR/src
-        mv $NAME_P".bin" $OUTPUT_DIR/bin
+        #mv $NAME_P".bin" $OUTPUT_DIR/bin
     done
     mv $NAME"_solution.txt" $OUTPUT_DIR/sln
 done

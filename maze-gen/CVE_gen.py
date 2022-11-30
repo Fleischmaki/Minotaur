@@ -1,12 +1,18 @@
 import smt2_parser
+import random
 
 class Generator:
-    def __init__(self, size, edges, sln, smt_file):
+    def __init__(self, size, edges, sln, smt_file, shuffle):
         self.size = size
         self.edges = edges
         self.sln = sln
         self.constraints, self.vars_all = smt2_parser.parse(smt_file, check_neg = False)
         self.groups, self.vars = smt2_parser.independent_formulas(self.constraints, self.vars_all)
+        if shuffle:
+            temp = list(zip(self.groups, self.vars)) #shuffle groups and vars together
+            random.shuffle(temp)
+            r1, r2 = zip(*temp)
+            self.groups, self.vars = list(r1), list(r2)
         self.insert = list()
         for idx in range(self.size):
             self.insert.append(0)
@@ -15,6 +21,8 @@ class Generator:
                 self.insert[func] += 1
                 if sum(self.insert) >= len(self.groups):
                     break
+        if shuffle:
+            random.shuffle(self.insert)
     def get_logic_def(self):
         logic_def = "char read_input(char *input, int index){ return input[index]; }\n"
         return logic_def
