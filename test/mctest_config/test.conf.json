@@ -1,0 +1,47 @@
+{
+	"repeats" : 10,
+	"duration" : 15,
+	"fuzzleRoot" : "/home/markus/MasterThesis/Fuzzle/Fuzzle",
+	"tools" : {
+		"cpa": {
+			"command": "/home/markus/MasterThesis/CPAchecker-2.1.1-unix/scripts/cpa.sh -preprocess -svcomp22 -heap 10000M -benchmark",
+			"results": {
+				"positive" : "TRUE",
+				"negative" : "FALSE", 
+				"neutral" : "UNKOWN"
+				}
+			},
+		"ua": {
+			"command": "Ultimate.py --spec /home/markus/MasterThesis/unreach.prp --architecture 64bit --file",
+			"results": {
+				"positive" : "TRUE",
+				"negative" : "FALSE", 
+				"neutral" : "UNKOWN"
+			}
+		}
+	},
+	"parameters" : {
+		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
+		"w" : {
+			"min" : 5,
+			"max" : 10
+		},
+		"h" : {
+			"min" : 5,
+			"max" : 10
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 100
+		},
+		"t" : {
+			"min" : 0,
+			"max" : 20
+		},
+		"g": ["default_gen", "CVE-2016-4487_gen", "CVE-2016-4489_gen", "CVE-2016-4491_gen", "CVE-2016-4492_gen", "CVE-2016-4493_gen", "CVE-2016-6131_gen", "equality0_gen", "equality25_gen", "equality50_gen", "equality75_gen", "equality100_gen"],
+		"r" : {
+			"min" : 0,
+			"max" : 32767
+		}
+	}
+}
