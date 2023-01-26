@@ -138,7 +138,6 @@ do
         mv $NAME"_"$T_INDEX".png" $OUTPUT_DIR/png
         mv $NAME"_"$T_INDEX".txt" $OUTPUT_DIR/txt
         mv $NAME_P".c" $OUTPUT_DIR/src
-        #mv $NAME_P".bin" $OUTPUT_DIR/bin
     done
     mv $NAME"_solution.txt" $OUTPUT_DIR/sln
 done
