@@ -16,11 +16,12 @@ def bits_to_type(n):
         return "short"
     elif n <= 32:
         return "int"
-    else:
+    elif n <= 64:
         return "long"
-
+    else:
+        error(1)
 def bits_to_utype(n):
-    return "unsigned " + bits_to_type(n/2)
+    return "unsigned " + bits_to_type(n)
 
 def cast_to_signed(l, r):
     cast = ""
@@ -36,7 +37,7 @@ def cast_to_signed(l, r):
     else:
         error(1)
     if extend_step in (8,16,24,32,48,56):
-        cast = bits_to_type(extend_step)
+        cast = '(' + bits_to_type(extend_step+1) + ')'
     return cast
 
 def cast_to_unsigned(l, r):
@@ -53,7 +54,7 @@ def cast_to_unsigned(l, r):
     else:
         error(1)
     if extend_step in (8,16,24,32,48,56):
-        cast = bits_to_utype(extend_step)
+        cast = '(' + bits_to_utype(extend_step+1) + ')'
     return cast
 
 def convert_helper(node, cons, op):
@@ -111,22 +112,13 @@ def convert(node, cons):
     elif node.is_bv_sext():
         extend_step = node.bv_extend_step()
         (l, ) = node.args()
-        if extend_step == 8:
-            cons += "(short) "
-        if extend_step == 16 or extend_step == 24:
-            cons += "(int) "
-        elif extend_step == 32 or extend_step == 48 or extend_step == 56:
-            cons += "(long) "
+        cons += '(' + bits_to_type(extend_step) + ')'
         cons = convert(l, cons)
     elif node.is_bv_zext():
         extend_step = node.bv_extend_step()
         (l, ) = node.args()
-        if extend_step == 8:
-            cons += "(unsigned short) "
-        if extend_step == 16 or extend_step == 24:
-            cons += "(unsigned int) "
-        elif extend_step == 32 or extend_step == 48 or extend_step == 56:
-            cons += "(unsigned long) "
+        if extend_step in (8,16,24,32,48,56):
+            cons += '(' + bits_to_utype(extend_step) + ')'
         cons = convert(l, cons)
     elif node.is_bv_concat():
         cons += "model_version"
@@ -154,6 +146,8 @@ def convert(node, cons):
             error(1)
     elif node.is_bv_constant():
         constant =  "(" + bits_to_utype(node.bv_width()) + ") " + str(node.constant_value())
+        if node.bv_width() > 32:
+            constant += "UL"
         cons += constant
     else:
         error(0)
