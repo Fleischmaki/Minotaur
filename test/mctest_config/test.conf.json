@@ -1,25 +1,11 @@
 {
+	"verbosity": "all",
 	"repeats" : 10,
 	"duration" : 15,
-	"fuzzleRoot" : "/home/markus/MasterThesis/Fuzzle/Fuzzle",
-	"tools" : {
-		"cpa": {
-			"command": "/home/markus/MasterThesis/CPAchecker-2.1.1-unix/scripts/cpa.sh -preprocess -svcomp22 -heap 10000M -benchmark",
-			"results": {
-				"positive" : "TRUE",
-				"negative" : "FALSE", 
-				"neutral" : "UNKOWN"
-				}
-			},
-		"ua": {
-			"command": "Ultimate.py --spec /home/markus/MasterThesis/unreach.prp --architecture 64bit --file",
-			"results": {
-				"positive" : "TRUE",
-				"negative" : "FALSE", 
-				"neutral" : "UNKOWN"
-			}
-		}
-	},
+	"workers" : 1,
+	"memory" : 8,
+	"fuzzleRoot" : "Fuzzle",
+	"tool" : ["cpa", "ua", "seahorn"],
 	"parameters" : {
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
 		"w" : {
