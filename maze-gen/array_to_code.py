@@ -1,6 +1,7 @@
 import sys, os
 import random
 import importlib
+import genutils
 from collections import defaultdict
 
 def get_maze(maze_file):
@@ -122,8 +123,8 @@ def get_bug(bugtype):
 
 def render_program(c_file, maze, maze_funcs, width, height, generator, sln, bugtype, smt_file, t_type):
     f = open(c_file, 'w')
-    transformations = t_type.split("_")
-    generator = generator.Generator(width*height, maze.graph, sln, smt_file, "sh" in transformations)     
+    transformations = genutils.parse_transformations(t_type)
+    generator = generator.Generator(width*height, maze.graph, sln, smt_file, transformations)     
     logic_def = generator.get_logic_def()
     logic_c = generator.get_logic_c()
     numb_bytes = generator.get_numb_bytes()

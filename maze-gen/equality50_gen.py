@@ -1,7 +1,7 @@
 import random
 
 class Generator:
-    def __init__(self, size, edges, sln, smt_file, shuffle):
+    def __init__(self, size, edges, sln, smt_file, transformations):
         self.size = size
         self.edges = edges
         self.sln = sln

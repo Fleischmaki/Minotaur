@@ -104,7 +104,7 @@ def t_remove_walls(width, height, matrix, proportion):
     total = len(ones)
     rm = int(total*proportion/100)
     while (rm > 0):
-        r = random.randrange(0,total)
+        r = random.randrange(0,total-1)
         i, j = ones.pop(r)
         matrix[i,j] = 0
         total -= 1

@@ -30,15 +30,17 @@ The config is in json and should contain
 }
 ```
 ## Current parameters
-
 - a: Algorithm for maze generation ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"]
 - w: Maze Width (min 5)
 - h: Maze Height (min 5)
 - c: Percentage of backedges to keep 
-- t: Transformations ("t1_t2_t3_...")
+- t: Transformations {t1: [0,1], t2: {min:0,max:10}, t3: [10,15,20],...}
 - g: Type of constraint generation: ["default_gen","equality\*_gen", "CVE\*_gen"]              
 - r: Random seed
 
 ## Current transformations
-- sh: Shuffle constraints
-- rwX: Remove X % of walls   
+- rwX: Remove X% of walls
+- sh: Shuffle constraints*
+- dcX: Drop X% of constraints*
+
+\* Constraint based transformations only work with CVE_gen

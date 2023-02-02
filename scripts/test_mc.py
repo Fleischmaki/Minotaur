@@ -52,18 +52,31 @@ def get_user(tool): # Could not create user in seahorn docker
         return 'usea'
     return 'maze'
 
+def pick_values(head,value,tail):
+    if 'min' in value:
+        body = str(random.randint(value['min'], value['max']))
+    else: 
+        choice = random.choice(value)
+        if choice == 0:
+            return ''
+        elif choice == 1:
+            body = ''
+        else:
+            body = choice
+    return head + body + tail
 def get_random_params(conf):
     params = conf['parameters']
     res = dict()
     for key, value in params.items():
-        if 'min' in value:
-            body = str(random.randint(value['min'], value['max']))
-        else:
-            body = random.choice(value)
-
-        ## Special cases
         if key == 't':
-            body = 'sh_rw' + body
+            body = ''
+            for tkey, tvalue in value.items():
+                body += pick_values(tkey, tvalue, '_')
+            body = body[:-1] # remove last _
+        else:
+            body = pick_values('', value, '')
+            ## Special cases
+                        
         if 'CVE' in body: 
             file = body.split('_')[0]
             body = 'CVE_gen'
