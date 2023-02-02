@@ -1,3 +1,6 @@
+# Model Checker Analysis
+See [Info.md](https://github.com/Fleischmaki/Fuzzle/blob/working/Info.md)
+
 # Fuzzle
 
 Fuzzle is a bug synthesizer that generates buggy benchmarks for evaluating
