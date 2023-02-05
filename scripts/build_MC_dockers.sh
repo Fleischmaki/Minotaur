@@ -5,10 +5,10 @@ set -e
 DOCKERDIR=$(readlink -f $(dirname "$0")/..)/dockers
 
 # Build base image
-#echo "[*] Build maze-base Docker image..."
-#cd $DOCKERDIR/base 
-#docker build -t maze-base .
-#echo "[*] Done!"
+echo "[*] Build maze-base Docker image..."
+cd $DOCKERDIR/base 
+docker build -t maze-base .
+echo "[*] Done!"
 
 # Build UA image
 echo "[*] Build maze-UA Docker image..."

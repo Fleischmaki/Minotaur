@@ -1,4 +1,4 @@
-FROM ubuntu:23.04
+FROM ubuntu:20.04
 
 ### Prepare apt
 RUN sed -i 's/archive.ubuntu.com/ftp.daumkakao.com/g' /etc/apt/sources.list
