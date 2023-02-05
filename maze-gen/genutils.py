@@ -2,7 +2,7 @@ import random
 
 def remove_constraints(constraints, dc):
     curr = len(constraints)
-    rm = (curr*dc)/100 
+    rm = (curr*(1-dc))/100 
     while rm > 0:
         r = random.choice(list(constraints.keys()))
         constraints.pop(r)
