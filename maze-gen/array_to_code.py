@@ -119,11 +119,8 @@ def get_bug(bugtype):
     elif bugtype == "ve":
         return "__VERIFIER_error();", "extern void __VERIFIER_error(void);\n"
 
-
-
-def render_program(c_file, maze, maze_funcs, width, height, generator, sln, bugtype, smt_file, t_type):
+def render_program(c_file, maze, maze_funcs, width, height, generator, sln, bugtype, smt_file, transformations):
     f = open(c_file, 'w')
-    transformations = genutils.parse_transformations(t_type)
     generator = generator.Generator(width*height, maze.graph, sln, smt_file, transformations)     
     logic_def = generator.get_logic_def()
     logic_c = generator.get_logic_c()
@@ -202,8 +199,14 @@ def render_program(c_file, maze, maze_funcs, width, height, generator, sln, bugt
     func_{}(input, index, MAX_LIMIT);\n}}\n""".format(maze_funcs[(0, 0)]))
     f.close()
 
-def main(sol_file, width, height, cycle, seed, generator, bugtype, t_type, t_numb, smt_file, CVE_name):
+def main(sol_file, width, height, cycle, seed, generator, bugtype, t_type, t_numb, output_dir, smt_file, CVE_name):
     random.seed(seed)
+    transformations = genutils.parse_transformations(t_type)
+    if transformations["storm"]:
+        smt_files = [smt_file] + genutils.run_storm(smt_file, output_dir, seed, t_numb)
+    else:
+        smt_files = [smt_file]*(t_numb+1)
+    print(smt_files)
     for t_index in range(t_numb+1):
         maze_file = sol_file + "_" + str(t_index)
         matrix = get_maze(maze_file)
@@ -214,9 +217,9 @@ def main(sol_file, width, height, cycle, seed, generator, bugtype, t_type, t_num
         remove_cycle(graph, cycle)
         c_file = maze_file + "_" + str(cycle) + "percent_" + CVE_name + "_" + bugtype + ".c"
         if t_index != 0:
-            render_program(c_file, graph, maze_funcs, width, height, generator, sln, bugtype, smt_file, t_type)
+            render_program(c_file, graph, maze_funcs, width, height, generator, sln, bugtype, smt_files[t_index], transformations)
         else:
-            render_program(c_file, graph, maze_funcs, width, height, generator, sln, bugtype, smt_file, "")
+            render_program(c_file, graph, maze_funcs, width, height, generator, sln, bugtype, smt_files[t_index],genutils.parse_transformations(""))
 
 if __name__ == '__main__':
     sol_file = sys.argv[1]
@@ -226,13 +229,14 @@ if __name__ == '__main__':
     bugtype = sys.argv[6]
     t_type = sys.argv[7]
     t_numb = int(sys.argv[8])
-    generator_file = sys.argv[9]
+    output_dir = sys.argv[9]
+    generator_file = sys.argv[10]
     generator = importlib.import_module(generator_file)
     if "CVE" in generator_file:
-        smt_file = sys.argv[10]
+        smt_file = sys.argv[11]
         CVE_name = os.path.basename(smt_file)
         CVE_name = os.path.splitext(CVE_name)[0] + "_gen"
     else:
         smt_file = ""
         CVE_name = generator_file
-    main(sol_file, width, height, cycle, seed, generator, bugtype, t_type, t_numb, smt_file, CVE_name)
+    main(sol_file, width, height, cycle, seed, generator, bugtype, t_type, t_numb, output_dir, smt_file, CVE_name)

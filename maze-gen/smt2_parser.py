@@ -144,12 +144,23 @@ def convert(node, cons):
             cons += array
         else:
             error(1)
+    elif node.is_and():
+        cons = convert_helper(node, cons, "&&")
+    elif node.is_or():
+        cons = convert_helper(node, cons, "||")
+    elif node.is_not():
+        (b) = node.args()
+        cons += "!(" + convert(b, cons) + ")"
     elif node.is_bv_constant():
         constant =  "(" + bits_to_utype(node.bv_width()) + ") " + str(node.constant_value())
         if node.bv_width() > 32:
             constant += "UL"
         cons += constant
+    elif node.is_bool_constant():
+        constant =  1 if node.is_bool_constant(True) else 0
+        cons+=constant
     else:
+        #print("ERROR: Node %s not supported" % node.get_type())
         error(0)
     return cons
 

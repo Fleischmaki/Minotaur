@@ -42,5 +42,6 @@ The config is in json and should contain
 - rwX: Remove X% of walls
 - sh: Shuffle constraints*
 - dcX: Drop X% of constraints*
+- storm: Generate transformed SMT Files via Storm*
 
 \* Constraint based transformations only work with CVE_gen

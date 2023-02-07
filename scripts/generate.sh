@@ -112,7 +112,7 @@ echo "Generator used: "$GEN
 echo "Output directory: "$OUTPUT_DIR
 echo "##############################################"
 
-mkdir -p $OUTPUT_DIR/src $OUTPUT_DIR/bin $OUTPUT_DIR/png $OUTPUT_DIR/txt $OUTPUT_DIR/sln
+mkdir -p $OUTPUT_DIR/src $OUTPUT_DIR/bin $OUTPUT_DIR/png $OUTPUT_DIR/txt $OUTPUT_DIR/sln $OUTPUT_DIR/smt
 MAZEGEN_DIR=$(readlink -f $(dirname "$0")/..)/maze-gen
 
 NAME=$ALGORITHM"_"$WIDTH"x"$HEIGHT"_"$SEED"_"$NUMB"_"$T_TYPE
@@ -124,10 +124,10 @@ fi
 if [[ "$GEN" == *"CVE"* ]]; then
     SMT_NAME=$(basename $SMT_PATH .smt2)
     NAME_EXT="_"$CYCLE"percent_"$SMT_NAME"_gen_"$BUGTYPE
-    python3 $MAZEGEN_DIR/array_to_code.py $NAME $WIDTH $HEIGHT $CYCLE $SEED $BUGTYPE $T_TYPE $T_NUMB $GEN $SMT_PATH 
+    python3 $MAZEGEN_DIR/array_to_code.py $NAME $WIDTH $HEIGHT $CYCLE $SEED $BUGTYPE $T_TYPE $T_NUMB $OUTPUT_DIR $GEN $SMT_PATH 
 else
     NAME_EXT="_"$CYCLE"percent_"$GEN"_"$BUGTYPE
-    python3 $MAZEGEN_DIR/array_to_code.py $NAME $WIDTH $HEIGHT $CYCLE $SEED $BUGTYPE $T_TYPE $T_NUMB $GEN 
+    python3 $MAZEGEN_DIR/array_to_code.py $NAME $WIDTH $HEIGHT $CYCLE $SEED $BUGTYPE $T_TYPE $T_NUMB $OUTPUT_DIR $GEN 
 fi
 for (( T_INDEX=0; T_INDEX<=$T_NUMB; T_INDEX++ ))
 do
