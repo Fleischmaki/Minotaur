@@ -206,7 +206,6 @@ def main(sol_file, width, height, cycle, seed, generator, bugtype, t_type, t_num
         smt_files = [smt_file] + genutils.run_storm(smt_file, output_dir, seed, t_numb)
     else:
         smt_files = [smt_file]*(t_numb+1)
-    print(smt_files)
     for t_index in range(t_numb+1):
         maze_file = sol_file + "_" + str(t_index)
         matrix = get_maze(maze_file)

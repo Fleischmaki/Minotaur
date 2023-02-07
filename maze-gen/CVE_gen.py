@@ -4,7 +4,6 @@ import genutils
 
 class Generator:
     def __init__(self, size, edges, sln, smt_file, transformations):
-        print("Generating constraints from file %s" % smt_file)
         self.size = size
         self.edges = edges
         self.sln = sln
