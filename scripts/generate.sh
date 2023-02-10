@@ -42,8 +42,8 @@ case "${HEIGHT#[-+]}" in
         exit 1;;
 esac
 
-(($WIDTH < 3)) && { echo "Invalid size input: width should be greater than 2"; exit 1; }
-(($HEIGHT < 3)) && { echo "Invalid size input: height should be greater than 2"; exit 1; }
+(($WIDTH < 5)) && { echo "Invalid size input: width should be greater than 4"; exit 1; }
+(($HEIGHT < 5)) && { echo "Invalid size input: height should be greater than 4"; exit 1; }
 
 if [ -z ${OUTPUT_DIR+x} ]; then
     echo "Output directory not specified. Exiting..."
@@ -115,28 +115,40 @@ echo "##############################################"
 mkdir -p $OUTPUT_DIR/src $OUTPUT_DIR/bin $OUTPUT_DIR/png $OUTPUT_DIR/txt $OUTPUT_DIR/sln $OUTPUT_DIR/smt
 MAZEGEN_DIR=$(readlink -f $(dirname "$0")/..)/maze-gen
 
-NAME=$ALGORITHM"_"$WIDTH"x"$HEIGHT"_"$SEED"_"$NUMB"_"$T_TYPE
+NAME=$ALGORITHM"_"$WIDTH"x"$HEIGHT"_"$SEED"_"
 python3 $MAZEGEN_DIR/array_gen.py $ALGORITHM $WIDTH $HEIGHT $SEED $EXIT $NUMB $T_TYPE $T_NUMB 
 if [ $? -eq 1 ]; then
     echo "Select one of the following algorithms: Backtracking, Kruskal, Prims, Wilsons, Sidewinder"
     exit 1
 fi
+
+MAZES=""
+for (( INDEX=0; INDEX < $NUMB; INDEX++ ))
+do
+    MAZES=$MAZES$NAME$INDEX"_"$T_TYPE" "$WIDTH" "$HEIGHT" "
+done
+
 if [[ "$GEN" == *"CVE"* ]]; then
     SMT_NAME=$(basename $SMT_PATH .smt2)
     NAME_EXT="_"$CYCLE"percent_"$SMT_NAME"_gen_"$BUGTYPE
-    python3 $MAZEGEN_DIR/array_to_code.py $NAME $WIDTH $HEIGHT $CYCLE $SEED $BUGTYPE $T_TYPE $T_NUMB $OUTPUT_DIR $GEN $SMT_PATH 
+    python3 $MAZEGEN_DIR/array_to_code.py $SEED $BUGTYPE $T_TYPE $T_NUMB $OUTPUT_DIR $CYCLE $GEN $SMT_PATH $MAZES
 else
     NAME_EXT="_"$CYCLE"percent_"$GEN"_"$BUGTYPE
-    python3 $MAZEGEN_DIR/array_to_code.py $NAME $WIDTH $HEIGHT $CYCLE $SEED $BUGTYPE $T_TYPE $T_NUMB $OUTPUT_DIR $GEN 
+    python3 $MAZEGEN_DIR/array_to_code.py $SEED $BUGTYPE $T_TYPE $T_NUMB $OUTPUT_DIR $CYCLE $GEN $MAZES
 fi
 for (( T_INDEX=0; T_INDEX<=$T_NUMB; T_INDEX++ ))
 do
-    NAME_P=$NAME"_"$T_INDEX$NAME_EXT;
+    NAME_P=$NAME"0_"$T_TYPE"_t"$T_INDEX$NAME_EXT;
     #gcc -O3 -w -o $NAME_P".bin" $NAME_P".c"
-    mv $NAME"_"$T_INDEX".png" $OUTPUT_DIR/png
-    mv $NAME"_"$T_INDEX".txt" $OUTPUT_DIR/txt
+    for (( INDEX = 0; INDEX < $NUMB; INDEX++ ))
+    do
+        mv $NAME$INDEX"_"$T_TYPE"_t"$T_INDEX".png" $OUTPUT_DIR/png
+        mv $NAME$INDEX"_"$T_TYPE"_t"$T_INDEX".txt" $OUTPUT_DIR/txt
+    done
     mv $NAME_P".c" $OUTPUT_DIR/src
 done
-mv $NAME"_solution.txt" $OUTPUT_DIR/sln
-
+for (( INDEX = 0; INDEX < $NUMB; INDEX++ ))
+do
+    mv $NAME$INDEX"_"$T_TYPE"_solution.txt" $OUTPUT_DIR/sln
+done
 echo "Done!"

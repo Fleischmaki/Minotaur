@@ -111,24 +111,25 @@ def t_remove_walls(width, height, matrix, proportion):
         rm -= 1
     return matrix
 
-def main(algorithm, width, height, seed, maze_exit, index, t_type, t_numb):
-    maze = generate_maze(algorithm, width, height, seed, maze_exit)
-    label = algorithm + "_" + str(width) + "x" + str(height) + "_" + str(seed) + "_" + index + "_" + t_type
-    store_solution(maze, label, width, height)
-    random.seed(seed)
-    for t_index in range(t_numb+1):
-        grid = maze.grid.copy()
-        if t_index != 0:
-            grid = apply_transforms(t_type, width, height, grid)
-        store_maze(grid, label+"_"+str(t_index))
-        show_png(grid, label+"_"+str(t_index))
+def main(algorithm, width, height, seed, maze_exit, numb, t_type, t_numb):
+    for index in range(numb):
+        maze = generate_maze(algorithm, width, height, seed, maze_exit)
+        label = algorithm + "_" + str(width) + "x" + str(height) + "_" + str(seed) + "_" + str(index) + "_" + t_type
+        store_solution(maze, label, width, height)
+        random.seed(seed)
+        for t_index in range(t_numb+1):
+            grid = maze.grid.copy()
+            if t_index != 0:
+                grid = apply_transforms(t_type, width, height, grid)
+            store_maze(grid, label+"_t"+str(t_index))
+            show_png(grid, label+"_t"+str(t_index))
 
 if __name__ == '__main__':
     algorithm = sys.argv[1]
     width, height = int (sys.argv[2]), int (sys.argv[3])
-    seed = sys.argv[4]
+    seed = int(sys.argv[4])
     maze_exit = sys.argv[5]
-    index = sys.argv[6]
+    numb = int(sys.argv[6])
     t_type = sys.argv[7]
     t_numb = int(sys.argv[8])
-    main(algorithm, width, height, seed, maze_exit, index, t_type, t_numb)
+    main(algorithm, width, height, seed, maze_exit, numb, t_type, t_numb)

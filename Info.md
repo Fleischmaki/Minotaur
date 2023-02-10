@@ -37,6 +37,7 @@ The config is in json and should contain
 - t: Transformations {t1: [0,1], t2: {min:0,max:10}, t3: [10,15,20],...}
 - g: Type of constraint generation: ["default_gen","equality\*_gen", "CVE\*_gen"]              
 - r: Random seed
+- n: Number of mazes to chain 
 
 ## Current transformations
 - rwX: Remove X% of walls

@@ -3,7 +3,7 @@ import sys, os, subprocess
 import json
 import time
 
-NUM_WORKERS = 12
+#NUM_WORKERS = 12
 SPAWN_CMD = 'docker run --rm -m=%dg --cpuset-cpus=%d -it -d --name %s %s'
 CP_MAZE_CMD = 'docker cp %s %s:/home/%s/maze.c'
 CP_CMD = 'docker cp %s:/home/%s/outputs %s'
@@ -64,6 +64,11 @@ def pick_values(head,value,tail):
         else:
             body = choice
     return head + body + tail
+
+def set_default(parameters, name, value):
+    parameters[name] = value if parameters[name] is None else parameters[name]
+    print('Using default value %s for parameter %s' % (value, name))
+
 def get_random_params(conf):
     params = conf['parameters']
     res = dict()
@@ -83,10 +88,18 @@ def get_random_params(conf):
             res['s'] = '%s/CVEs/%s.smt2' % (conf['fuzzleRoot'], file)
 
         res[key] = body
-    # default values for other parameters 
-    res['n'] = 1
-    res['b'] = 've'
-    res['m'] = 1
+    
+    # default values 
+    set_default(res,'a','Backtracking')
+    set_default(res,'w',5)
+    set_default(res,'h',5)
+    set_default(res,'b','ve')
+    set_default(res,'n',1)
+    set_default(res,'m',1)
+    set_default(res,'t','id')
+    set_default(res,'r',int(time.localtime()))
+    set_default(res,'c',100)
+    set_default(res,'g','default_gen')
     return res
 
 
@@ -112,8 +125,8 @@ def generateMaze(conf, params):
     else:
         generator = params['g']
     return {
-        'original' : '%s_%sx%s_%s_1_%s_0_%spercent_%s_ve.c' %  (params['a'], params['w'], params['h'],params['r'], params['t'],params['c'], generator),  
-        'transformed' : '%s_%sx%s_%s_1_%s_1_%spercent_%s_ve.c' %  (params['a'], params['w'], params['h'],params['r'], params['t'],params['c'], generator),
+        'original' : '%s_%sx%s_%s_0_%s_t0_%spercent_%s_ve.c' %  (params['a'], params['w'], params['h'],params['r'], params['t'],params['c'], generator),  
+        'transformed' : '%s_%sx%s_%s_0_%s_t1_%spercent_%s_ve.c' %  (params['a'], params['w'], params['h'],params['r'], params['t'],params['c'], generator),
     }
 
 def fetch_works(conf,targets):

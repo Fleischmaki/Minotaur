@@ -13,7 +13,7 @@ class Generator:
         if transformations['sh']:
             self.groups, self.vars = genutils.coshuffle(self.groups, self.vars)
         self.insert = list()
-        for idx in range(self.size):
+        for _ in range(self.size):
             self.insert.append(0)
         while sum(self.insert) < len(self.groups):
             for func in self.sln:
