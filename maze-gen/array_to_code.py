@@ -95,7 +95,7 @@ class MazeGraph(DirGraph):
         super().__init__()
 
         self.start_neigh = maze_functions[0,0]
-        self.bug_neigh = maze_functions[width-1,height-1]
+        self.bug_neigh = maze_functions[height-1,width-1]
 
         self.graph['start'] = [self.start_neigh]
         self.graph['bug'] = []
@@ -103,7 +103,7 @@ class MazeGraph(DirGraph):
         for idx in range(width*height):
             x, y = idx // width, idx % width
             node = maze_functions[(x, y)]
-            if node == maze_exit and x != width - 1 and y != height - 1:
+            if node == maze_exit and not (x == height - 1 and y == width - 1):
                 self.add_edge(node, 'bug')
                 self.bug_neigh = node                
             i, j = 2*x + 1, 2*y + 1
@@ -125,6 +125,7 @@ class MazeGraph(DirGraph):
 
     def append(self, maze):
         self.disjoint_union(maze)
+        self.graph['start'] = [self.start_neigh] # Overwrite this as not disjoint
         self.remove_edge(self.bug_neigh,'bug')
         self.remove_edge(maze.start_neigh,'start')
         self.add_edge(self.bug_neigh, maze.start_neigh)
@@ -162,7 +163,7 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     for k in range(size):
         function_declarations += function_format_declaration.format(k)
     f.write(function_declarations)
-    f.write("""void func_start(char *input, int index, int length){{ func_0(input,index,length) }}\n""")
+    f.write("""void func_start(char *input, int index, int length){{ func_0(input,index,length); }}\n""")
     f.write("""void func_bug(char *input, int index, int length){{ {} }}\n""".format(bug))
     f.write(logic_def)
     f.write("""char* copy_input(char *input, int index, int bytes_to_use){

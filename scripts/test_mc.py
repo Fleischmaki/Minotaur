@@ -66,8 +66,9 @@ def pick_values(head,value,tail):
     return head + body + tail
 
 def set_default(parameters, name, value):
-    parameters[name] = value if parameters[name] is None else parameters[name]
-    print('Using default value %s for parameter %s' % (value, name))
+    if name not in parameters.keys():
+        parameters[name] = value
+        print('Using default value %s for parameter %s' % (value, name))
 
 def get_random_params(conf):
     params = conf['parameters']
@@ -97,7 +98,7 @@ def get_random_params(conf):
     set_default(res,'n',1)
     set_default(res,'m',1)
     set_default(res,'t','id')
-    set_default(res,'r',int(time.localtime()))
+    set_default(res,'r',int(time.time()))
     set_default(res,'c',100)
     set_default(res,'g','default_gen')
     return res
@@ -183,12 +184,6 @@ def store_outputs(conf, out_dir, works):
 
     time.sleep(60)
 
-    # Write summary header
-    with open(out_dir + '/summary.csv', 'w') as f:
-        f.write('tool,')
-        for key in conf['parameters'].keys():
-            f.write(str(key)+',')
-        f.write('runtime,status\n')
 
     # Next, store outputs to host filesystem
     for i in range(len(works)):
@@ -224,6 +219,13 @@ def store_outputs(conf, out_dir, works):
              
     time.sleep(60)
 
+def write_summary_header(conf, out_dir):
+    with open(out_dir + '/summary.csv', 'w') as f:
+        f.write('tool,')
+        for key in conf['parameters'].keys():
+            f.write(str(key)+',')
+        f.write('runtime,status\n')
+
 
 def kill_containers(works):
     for i in range(len(works)):
@@ -240,7 +242,8 @@ def main(conf_path, out_dir):
 
     conf = load_config(conf_path)
     targets = get_targets(conf)
-
+    write_summary_header(conf, out_dir)
+    
     while len(targets) > 0:
         works = fetch_works(conf, targets)
         spawn_containers(conf, works)
