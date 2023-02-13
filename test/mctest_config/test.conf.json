@@ -1,0 +1,40 @@
+{
+	"verbosity": "all",
+	"repeats" : 10,
+	"duration" : 15,
+	"workers" : 1,
+	"memory" : 8,
+	"fuzzleRoot" : "Fuzzle",
+	"tool" : ["cpa", "ua", "seahorn"],
+	"parameters" : {
+		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
+		"w" : {
+			"min" : 5,
+			"max" : 10
+		},
+		"h" : {
+			"min" : 5,
+			"max" : 10
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 100
+		},
+		"t" : {
+			"rw": {
+				"min" : 0,
+				"max" : 20
+			},
+			"dc": {
+				"min" : 0,
+				"max" : 10
+			},
+			"sh": [0,1]
+		},
+		"g": ["default_gen", "CVE-2016-4487_gen", "CVE-2016-4489_gen", "CVE-2016-4491_gen", "CVE-2016-4492_gen", "CVE-2016-4493_gen", "CVE-2016-6131_gen", "equality0_gen", "equality25_gen", "equality50_gen", "equality75_gen", "equality100_gen"],
+		"r" : {
+			"min" : 0,
+			"max" : 32767
+		}
+	}
+}

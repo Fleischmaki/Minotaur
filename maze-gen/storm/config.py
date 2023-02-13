@@ -1,0 +1,1 @@
+config={"home":"/home/markus/MasterThesis/storm"}

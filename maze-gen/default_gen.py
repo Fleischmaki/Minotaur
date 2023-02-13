@@ -1,5 +1,5 @@
 class Generator:
-    def __init__(self, size, edges, sln, smt_file):
+    def __init__(self, size, edges, sln, smt_file, transformations):
         self.size = size
         self.edges = edges
         self.sln = sln
@@ -38,6 +38,3 @@ class Generator:
 
     def get_total_bytes(self):
         return sum(self.get_numb_bytes())
-
-    def get_bug(self):
-        return "abort();"

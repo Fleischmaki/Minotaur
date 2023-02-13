@@ -9,46 +9,52 @@ def error(flag):
     elif flag == 1:
         print("ERROR: type not supported")
 
+def bits_to_type(n):
+    if n <= 8:
+        return "char"
+    elif n <= 16:
+        return "short"
+    elif n <= 32:
+        return "int"
+    elif n <= 64:
+        return "long"
+    else:
+        error(1)
+def bits_to_utype(n):
+    return "unsigned " + bits_to_type(n)
+
 def cast_to_signed(l, r):
     cast = ""
     extend_step = 0
     if l.is_bv_constant():
-        cast = "(int" + str(l.bv_width()) + "_t) "
+        cast = "(" + bits_to_type(l.bv_width()) + ") "
     elif r.is_bv_constant():
-        cast = "(int" + str(r.bv_width()) + "_t) "
+        cast = "( " + bits_to_type(r.bv_width()) + ") "
     elif l.is_bv_sext() or l.is_bv_zext():
         extend_step = l.bv_extend_step()
     elif r.is_bv_sext() or r.is_bv_zext():
         extend_step = r.bv_extend_step()
     else:
         error(1)
-    if extend_step == 8:
-        cast = "(int16_t) "
-    elif extend_step == 16 or extend_step == 24:
-        cast = "(int32_t) "
-    elif extend_step == 32 or extend_step == 48 or extend_step == 56:
-        cast = "(int64_t) "
+    if extend_step in (8,16,24,32,48,56):
+        cast = '(' + bits_to_type(extend_step+1) + ')'
     return cast
 
 def cast_to_unsigned(l, r):
     cast = ""
     extend_step = 0
     if l.is_bv_constant():
-        cast = "(uint" + str(l.bv_width()) + "_t) "
+        cast = "(" + bits_to_utype(l.bv_width()) + ") "
     elif r.is_bv_constant():
-        cast = "(uint" + str(r.bv_width()) + "_t) "
+        cast = "(" + bits_to_utype(r.bv_width()) + ") "
     elif l.is_bv_sext() or l.is_bv_zext():
         extend_step = l.bv_extend_step()
     elif r.is_bv_sext() or r.is_bv_zext():
         extend_step = r.bv_extend_step()
     else:
         error(1)
-    if extend_step == 8:
-        cast = "(uint16_t) "
-    elif extend_step == 16 or extend_step == 24:
-        cast = "(uint32_t) "
-    elif extend_step == 32 or extend_step == 48 or extend_step == 56:
-        cast = "(uint64_t) "
+    if extend_step in (8,16,24,32,48,56):
+        cast = '(' + bits_to_utype(extend_step+1) + ')'
     return cast
 
 def convert_helper(node, cons, op):
@@ -106,22 +112,13 @@ def convert(node, cons):
     elif node.is_bv_sext():
         extend_step = node.bv_extend_step()
         (l, ) = node.args()
-        if extend_step == 8:
-            cons += "(int16_t) "
-        if extend_step == 16 or extend_step == 24:
-            cons += "(int32_t) "
-        elif extend_step == 32 or extend_step == 48 or extend_step == 56:
-            cons += "(int64_t) "
+        cons += '(' + bits_to_type(extend_step) + ')'
         cons = convert(l, cons)
     elif node.is_bv_zext():
         extend_step = node.bv_extend_step()
         (l, ) = node.args()
-        if extend_step == 8:
-            cons += "(uint16_t) "
-        if extend_step == 16 or extend_step == 24:
-            cons += "(uint32_t) "
-        elif extend_step == 32 or extend_step == 48 or extend_step == 56:
-            cons += "(uint64_t) "
+        if extend_step in (8,16,24,32,48,56):
+            cons += '(' + bits_to_utype(extend_step) + ')'
         cons = convert(l, cons)
     elif node.is_bv_concat():
         cons += "model_version"
@@ -131,11 +128,11 @@ def convert(node, cons):
         (l, ) = node.args()
         extract = ""
         if ext_start == 0 and ext_end == 7:
-            extract = "(uint8_t) "
+            extract = "(unsigned char) "
         elif ext_start == 0 and ext_end == 15:
-            extract = "(uint16_t) "
+            extract = "(unsigned short) "
         elif ext_start == 0 and ext_end == 31:
-            extract = "(uint32_t) "
+            extract = "(unsigned int) "
         else:
             error(1)
         cons = convert(l, cons + extract + "(")
@@ -147,10 +144,23 @@ def convert(node, cons):
             cons += array
         else:
             error(1)
+    elif node.is_and():
+        cons = convert_helper(node, cons, "&&")
+    elif node.is_or():
+        cons = convert_helper(node, cons, "||")
+    elif node.is_not():
+        (b) = node.args()
+        cons += "!(" + convert(b, cons) + ")"
     elif node.is_bv_constant():
-        constant =  "(uint" + str(node.bv_width()) + "_t) " + str(node.constant_value())
+        constant =  "(" + bits_to_utype(node.bv_width()) + ") " + str(node.constant_value())
+        if node.bv_width() > 32:
+            constant += "UL"
         cons += constant
+    elif node.is_bool_constant():
+        constant =  1 if node.is_bool_constant(True) else 0
+        cons+=constant
     else:
+        #print("ERROR: Node %s not supported" % node.get_type())
         error(0)
     return cons
 

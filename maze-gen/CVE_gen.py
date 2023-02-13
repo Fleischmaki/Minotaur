@@ -1,20 +1,27 @@
 import smt2_parser
+import random
+import genutils
 
 class Generator:
-    def __init__(self, size, edges, sln, smt_file):
+    def __init__(self, size, edges, sln, smt_file, transformations):
         self.size = size
         self.edges = edges
         self.sln = sln
         self.constraints, self.vars_all = smt2_parser.parse(smt_file, check_neg = False)
+        genutils.remove_constraints(self.constraints, transformations['dc'])
         self.groups, self.vars = smt2_parser.independent_formulas(self.constraints, self.vars_all)
+        if transformations['sh']:
+            self.groups, self.vars = genutils.coshuffle(self.groups, self.vars)
         self.insert = list()
-        for idx in range(self.size):
+        for _ in range(self.size):
             self.insert.append(0)
         while sum(self.insert) < len(self.groups):
             for func in self.sln:
                 self.insert[func] += 1
                 if sum(self.insert) >= len(self.groups):
                     break
+        if transformations['sh']:
+            random.shuffle(self.insert)
     def get_logic_def(self):
         logic_def = "char read_input(char *input, int index){ return input[index]; }\n"
         return logic_def
@@ -96,6 +103,3 @@ class Generator:
 
     def get_total_bytes(self):
         return sum(self.get_numb_bytes())
-
-    def get_bug(self):
-        return "abort();"
