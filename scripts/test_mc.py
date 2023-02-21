@@ -3,7 +3,6 @@ import sys, os, subprocess
 import json
 import time
 
-#NUM_WORKERS = 12
 SPAWN_CMD = 'docker run --rm -m=%dg --cpuset-cpus=%d -it -d --name %s %s'
 CP_MAZE_CMD = 'docker cp %s %s:/home/%s/maze.c'
 CP_CMD = 'docker cp %s:/home/%s/outputs %s'
@@ -11,6 +10,10 @@ CP_FRCON_CMD = 'docker cp %s:%s %s'
 MOVE_CMD = 'mv %s %s'
 REMOVE_CMD = 'rm -r %s'
 KILL_CMD = 'docker kill %s'
+
+def wait_for_procs(procs):
+    for p in procs:
+        p.wait()
 
 def load_config(path):
     with open(path) as f:
@@ -27,11 +30,20 @@ def load_config(path):
 
     return conf
 
+def spawn_cmd(cmd_str):
+    print('[*] Executing: %s' % cmd_str)
+    cmd_args = cmd_str.split()
+    try:
+        return subprocess.Popen(cmd_args, stdout=subprocess.DEVNULL)
+    except Exception as e:
+        print(e)
+        exit(1)
+
 def run_cmd(cmd_str):
     print('[*] Executing: %s' % cmd_str)
     cmd_args = cmd_str.split()
     try:
-        return subprocess.run(cmd_args, capture_output=True, text=True)
+        return subprocess.run(cmd_args)
     except Exception as e:
         print(e)
         exit(1)
@@ -42,7 +54,7 @@ def run_cmd_in_docker(container, cmd_str):
     cmd_args = cmd_prefix.split()
     cmd_args += [cmd_str]
     try:
-        subprocess.call(cmd_args)
+        subprocess.run(cmd_args)
     except Exception as e:
         print(e)
         exit(1)
@@ -62,7 +74,7 @@ def pick_values(head,value,tail):
         elif choice == 1:
             body = ''
         else:
-            body = choice
+            body = str(choice)
     return head + body + tail
 
 def set_default(parameters, name, value):
@@ -96,11 +108,15 @@ def get_random_params(conf):
     set_default(res,'h',5)
     set_default(res,'b','ve')
     set_default(res,'n',1)
-    set_default(res,'m',1)
     set_default(res,'t','id')
     set_default(res,'r',int(time.time()))
     set_default(res,'c',100)
     set_default(res,'g','default_gen')
+    set_default(res,'u',0)
+
+    if 'u' in res.keys():
+        res['w'] = 1
+        res['h'] = 1
     return res
 
 
@@ -110,35 +126,45 @@ def get_targets(conf):
     repeats = conf['repeats']
     for i in range(repeats):
         params = get_random_params(conf)
-        mazes = generateMaze(conf, params)
+        mazes = get_maze_names(params, int(conf['transforms']))
         for tool in conf['tool']:
-            targets.append((mazes['original'], tool,2*i,params))
-            targets.append((mazes['transformed'], tool,2*i+1,params))
+            for j in range(len(mazes)):
+                targets.append((mazes[j], tool,i*j + j,params))
     return targets
+
+def get_maze_names(params,transforms):
+    if params['g'] == 'CVE_gen':
+        generator = '%s_gen' % params['s'].split('/')[-1][0:-5]
+    else:
+        generator = params['g']
+    return ['%s_%sx%s_%s_0_%s_t%d_%spercent_%s_ve.c' %  (params['a'], params['w'], params['h'],params['r'], params['t'],i,params['c'], generator) for i in range(transforms)]
+
 
 def generateMaze(conf, params):
     param_string = ''
     for param, value in params.items():
         param_string += '-%s %s ' % (param, value)
-    run_cmd('%s/scripts/generate.sh -o temp %s' % (conf['fuzzleRoot'], param_string))
-    if params['g'] == 'CVE_gen':
-        generator = '%s_gen' % params['s'].split('/')[-1][0:-5]
-    else:
-        generator = params['g']
-    return {
-        'original' : '%s_%sx%s_%s_0_%s_t0_%spercent_%s_ve.c' %  (params['a'], params['w'], params['h'],params['r'], params['t'],params['c'], generator),  
-        'transformed' : '%s_%sx%s_%s_0_%s_t1_%spercent_%s_ve.c' %  (params['a'], params['w'], params['h'],params['r'], params['t'],params['c'], generator),
-    }
-
+    out_dir = os.path.join(conf['fuzzleRoot'], 'temp')
+    return run_cmd('%s/scripts/generate.sh -o %s -m %s %s' % (conf['fuzzleRoot'], out_dir, conf['transforms'], param_string)) # TODO: Figure out how to multithread this
+                                                                                                                              # Or just set greater values for transforms 
 def fetch_works(conf,targets):
     works = []
+    #procs = []
     for i in range(conf['workers']):
         if len(targets) <= 0:
             break
-        works.append(targets.pop(0))
+        t = targets.pop(0)
+        if t[2] % (int(conf['transforms'])*len(conf['tools'])) == 0:
+            generateMaze(conf,t[3])
+        works.append(t)
+        #procs.append(generateMaze(conf,t[3]))
+
+    #for p in procs: # Wait for all mazes to be done
+    #    p.wait()
     return works
 
 def spawn_containers(conf, works):
+    procs = []
     for i in range(len(works)):
         maze, tool, id, _ = works[i]
 
@@ -148,13 +174,21 @@ def spawn_containers(conf, works):
         container = '%s-%s' % (tool,id)
         # Spawn a container
         cmd = SPAWN_CMD % (conf['memory'], i, container, image)
-        run_cmd(cmd)
+        procs.append(spawn_cmd(cmd))
+    wait_for_procs(procs)
 
+    procs = []
+    for i in range(len(works)):
+        maze, tool, id, _ = works[i]
+        user = get_user(tool)
+        container = '%s-%s' % (tool,id)
         # Copy maze in the container
-        cmd = CP_MAZE_CMD % ('temp/src/%s' % maze, container, user)
-        run_cmd(cmd)
+        cmd = CP_MAZE_CMD % ( os.path.join(conf['fuzzleRoot'], 'temp','src',maze), container, user)
+        procs.append(spawn_cmd(cmd))
+    wait_for_procs(procs)
 
 def run_tools(conf,works):
+    duration = conf['duration']
     for i in range(len(works)):
         _, tool, id, _ = works[i]
         container = '%s-%s' % (tool,id)
@@ -162,12 +196,11 @@ def run_tools(conf,works):
         user = get_user(tool)
         script = '/home/%s/tools/run_%s.sh' % (user, tool)
         src_path = '/home/%s/maze.c' % (user)
-        duration = conf['duration']
         cmd = '%s %s %s' % (script, src_path, duration)
 
         run_cmd_in_docker(container, cmd)
 
-    time.sleep(duration*60 + 60) # sleep timeout + extra 1 min.
+    time.sleep(duration*60 + 5) # sleep timeout + extra 5 secs.
 
 def store_outputs(conf, out_dir, works):
     # First, collect testcases in /home/maze/outputs
@@ -182,7 +215,7 @@ def store_outputs(conf, out_dir, works):
         cmd = 'python3 /home/%s/tools/get_tcs.py /home/%s/outputs' % (user,user)
         run_cmd_in_docker(container, cmd)
 
-    time.sleep(60)
+    time.sleep(5)
 
 
     # Next, store outputs to host filesystem
@@ -206,36 +239,40 @@ def store_outputs(conf, out_dir, works):
             run_cmd(REMOVE_CMD % out_path)
             break
         with open(out_dir + '/summary.csv', 'a') as f:
-            f.write(tool + ',')
+            f.write(tool + ',' + str(id) + ',')
             for key, value in params.items():
                 if key == 'g':
-                    f.write(str(params['g']))
-                if key not in ('m','n','b','s'):
+                    f.write(str(params['s'].split('/')[-1]))
+                elif key == 'u':
+                    f.write('1,')
+                elif key not in ('m','n','b','s'):
                     f.write(str(value) + ',')
             f.write('%s,%s,' % (runtime, tag))
             f.write('\n')
         if conf['verbosity'] == 'summary': 
             run_cmd(REMOVE_CMD % out_path)
-             
-    time.sleep(60)
+
+    time.sleep(5)
 
 def write_summary_header(conf, out_dir):
     with open(out_dir + '/summary.csv', 'w') as f:
-        f.write('tool,')
+        f.write('tool,id,')
         for key in conf['parameters'].keys():
             f.write(str(key)+',')
         f.write('runtime,status\n')
 
 
 def kill_containers(works):
+    procs = []
     for i in range(len(works)):
         _, tool, id, _ = works[i]
         container = '%s-%s' % (tool,id)
         cmd = KILL_CMD % container
-        run_cmd(cmd)
+        procs.append(spawn_cmd(cmd))
+    wait_for_procs(procs)
 
-def cleanup():
-    run_cmd(REMOVE_CMD % 'temp')
+def cleanup(conf):
+    run_cmd(REMOVE_CMD % os.path.join(conf['fuzzleRoot'],'temp'))
 
 def main(conf_path, out_dir):
     os.system('mkdir -p %s' % out_dir)
@@ -250,7 +287,7 @@ def main(conf_path, out_dir):
         run_tools(conf, works)
         store_outputs(conf, out_dir, works)
         kill_containers(works)
-    cleanup()
+    cleanup(conf)
 
 
 if __name__ == '__main__':
