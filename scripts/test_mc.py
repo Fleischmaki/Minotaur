@@ -154,7 +154,7 @@ def fetch_works(conf,targets):
         if len(targets) <= 0:
             break
         t = targets.pop(0)
-        if t[2] % (int(conf['transforms'])*len(conf['tools'])) == 0:
+        if t[2] % (int(conf['transforms'])) == 0:
             generateMaze(conf,t[3])
         works.append(t)
         #procs.append(generateMaze(conf,t[3]))
