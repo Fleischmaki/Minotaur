@@ -1,13 +1,13 @@
 import sys, random
 from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict
-from pysmt.shortcuts import is_sat, Not
+from pysmt.shortcuts import is_sat, Not, And, Or
 
-def error(flag):
+def error(flag, *nodes):
     if flag == 0:
-        print("ERROR: node type not recognized")
+        raise Exception("ERROR: node type not recognized: ", nodes, nodes[0].is_function_application())
     elif flag == 1:
-        print("ERROR: type not supported")
+        raise Exception("ERROR: nodes not supported", nodes, nodes[0].is_symbol())
 
 def bits_to_type(n):
     if n <= 8:
@@ -19,7 +19,8 @@ def bits_to_type(n):
     elif n <= 64:
         return "long"
     else:
-        error(1)
+        error(1, n)
+        
 def bits_to_utype(n):
     return "unsigned " + bits_to_type(n)
 
@@ -35,7 +36,8 @@ def cast_to_signed(l, r):
     elif r.is_bv_sext() or r.is_bv_zext():
         extend_step = r.bv_extend_step()
     else:
-        error(1)
+        error(1,l,r)
+        
     if extend_step in (8,16,24,32,48,56):
         cast = '(' + bits_to_type(extend_step+1) + ')'
     return cast
@@ -52,117 +54,187 @@ def cast_to_unsigned(l, r):
     elif r.is_bv_sext() or r.is_bv_zext():
         extend_step = r.bv_extend_step()
     else:
-        error(1)
+        error(1,l)
+        
     if extend_step in (8,16,24,32,48,56):
         cast = '(' + bits_to_utype(extend_step+1) + ')'
     return cast
 
-def convert_helper(node, cons, op):
+def convert_helper(symbs,node, cons, op):
     (l, r) = node.args()
-    cons = convert(l, cons + "(")
-    cons += op
-    cons = convert(r, cons) + ")"
-    return cons
+    convert(symbs,l, cons)
+    cons.write(op)
+    convert(symbs,r, cons)
 
-def convert(node, cons):
-    if node.is_iff():
-            (l, r) = node.args()
-            if l.is_false():
-                cons += "(!"
-                cons = convert(r, cons)
-                cons += ")"
-            else:
-                error(1)
-    elif node.is_equals():
-        cons = convert_helper(node, cons, " == ")
+def convert(symbs,node, cons):
+    if type(node) is tuple:
+        error(1, node)
+    cons.write('(')
+    if node.is_iff() or node.is_equals():
+        convert_helper(symbs,node, cons, " == ")
     elif node.is_bv_sle():
         (l, r) = node.args()
         cast = cast_to_signed(l, r)
-        cons = convert(l, cons + "(" + cast)
-        cons += " <= "
-        cons = convert(r, cons + cast) + ")"
+        cons.write("(" + cast)
+        convert(symbs,l, cons)
+        cons.write(" <= " + cast)
+        convert(symbs,r, cons)
+        cons.write(")")
     elif node.is_bv_ule():
         (l, r) = node.args()
         cast = cast_to_unsigned(l, r)
-        cons = convert(l, cons + "(" + cast)
-        cons += " <= "
-        cons = convert(r, cons + cast) + ")"
+        cons.write("(" + cast)
+        convert(symbs,l, cons)
+        cons.write(" <= " + cast)
+        convert(symbs,r, cons)
+        cons.write(")")
     elif node.is_bv_slt():
         (l, r) = node.args()
         cast = cast_to_signed(l, r)
-        cons = convert(l, cons + "(" + cast)
-        cons += " < "
-        cons = convert(r, cons + cast) + ")"
+        cons.write("(" + cast)
+        convert(symbs,l, cons)
+        cons.write(" < " + cast)
+        convert(symbs,r, cons)
+        cons.write(")")
     elif node.is_bv_ult():
         (l, r) = node.args()
         cast = cast_to_unsigned(l, r)
-        cons = convert(l, cons + "(" + cast)
-        cons += " < "
-        cons = convert(r, cons + cast) + ")"
+        cons.write("(" + cast)
+        convert(symbs,l, cons)
+        cons.write(" < " + cast)
+        convert(symbs,r, cons)
+        cons.write(")")
     elif node.is_bv_add():
-        cons = convert_helper(node, cons, " + ")
+        convert_helper(symbs,node, cons, " + ")
     elif node.is_bv_sub():
-        cons = convert_helper(node, cons, " - ")
+        convert_helper(symbs,node, cons, " - ")
     elif node.is_bv_mul():
-        cons = convert_helper(node, cons, " * ")
+        convert_helper(symbs,node, cons, " * ")
     elif node.is_bv_udiv() or node.is_bv_sdiv():
-        cons = convert_helper(node, cons, " / ")
+        convert_helper(symbs,node, cons, " / ")
     elif node.is_bv_urem() or node.is_bv_srem():
-        cons = convert_helper(node, cons, " % ")
+        convert_helper(symbs,node, cons, " % ")
+    elif node.is_bv_xor():
+        convert_helper(symbs,node, cons, " ^ ")
+    elif node.is_bv_or():
+        convert_helper(symbs,node, cons, " | ")
+    elif node.is_bv_and():
+        convert_helper(symbs,node, cons, " & ")
+    elif node.is_bv_lshl():
+        convert_helper(symbs,node, cons, " << ")
+    elif node.is_bv_lshr():
+        convert_helper(symbs,node, cons, " >> ")
+    elif node.is_bv_not():
+        b = node.args()
+        cons.write("~")
+        convert(symbs,b, cons)
     elif node.is_bv_sext():
         extend_step = node.bv_extend_step()
         (l, ) = node.args()
-        cons += '(' + bits_to_type(extend_step) + ')'
-        cons = convert(l, cons)
+        cons.write('(' + bits_to_type(extend_step) + ')')
+        convert(symbs,l, cons)
     elif node.is_bv_zext():
         extend_step = node.bv_extend_step()
         (l, ) = node.args()
         if extend_step in (8,16,24,32,48,56):
-            cons += '(' + bits_to_utype(extend_step) + ')'
-        cons = convert(l, cons)
+            cons.write('(' + bits_to_utype(extend_step) + ')')
+        convert(symbs,l, cons)
     elif node.is_bv_concat():
-        cons += "model_version"
+        (l,r) = node.args()
+        if (l.bv_width() + r.bv_width() > 64):
+            error(1,node)   
+             
+        cons.write('(')
+        convert(symbs,l, cons)
+        cons.write(' << %d) | ' % r.bv_width())
+        convert(symbs,r,cons)
     elif node.is_bv_extract():
         ext_start = node.bv_extract_start()
         ext_end = node.bv_extract_end()
         (l, ) = node.args()
         extract = ""
+        ul = False
         if ext_start == 0 and ext_end == 7:
             extract = "(unsigned char) "
         elif ext_start == 0 and ext_end == 15:
             extract = "(unsigned short) "
         elif ext_start == 0 and ext_end == 31:
             extract = "(unsigned int) "
+        elif ext_start == 0 and ext_end == 63:
+            extract = "(unsigned long) "
+            ul = True
         else:
-            error(1)
-        cons = convert(l, cons + extract + "(")
-        cons += ")"
+            error(1,node)
+            
+        cons.write(extract + "(")
+        convert(symbs,l, cons)
+        cons.write("UL)" if ul else ")")
     elif node.is_select():
         (l, r) = node.args()
         if l.is_symbol() and r.is_bv_constant():
             array = str(l) + "_" + str(r.constant_value())
-            cons += array
+            symbs.add(array)
+            cons.write(array)
         else:
-            error(1)
+            error(1,node)
+            
+    elif node.is_store():
+        (a, p, v) = node.args()
+        if a.is_symbol() and p.is_bv_constant():
+            cons.write(str(a) + "_" + str(p.constant_value) + " = ")
+            symbs.add(str(a) + "_" + str(p.constant_value))
+            convert(symbs,v, cons)
     elif node.is_and():
-        cons = convert_helper(node, cons, "&&")
+        convert_helper(symbs,node, cons, " && ")
     elif node.is_or():
-        cons = convert_helper(node, cons, "||")
+        convert_helper(symbs,node, cons, " || ")
     elif node.is_not():
         (b) = node.args()
-        cons += "!(" + convert(b, cons) + ")"
+        cons.write("!(")
+        convert(symbs,b, cons)
+        cons.write(")")
+    elif node.is_implies():
+        (l,r) = node.args()
+        cons.write("!(")
+        convert(symbs,l,cons)
+        cons.write(") | ")
+        convert(symbs,r,cons)
+    elif node.is_ite():
+        (g,p,n) = node.args()
+        convert(symbs,g,cons)
+        cons.write(' ? ')
+        convert(symbs,p, cons)
+        cons.write(' : ')
+        convert(symbs,n, cons)
+    elif node.is_bv_neg():
+        s = node.args()
+        cons.write('0b1' + '0' * (node.bv_width() - 1) + ' - ')
+        convert(symbs,s,cons)
     elif node.is_bv_constant():
         constant =  "(" + bits_to_utype(node.bv_width()) + ") " + str(node.constant_value())
         if node.bv_width() > 32:
             constant += "UL"
-        cons += constant
+        cons.write(constant)
     elif node.is_bool_constant():
-        constant =  1 if node.is_bool_constant(True) else 0
-        cons+=constant
+        constant =  "1" if node.is_bool_constant(True) else "0"
+        cons.write(constant)
+    elif node.is_symbol():
+        cons.write(str(node))
+        symbs.add(str(node))
+    elif node.is_function_application():
+        for n in node.args():
+            if not n.is_bv_constant():
+                error(1, node)
+                
+        index = ["_" + str(n.constant_value()) for n in node.args()]
+        cons.write(str(node.function_name()) + index)
+        symbs.add(str(node.function_name()) + index)
     else:
-        #print("ERROR: Node %s not supported" % node.get_type())
-        error(0)
-    return cons
+        error(0, node)
+        
+        return("")
+    cons.write(')')
+    return ""
 
 def is_neg_sat(c, clauses):
     form_neg = Not(c)
@@ -171,6 +243,15 @@ def is_neg_sat(c, clauses):
             form_neg = form_neg.And(n)
     sat = is_sat(form_neg, solver_name = "z3")
     return sat
+
+def conjunction_to_clauses(formula):
+    if formula.is_and():
+        clauses = set()
+        for node in formula.args():
+            clauses = clauses.union(conjunction_to_clauses(node))
+    else:
+        clauses = set([formula])
+    return clauses
 
 def parse(file_path, check_neg):
     parser = SmtLibParser()
@@ -181,31 +262,42 @@ def parse(file_path, check_neg):
     for d in decls:
         for arg in d.args:
             if (str)(arg) != "model_version":
-                decl_arr.append(arg)
+                decl_arr.append(str(arg))
     formula = script.get_strict_formula()
-    res = is_sat(formula, solver_name="z3")
-    assert(res == True)
+    #res = is_sat(formula, solver_name="z3")
+    #assert(res)
     parsed_cons = dict()
-    x = formula
-    clauses = set()
-    while len(x.get_atoms()) > 1:
-        (x, y) = x.args()
-        clauses.add(y)
-    clauses.add(x)
+    clauses = conjunction_to_clauses(formula)
     for clause in clauses:
-        cons_in_c = convert(clause, "")
+        symbs = set()
+        tempfile = open('temp.txt', 'w+')
+        try:
+            convert(symbs,clause, tempfile)
+        except Exception as e:
+            print(e)
+            break
+        tempfile.seek(0)
+        cons_in_c =  tempfile.read()
         if "model_version" not in cons_in_c:
             if check_neg == True:
                 neg_sat = is_neg_sat(clause, clauses)
                 parsed_cons[cons_in_c] = neg_sat
             else:
                 parsed_cons[cons_in_c] = ""
-            for declared in decl_arr:
-                for idx in range(0,100):
-                    var_idx = str(declared) + "_" + str(idx)
-                    if var_idx + " " in cons_in_c or var_idx + ")" in cons_in_c:
-                        variables.add(str(declared) + "_" + str(idx))
+            for symb in symbs:
+                decl = symb.split("_")[0]
+                if decl in decl_arr:
+                    variables.add(symb)
     return parsed_cons, variables
+
+def check_indices(symbol,maxArity,maxId, cons_in_c):
+    if maxArity == 0:
+        return set([symbol]) if symbol in cons_in_c else set()
+    for id in range(maxId):
+        var = symbol + '_' + str(id)
+        res = set([var]) if var in cons_in_c else set()
+        res = res.union(check_indices(var, maxArity-1,maxId,cons_in_c))
+    return res    
 
 def extract_vars(cond, variables):
     vars = set()

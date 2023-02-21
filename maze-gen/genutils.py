@@ -23,6 +23,7 @@ def parse_transformations(t_type):
     transformations = t_type.split('_')
     shuffle = False
     storm = False
+    keepId = False
     dc = 0
     for t in transformations:
         if t == 'sh':
@@ -31,14 +32,16 @@ def parse_transformations(t_type):
             storm = True
         elif t.startswith('dc'):
             dc = int(t[2:])
-    return {'sh': shuffle, 'dc': dc, 'storm' : storm}
+        elif t == 'keepId':
+            keepId = True
+    return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keepId}
 
-def run_storm(smt_file,output_dir, seed,n):
-    MUTANT_PATH=os.path.join(output_dir,'smt')
-    smt_obj = smtObject(smt_file, MUTANT_PATH)
-    smt_obj.check_satisfiability(15*60)
+def run_storm(smt_file,mutant_path, seed,n):
+    if n <= 0:
+        return
+    smt_obj = smtObject(smt_file, mutant_path)
+    smt_obj.check_satisfiability(5*60)
     fpars = get_parameters_dict(False, 0)
     fpars['number_of_mutants'] = n
-    fpars['max_assert'] = 1 #Fuzzle expects only 1 assertion 
-    generate_mutants(smt_obj, MUTANT_PATH, fpars['max_depth'],fpars['max_assert'],seed, 'QF_AUFBV',fpars)
-    return [MUTANT_PATH + '/mutant_%s.smt2' % i for i in range(n)]
+    generate_mutants(smt_obj, mutant_path, fpars['max_depth'],fpars['max_assert'],seed, 'QF_AUFBV',fpars)
+    return [mutant_path + '/mutant_%s.smt2' % i for i in range(n)]
