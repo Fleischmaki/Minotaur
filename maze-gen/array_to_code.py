@@ -4,6 +4,8 @@ import importlib
 import genutils
 from collections import defaultdict
 
+UNIT_MATRIX = [['1','0','1'],['1','0','1'],['1','0','1']]
+
 def get_maze(maze_file, width, height):
     f = open(maze_file + ".txt", "r+")
     txt = f.read().replace(' ', '').replace('[', '').replace(']', '')
@@ -99,6 +101,7 @@ class MazeGraph(DirGraph):
 
         self.graph['start'] = [self.start_neigh]
         self.graph['bug'] = []
+
 
         for idx in range(width*height):
             x, y = idx // width, idx % width
@@ -220,21 +223,26 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     func_start(input, index, MAX_LIMIT);\n}}\n""")
     f.close()
 
-def generate_maze(t_index, size, maze):
+def generate_maze(t_index, size, maze, unit):
     maze_file = maze["sol_file"] + "_t" + str(t_index)
-    matrix = get_maze(maze_file, maze["width"], maze["height"])
-    sln = get_solution(maze["sol_file"],size)
+    if unit:
+        matrix = UNIT_MATRIX
+        sln = [0 + size]
+    else:
+        matrix = get_maze(maze_file, maze["width"], maze["height"])
+        sln = get_solution(maze["sol_file"],size)
+
     maze_exit = get_exit(sln)
     maze_funcs = get_functions(maze["width"], maze["height"], maze_exit,size)
     graph = MazeGraph(maze["width"], maze["height"], maze_exit, maze_funcs, matrix)
     return sln,graph
 
-def generate_maze_chain(mazes, cycle, t_index):
+def generate_maze_chain(mazes, cycle, t_index, unit):
     size = 0
     graph = None
     solution = []
     for maze in mazes:
-        sln, new_graph = generate_maze(t_index, size, maze)
+        sln, new_graph = generate_maze(t_index, size, maze, unit)
         solution += sln
         size += maze["width"] * maze["height"]
         if graph is None:
@@ -244,22 +252,20 @@ def generate_maze_chain(mazes, cycle, t_index):
     graph.remove_cycle(cycle)
     return size,graph,solution
 
-def main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, smt_file, CVE_name):
+def main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, unit, smt_file, CVE_name):
     random.seed(seed)
     transformations = genutils.parse_transformations(t_type)
     if transformations["storm"]:
-        smt_files = [smt_file] + genutils.run_storm(smt_file, output_dir, seed, t_numb)
+        smt_files = [smt_file] + genutils.run_storm(smt_file, os.path.join(output_dir,'smt'), seed, t_numb)
     else:
         smt_files = [smt_file]*(t_numb+1)
     for t_index in range(t_numb+1):
-        size, graph, solution = generate_maze_chain(mazes, cycle, t_index)
+        size, graph, solution = generate_maze_chain(mazes, cycle, t_index, unit)
         c_file = mazes[0]["sol_file"] + "_t" + str(t_index) + "_" + str(cycle) + "percent_" + CVE_name + "_" + bugtype + ".c"
         if t_index != 0:
             render_program(c_file, graph.graph, size, generator, solution, bugtype, smt_files[t_index], transformations)
-        else:
+        elif transformations["keepId"]:
             render_program(c_file, graph.graph, size, generator, solution, bugtype, smt_files[t_index],genutils.parse_transformations(""))
-
-
 
 if __name__ == '__main__':
     seed = int(sys.argv[1])
@@ -268,17 +274,18 @@ if __name__ == '__main__':
     t_numb = int(sys.argv[4])
     output_dir = sys.argv[5]
     cycle = int(sys.argv[6])
-    generator_file = sys.argv[7]
+    unit = int(sys.argv[7])
+    generator_file = sys.argv[8]
     generator = importlib.import_module(generator_file)
     if "CVE" in generator_file:
-        smt_file = sys.argv[8]
+        smt_file = sys.argv[9]
         CVE_name = os.path.basename(smt_file)
         CVE_name = os.path.splitext(CVE_name)[0] + "_gen"
-        i = 8
+        i = 9
     else:
         smt_file = ""
         CVE_name = generator_file
-        i = 7
+        i = 8
     mazes = []
     while (i+3 < len(sys.argv)):
         maze = dict()
@@ -286,4 +293,4 @@ if __name__ == '__main__':
         maze["width"], maze["height"] = int(sys.argv[i+2]), int(sys.argv[i+3])
         mazes.append(maze)
         i += 3
-    main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, smt_file, CVE_name)
+    main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, unit, smt_file, CVE_name)

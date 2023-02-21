@@ -1,6 +1,6 @@
 #!/bin/bash
 
-while getopts a:w:h:o:r:n:c:g:s:e:b:m:t: option
+while getopts a:w:h:o:r:n:c:g:s:e:b:m:t:u option
 do
     case "${option}"
     in
@@ -17,12 +17,21 @@ do
     b) BUGTYPE=${OPTARG};;
     m) T_NUMB=${OPTARG};;
     t) T_TYPE=${OPTARG};;
+    u) UNIT=1
     esac
 done
 
 if [ -z ${ALGORITHM+x} ]; then
     echo "No algorithm selected. Exiting..."
     exit 1
+fi
+
+if [ -z ${UNIT+x} ]; then
+    UNIT=0
+else
+    echo "NOTE: Generating unit maze"
+    WIDTH=1
+    HEIGHT=1
 fi
 
 if [[ -z ${WIDTH+x} || -z ${HEIGHT+x} ]]; then
@@ -42,8 +51,8 @@ case "${HEIGHT#[-+]}" in
         exit 1;;
 esac
 
-(($WIDTH < 5)) && { echo "Invalid size input: width should be greater than 4"; exit 1; }
-(($HEIGHT < 5)) && { echo "Invalid size input: height should be greater than 4"; exit 1; }
+#(($WIDTH < 5)) && { echo "Invalid size input: width should be greater than 4"; exit 1; }
+#(($HEIGHT < 5)) && { echo "Invalid size input: height should be greater than 4"; exit 1; }
 
 if [ -z ${OUTPUT_DIR+x} ]; then
     echo "Output directory not specified. Exiting..."
@@ -51,7 +60,7 @@ if [ -z ${OUTPUT_DIR+x} ]; then
 fi
 
 if [ -z ${NUMB+x} ]; then
-    echo "NOTE: The id of the maze was not specified. Default value of 1 will be used."
+    echo "NOTE: The number of mazes to chain was not specified. Default value of 1 will be used."
     NUMB=1
 fi
 
@@ -74,8 +83,8 @@ if [ -z ${CYCLE+x} ]; then
 fi
 
 if [ -z ${BUGTYPE} ]; then
-    echo "NOTE: The bugtype was not specified. Default function abort() will be used."
-    BUGTYPE="abort"
+    echo "NOTE: The bugtype was not specified. Default function __VERIFIER_ERROR() will be used."
+    BUGTYPE="ve"
 fi
 
 if [ -z ${EXIT+x} ]; then
@@ -87,15 +96,17 @@ if [ -z ${GEN+x} ]; then
     GEN="default_gen"
 fi
 
-if [ -z ${T_NUMB} ]; then
-    echo "NOTE: The number of transformed mazes was not specified. No transformations will be performed"
-    T_NUMB=0
-fi
-
 if [ -z ${T_TYPE} ]; then
     echo "NOTE: No transformations where specified. No transformations will be performed"
     T_TYPE="id"
+    T_NUMB=0
 fi
+
+if [ -z ${T_NUMB} ]; then
+    echo "NOTE: The number of transformed mazes was not specified. One transformation will be performed"
+    T_NUMB=1
+fi
+
 
 echo "Generating mazes..."
 echo "##############################################"
@@ -116,10 +127,12 @@ mkdir -p $OUTPUT_DIR/src $OUTPUT_DIR/bin $OUTPUT_DIR/png $OUTPUT_DIR/txt $OUTPUT
 MAZEGEN_DIR=$(readlink -f $(dirname "$0")/..)/maze-gen
 
 NAME=$ALGORITHM"_"$WIDTH"x"$HEIGHT"_"$SEED"_"
-python3 $MAZEGEN_DIR/array_gen.py $ALGORITHM $WIDTH $HEIGHT $SEED $EXIT $NUMB $T_TYPE $T_NUMB 
-if [ $? -eq 1 ]; then
-    echo "Select one of the following algorithms: Backtracking, Kruskal, Prims, Wilsons, Sidewinder"
-    exit 1
+if [ $UNIT -eq 0 ]; then
+    python3 $MAZEGEN_DIR/array_gen.py $ALGORITHM $WIDTH $HEIGHT $SEED $EXIT $NUMB $T_TYPE $T_NUMB 
+    if [ $? -eq 1 ]; then
+        echo "Select one of the following algorithms: Backtracking, Kruskal, Prims, Wilsons, Sidewinder"
+        exit 1
+    fi
 fi
 
 MAZES=""
@@ -127,14 +140,13 @@ for (( INDEX=0; INDEX < $NUMB; INDEX++ ))
 do
     MAZES=$MAZES$NAME$INDEX"_"$T_TYPE" "$WIDTH" "$HEIGHT" "
 done
-
 if [[ "$GEN" == *"CVE"* ]]; then
     SMT_NAME=$(basename $SMT_PATH .smt2)
     NAME_EXT="_"$CYCLE"percent_"$SMT_NAME"_gen_"$BUGTYPE
-    python3 $MAZEGEN_DIR/array_to_code.py $SEED $BUGTYPE $T_TYPE $T_NUMB $OUTPUT_DIR $CYCLE $GEN $SMT_PATH $MAZES
+    python3 $MAZEGEN_DIR/array_to_code.py $SEED $BUGTYPE $T_TYPE $T_NUMB $OUTPUT_DIR $CYCLE $UNIT $GEN $SMT_PATH $MAZES
 else
     NAME_EXT="_"$CYCLE"percent_"$GEN"_"$BUGTYPE
-    python3 $MAZEGEN_DIR/array_to_code.py $SEED $BUGTYPE $T_TYPE $T_NUMB $OUTPUT_DIR $CYCLE $GEN $MAZES
+    python3 $MAZEGEN_DIR/array_to_code.py $SEED $BUGTYPE $T_TYPE $T_NUMB $OUTPUT_DIR $CYCLE $UNIT $GEN $MAZES
 fi
 for (( T_INDEX=0; T_INDEX<=$T_NUMB; T_INDEX++ ))
 do
@@ -142,13 +154,17 @@ do
     #gcc -O3 -w -o $NAME_P".bin" $NAME_P".c"
     for (( INDEX = 0; INDEX < $NUMB; INDEX++ ))
     do
-        mv $NAME$INDEX"_"$T_TYPE"_t"$T_INDEX".png" $OUTPUT_DIR/png
-        mv $NAME$INDEX"_"$T_TYPE"_t"$T_INDEX".txt" $OUTPUT_DIR/txt
+        if [ $UNIT -eq 0 ]; then
+            mv $NAME$INDEX"_"$T_TYPE"_t"$T_INDEX".png" $OUTPUT_DIR/png
+            mv $NAME$INDEX"_"$T_TYPE"_t"$T_INDEX".txt" $OUTPUT_DIR/txt
+        fi
     done
     mv $NAME_P".c" $OUTPUT_DIR/src
 done
 for (( INDEX = 0; INDEX < $NUMB; INDEX++ ))
 do
-    mv $NAME$INDEX"_"$T_TYPE"_solution.txt" $OUTPUT_DIR/sln
+    if [ $UNIT -eq 0 ]; then
+        mv $NAME$INDEX"_"$T_TYPE"_solution.txt" $OUTPUT_DIR/sln
+    fi
 done
 echo "Done!"
