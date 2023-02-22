@@ -157,8 +157,7 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     "#include <stdlib.h>\n" \
     "#include <string.h>\n" \
     "#include <unistd.h>\n" \
-    "#include <stdint.h>\n" \
-    "#include <stdbool.h>\n")
+    "#include <stdint.h>\n")
     f.write(bug_headers)
     f.write("extern char __VERIFIER_nondet_char(void);\n")
     f.write("""#define MAX_LIMIT {}\n\n""".format(total_bytes))

@@ -1,17 +1,20 @@
-import sys, random
+import sys, random, traceback, math
 from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict
-from pysmt.shortcuts import is_sat, Not, And, Or
+from pysmt.shortcuts import is_sat, Not, BV
 
 def error(flag, *nodes):
     if flag == 0:
-        raise Exception("ERROR: node type not recognized: ", nodes, nodes[0].is_function_application())
+        raise Exception("ERROR: node type not recognized: ", nodes, map(lambda n: n.get_type()))
     elif flag == 1:
-        raise Exception("ERROR: nodes not supported", nodes, nodes[0].is_symbol())
+        raise Exception("ERROR: nodes not supported", nodes)
+
+def binary_to_decimal(binary):
+    if len(binary) > 64:
+        error(1, binary)
+    return str(BV(binary).constant_value())
 
 def bits_to_type(n):
-    if n == 1:
-        return "bool"
     if n <= 8:
         return "char"
     elif n <= 16:
@@ -24,8 +27,6 @@ def bits_to_type(n):
         error(1, n)
         
 def bits_to_utype(n):
-    if n == 1:
-        return "bool"
     return "unsigned " + bits_to_type(n)
 
 def cast_to_signed(l, r):
@@ -77,50 +78,32 @@ def type_to_c(type):
         return 'string'
     else:
         error(1)
-def convert_helper(symbs,node, cons, op):
+
+def convert_helper(symbs,node, cons, op, cast = ''):
     (l, r) = node.args()
+    if cast != '':
+        cast = cast_to_signed(l,r) if cast == 's' else cast_to_unsigned(l,r)
+    cons.write(cast)
     convert(symbs,l, cons)
-    cons.write(op)
+    cons.write(op + cast)
     convert(symbs,r, cons)
 
 def convert(symbs,node, cons):
-    if type(node) is tuple:
-        error(1, node)
     cons.write('(')
-    if node.is_iff() or node.is_equals():
+    if node.is_iff() or node.is_equals() or node.is_bv_comp():
         convert_helper(symbs,node, cons, " == ")
     elif node.is_bv_sle():
-        (l, r) = node.args()
-        cast = cast_to_signed(l, r)
-        cons.write("(" + cast)
-        convert(symbs,l, cons)
-        cons.write(" <= " + cast)
-        convert(symbs,r, cons)
-        cons.write(")")
+        convert_helper(symbs,node, cons, " <= ", 's')
     elif node.is_bv_ule():
-        (l, r) = node.args()
-        cast = cast_to_unsigned(l, r)
-        cons.write("(" + cast)
-        convert(symbs,l, cons)
-        cons.write(" <= " + cast)
-        convert(symbs,r, cons)
-        cons.write(")")
+        convert_helper(symbs,node, cons, " <= ", 'u')
     elif node.is_bv_slt():
-        (l, r) = node.args()
-        cast = cast_to_signed(l, r)
-        cons.write("(" + cast)
-        convert(symbs,l, cons)
-        cons.write(" < " + cast)
-        convert(symbs,r, cons)
-        cons.write(")")
+        convert_helper(symbs,node, cons, " < ", 's')
     elif node.is_bv_ult():
-        (l, r) = node.args()
-        cast = cast_to_unsigned(l, r)
-        cons.write("(" + cast)
-        convert(symbs,l, cons)
-        cons.write(" < " + cast)
-        convert(symbs,r, cons)
-        cons.write(")")
+        convert_helper(symbs,node, cons, " < ", 'u')
+    elif node.is_bv_lshr():
+        convert_helper(symbs,node, cons, " >> ", 'u') # C >> is logical for unsigned, arithmetic for signed
+    elif node.is_bv_ashr():
+        convert_helper(symbs,node, cons, " >> ", 's')
     elif node.is_bv_add():
         convert_helper(symbs,node, cons, " + ")
     elif node.is_bv_sub():
@@ -128,9 +111,9 @@ def convert(symbs,node, cons):
     elif node.is_bv_mul():
         convert_helper(symbs,node, cons, " * ")
     elif node.is_bv_udiv() or node.is_bv_sdiv():
-        convert_helper(symbs,node, cons, " / ")
+        convert_helper(symbs,node, cons, " / ", "s")
     elif node.is_bv_urem() or node.is_bv_srem():
-        convert_helper(symbs,node, cons, " % ")
+        convert_helper(symbs,node, cons, " % ", "s")
     elif node.is_bv_xor():
         convert_helper(symbs,node, cons, " ^ ")
     elif node.is_bv_or():
@@ -139,20 +122,18 @@ def convert(symbs,node, cons):
         convert_helper(symbs,node, cons, " & ")
     elif node.is_bv_lshl():
         convert_helper(symbs,node, cons, " << ")
-    elif node.is_bv_lshr():
-        convert_helper(symbs,node, cons, " >> ")
     elif node.is_bv_not():
-        b = node.args()
+        (b,) = node.args()
         cons.write("~")
         convert(symbs,b, cons)
     elif node.is_bv_sext():
         extend_step = node.bv_extend_step()
-        (l, ) = node.args()
+        (l,) = node.args()
         cons.write('(' + bits_to_type(extend_step) + ')')
         convert(symbs,l, cons)
     elif node.is_bv_zext():
         extend_step = node.bv_extend_step()
-        (l, ) = node.args()
+        (l,) = node.args()
         if extend_step in (8,16,24,32,48,56):
             cons.write('(' + bits_to_utype(extend_step) + ')')
         convert(symbs,l, cons)
@@ -160,7 +141,6 @@ def convert(symbs,node, cons):
         (l,r) = node.args()
         if (l.bv_width() + r.bv_width() > 64):
             error(1,node)   
-             
         cons.write('(')
         convert(symbs,l, cons)
         cons.write(' << %d) | ' % r.bv_width())
@@ -168,24 +148,12 @@ def convert(symbs,node, cons):
     elif node.is_bv_extract():
         ext_start = node.bv_extract_start()
         ext_end = node.bv_extract_end()
-        (l, ) = node.args()
-        extract = ""
-        ul = False
-        if ext_start == 0 and ext_end == 7:
-            extract = "(unsigned char) "
-        elif ext_start == 0 and ext_end == 15:
-            extract = "(unsigned short) "
-        elif ext_start == 0 and ext_end == 31:
-            extract = "(unsigned int) "
-        elif ext_start == 0 and ext_end == 63:
-            extract = "(unsigned long) "
-            ul = True
-        else:
-            error(1,node)
-            
-        cons.write(extract + "(")
+        (l,) = node.args()
+        mask = binary_to_decimal("1" * (ext_end - ext_start))
+        newtype = bits_to_utype(ext_end - ext_start) 
+        cons.write("(" + newtype +") ((")
         convert(symbs,l, cons)
-        cons.write("UL)" if ul else ")")
+        cons.write(" >> " + str(ext_start) + ") & " + mask + ")")
     elif node.is_select():
         (l, r) = node.args()
         if l.is_symbol() and r.is_bv_constant():
@@ -194,19 +162,18 @@ def convert(symbs,node, cons):
             cons.write(array)
         else:
             error(1,node)
-            
     elif node.is_store():
         (a, p, v) = node.args()
         if a.is_symbol() and p.is_bv_constant():
-            cons.write(str(a) + "_" + str(p.constant_value) + " = ")
-            symbs.add(str(a) + "_" + str(p.constant_value))
+            cons.write(str(a) + "_" + str(p.constant_value()) + " = ")
+            symbs.add(str(a) + "_" + str(p.constant_value()))
             convert(symbs,v, cons)
     elif node.is_and():
         convert_helper(symbs,node, cons, " && ")
     elif node.is_or():
         convert_helper(symbs,node, cons, " || ")
     elif node.is_not():
-        (b) = node.args()
+        (b,) = node.args()
         cons.write("!(")
         convert(symbs,b, cons)
         cons.write(")")
@@ -224,16 +191,21 @@ def convert(symbs,node, cons):
         cons.write(' : ')
         convert(symbs,n, cons)
     elif node.is_bv_neg():
-        s = node.args()
-        cons.write('0b1' + '0' * (node.bv_width() - 1) + ' - ')
+        (s,) = node.args()
+        base = binary_to_decimal("1" + "0" * (node.bv_width()-1))
+        cons.write(base + ' - ')
         convert(symbs,s,cons)
+    elif node.is_bv_rol():
+        rotate_helper(symbs, node, cons, "<<")
+    elif node.is_bv_ror():
+        rotate_helper(symbs, node, cons, ">>")
     elif node.is_bv_constant():
         constant =  "(" + bits_to_utype(node.bv_width()) + ") " + str(node.constant_value())
         if node.bv_width() > 32:
             constant += "UL"
         cons.write(constant)
     elif node.is_bool_constant():
-        constant =  "true" if node.is_bool_constant(True) else "false"
+        constant =  "1" if node.is_bool_constant(True) else "0"
         cons.write(constant)
     elif node.is_symbol():
         cons.write(str(node))
@@ -242,8 +214,7 @@ def convert(symbs,node, cons):
         for n in node.args():
             if not n.is_bv_constant():
                 error(1, node)
-                
-        index = ["_" + str(n.constant_value()) for n in node.args()]
+        index = "".join(["_" + str(n.constant_value()) for n in node.args()])
         cons.write(str(node.function_name()) + index)
         symbs.add(str(node.function_name()) + index)
     else:
@@ -252,6 +223,17 @@ def convert(symbs,node, cons):
         return("")
     cons.write(')')
     return ""
+
+def rotate_helper(symbs, node, cons, op):
+    (l,) = node.args()
+    m = node.bv_length()
+    i = node.bv_rotation_step()
+    convert(symbs,l,cons)
+    cons.write('((')
+    convert(symbs,l,cons)
+    cons.write(' %s %s) & ((1 %s %s+1) - 1)) | (') % (op, i, op, i) # TODO exponential blowup possible
+    convert(symbs,l,cons)
+    cons.write(' %s (%s-%s) )') % (op, i, m)
 
 def is_neg_sat(c, clauses):
     form_neg = Not(c)
@@ -292,6 +274,7 @@ def parse(file_path, check_neg):
             convert(symbs,clause, tempfile)
         except Exception as e:
             print(e)
+            #traceback.print_exc()
             break
         tempfile.seek(0)
         cons_in_c =  tempfile.read()
@@ -417,7 +400,7 @@ def get_subgroup(groups, vars_by_groups, seed):
     return subgroup, vars
 
 def main(file_path):
-    conds, variables = parse(file_path, True)
+    conds, variables = parse(file_path, False)
     for cond in conds:
         vars = extract_vars(cond, variables)
         print(cond)
@@ -426,10 +409,10 @@ def main(file_path):
     groups, vars_by_groups = independent_formulas(conds, variables)
     for idx in range(len(groups)):
         print(vars_by_groups[idx], "\n")
-        for cond in groups[idx]:
-            print(cond)
-            print("Can be negated:", conds[cond], "\n")
-        print("*"*100)
+        #for cond in groups[idx]:
+            #print(cond)
+            #print("Can be negated:", conds[cond], "\n")
+        #print("*"*100)
 
 if __name__ == '__main__':
     file_path = sys.argv[1]
