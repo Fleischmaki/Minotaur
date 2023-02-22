@@ -167,4 +167,7 @@ do
         mv $NAME$INDEX"_"$T_TYPE"_solution.txt" $OUTPUT_DIR/sln
     fi
 done
+if [[ "$GEN" == *"CVE"* ]]; then
+    rm temp.txt
+fi
 echo "Done!"
