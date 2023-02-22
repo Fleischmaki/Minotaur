@@ -242,10 +242,10 @@ def store_outputs(conf, out_dir, works):
             f.write(tool + ',' + str(id) + ',')
             for key, value in params.items():
                 if key == 'g':
-                    f.write(str(params['s'].split('/')[-1]))
+                    f.write(str(params['s'].split('/')[-1])[:-5] + ',')
                 elif key == 'u':
                     f.write('1,')
-                elif key not in ('m','n','b','s'):
+                elif key in conf['parameters'].keys():
                     f.write(str(value) + ',')
             f.write('%s,%s,' % (runtime, tag))
             f.write('\n')

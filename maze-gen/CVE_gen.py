@@ -40,7 +40,7 @@ class Generator:
                     vars = vars.union(self.vars[group_idx + cnt])
                 buggy_constraints = ""
                 for var in vars:
-                    buggy_constraints += "\t\tchar {} = read_input(copy, {});\n".format(var, copy_idx)
+                    buggy_constraints += "\t\t{} {} = read_input(copy, {});\n".format(self.vars_all[var], var, copy_idx)
                     copy_idx += 1
                 buggy_constraints += "\t\tchar c = read_input(copy, {});\n".format(len(vars))
                 buggy_constraints += "\t\tint flag = 0;\n"

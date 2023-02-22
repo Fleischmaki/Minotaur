@@ -10,6 +10,8 @@ def error(flag, *nodes):
         raise Exception("ERROR: nodes not supported", nodes, nodes[0].is_symbol())
 
 def bits_to_type(n):
+    if n == 1:
+        return "bool"
     if n <= 8:
         return "char"
     elif n <= 16:
@@ -22,6 +24,8 @@ def bits_to_type(n):
         error(1, n)
         
 def bits_to_utype(n):
+    if n == 1:
+        return "bool"
     return "unsigned " + bits_to_type(n)
 
 def cast_to_signed(l, r):
@@ -60,6 +64,19 @@ def cast_to_unsigned(l, r):
         cast = '(' + bits_to_utype(extend_step+1) + ')'
     return cast
 
+def type_to_c(type):
+    if type.is_bool_type():
+        return 'bool'
+    elif type.is_bv_type():
+        return bits_to_utype(type.width)
+    elif type.is_function_type():
+        return type_to_c(type.return_type)
+    elif type.is_array_type():
+        return type_to_c(type.elem_type)
+    elif type.is_string_type():
+        return 'string'
+    else:
+        error(1)
 def convert_helper(symbs,node, cons, op):
     (l, r) = node.args()
     convert(symbs,l, cons)
@@ -216,7 +233,7 @@ def convert(symbs,node, cons):
             constant += "UL"
         cons.write(constant)
     elif node.is_bool_constant():
-        constant =  "1" if node.is_bool_constant(True) else "0"
+        constant =  "true" if node.is_bool_constant(True) else "false"
         cons.write(constant)
     elif node.is_symbol():
         cons.write(str(node))
@@ -257,12 +274,12 @@ def parse(file_path, check_neg):
     parser = SmtLibParser()
     script = parser.get_script_fname(file_path)
     decl_arr = list()
-    variables = set()
+    variables = dict()
     decls = script.filter_by_command_name("declare-fun")
     for d in decls:
         for arg in d.args:
             if (str)(arg) != "model_version":
-                decl_arr.append(str(arg))
+                decl_arr.append(arg)
     formula = script.get_strict_formula()
     #res = is_sat(formula, solver_name="z3")
     #assert(res)
@@ -286,8 +303,10 @@ def parse(file_path, check_neg):
                 parsed_cons[cons_in_c] = ""
             for symb in symbs:
                 decl = symb.split("_")[0]
-                if decl in decl_arr:
-                    variables.add(symb)
+                for i in range(len(decl_arr)):
+                    if decl == str(decl_arr[i]):
+                        type_in_c = type_to_c(decl_arr[i].get_type())  
+                        variables[symb] = type_in_c
     return parsed_cons, variables
 
 def check_indices(symbol,maxArity,maxId, cons_in_c):
@@ -300,10 +319,10 @@ def check_indices(symbol,maxArity,maxId, cons_in_c):
     return res    
 
 def extract_vars(cond, variables):
-    vars = set()
-    for var in variables:
+    vars = dict()
+    for var, type in variables.items():
         if var + " " in cond or var + ")" in cond:
-            vars.add(var)
+            vars[var] = type
     return vars
 
 class Graph:
@@ -339,14 +358,14 @@ def independent_formulas(conds, variables):
     for cond in conds:
         vars = extract_vars(cond, variables)
         for other in conds:
-            if len(vars.intersection(extract_vars(other, variables))) > 0:
+            if len(vars.keys() & extract_vars(other, variables).keys()) > 0:
                 formula.add_edge(cond, other)
     groups = formula.separate()
     vars_by_groups = list()
     for group in groups:
-        used_vars = set()
+        used_vars = dict()
         for cond in group:
-            used_vars = used_vars.union(extract_vars(cond, variables))
+            used_vars.update(extract_vars(cond, variables))
         vars_by_groups.append(sorted(used_vars))
     return groups, vars_by_groups
 
@@ -391,10 +410,10 @@ def get_subgroup(groups, vars_by_groups, seed):
     # get a subset of a randomly selected independent group
     random.seed(seed)
     rand = random.randint(0, len(groups)-1)
-    vars = set()
+    vars = dict()
     subgroup = groups[rand]
     for cond in subgroup:
-        vars = vars.union(extract_vars(cond, vars_by_groups[rand]))
+        vars.update(extract_vars(cond, vars_by_groups[rand]))
     return subgroup, vars
 
 def main(file_path):
