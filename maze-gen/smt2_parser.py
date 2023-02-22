@@ -1,13 +1,20 @@
-import sys, random, traceback, math
+import sys, random, traceback, math, os
 from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict
-from pysmt.shortcuts import is_sat, Not, BV
+from pysmt.shortcuts import is_sat, Not, BV, Or, And
 
 def error(flag, *nodes):
     if flag == 0:
-        raise Exception("ERROR: node type not recognized: ", nodes, map(lambda n: n.get_type()))
+        raise ValueError("ERROR: node type not recognized: ", nodes, map(lambda n: n.get_type()))
     elif flag == 1:
-        raise Exception("ERROR: nodes not supported", nodes)
+        raise ValueError("ERROR: nodes not supported", nodes)
+
+def deflatten(args, op):
+    x = args[0]
+    for i in range(1,len(args)):
+        y = args[i]
+        x = op(x,y)
+    return x
 
 def binary_to_decimal(binary):
     if len(binary) > 64:
@@ -148,12 +155,14 @@ def convert(symbs,node, cons):
     elif node.is_bv_extract():
         ext_start = node.bv_extract_start()
         ext_end = node.bv_extract_end()
+        dif = ext_end - ext_start + 1
+        m = node.bv_width()
         (l,) = node.args()
-        mask = binary_to_decimal("1" * (ext_end - ext_start))
-        newtype = bits_to_utype(ext_end - ext_start) 
+        mask = binary_to_decimal("1" * (dif))
+        newtype = bits_to_utype(dif) 
         cons.write("(" + newtype +") ((")
         convert(symbs,l, cons)
-        cons.write(" >> " + str(ext_start) + ") & " + mask + ")")
+        cons.write(" >> " + str(m - ext_end) + ") & " + mask + ")")
     elif node.is_select():
         (l, r) = node.args()
         if l.is_symbol() and r.is_bv_constant():
@@ -169,8 +178,10 @@ def convert(symbs,node, cons):
             symbs.add(str(a) + "_" + str(p.constant_value()))
             convert(symbs,v, cons)
     elif node.is_and():
+        node = deflatten(node.args(),And)
         convert_helper(symbs,node, cons, " && ")
     elif node.is_or():
+        node = deflatten(node.args(),Or)
         convert_helper(symbs,node, cons, " || ")
     elif node.is_not():
         (b,) = node.args()
@@ -263,19 +274,24 @@ def parse(file_path, check_neg):
             if (str)(arg) != "model_version":
                 decl_arr.append(arg)
     formula = script.get_strict_formula()
-    #res = is_sat(formula, solver_name="z3")
-    #assert(res)
+    with open(file_path, 'r') as file:
+        text = file.read()
+        if ('unsat') in text:
+            raise ValueError("Unsat file")
+        elif('sat') not in text:
+            res = is_sat(formula, solver_name="z3")
+            assert(res)
     parsed_cons = dict()
     clauses = conjunction_to_clauses(formula)
     for clause in clauses:
         symbs = set()
         tempfile = open('temp.txt', 'w+')
-        try:
-            convert(symbs,clause, tempfile)
-        except Exception as e:
-            print(e)
-            #traceback.print_exc()
-            break
+        #try:
+        convert(symbs,clause, tempfile)
+        #except Exception as e:
+        #    print(e)
+        #    traceback.print_exc()
+        #    break
         tempfile.seek(0)
         cons_in_c =  tempfile.read()
         if "model_version" not in cons_in_c:
@@ -399,21 +415,35 @@ def get_subgroup(groups, vars_by_groups, seed):
         vars.update(extract_vars(cond, vars_by_groups[rand]))
     return subgroup, vars
 
-def main(file_path):
-    conds, variables = parse(file_path, False)
-    for cond in conds:
-        vars = extract_vars(cond, variables)
-        print(cond)
-        print(vars, "\n")
-    print("-"*100)
-    groups, vars_by_groups = independent_formulas(conds, variables)
-    for idx in range(len(groups)):
-        print(vars_by_groups[idx], "\n")
-        #for cond in groups[idx]:
-            #print(cond)
-            #print("Can be negated:", conds[cond], "\n")
-        #print("*"*100)
+def main(file_path, resfile):    
+    print("Checking file " + file_path)
+    if os.path.isdir(file_path):
+        print("Going into dir " + file_path)
+        for file in os.listdir(file_path):
+            main(os.path.join(file_path,file), resfile)
+    elif not file_path.endswith('.smt2'):
+        return
+    try:
+        parse(file_path, False)
+        #for cond in conds:
+        #    vars = extract_vars(cond, variables)
+        #    print(cond)
+        #    print(vars, "\n")
+        #print("-"*100)
+        #groups, vars_by_groups = independent_formulas(conds, variables)
+        #for idx in range(len(groups)):
+        #    print(vars_by_groups[idx], "\n")
+        #    for cond in groups[idx]:
+        #        print(cond)
+                #print("Can be negated:", conds[cond], "\n")
+            #print("*"*100)    
+    except Exception as e:
+        print("Error in " + file_path + ': ' + str(e))
+        traceback.print_exc()
+    
+    resfile.write(file_path + '\n')
 
 if __name__ == '__main__':
-    file_path = sys.argv[1]
-    main(file_path)
+    resfile = open('safe_files.txt', 'w')
+    for file_path in sys.argv:
+        main(file_path, resfile)

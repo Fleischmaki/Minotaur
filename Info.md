@@ -9,6 +9,15 @@ After that run
 ```
 python3 scripts/test_mc.py <Path to Config> <Output folder>
 ```
+
+# SMT Files
+Run
+```
+python3 maze-gen/smt2_parser.py /path/to/smt/dir
+```
+to recursively check all smt files in the directory.
+Accepted files will be written to safe-files.txt
+
 # Config
 A sample config can be found in */test/mctest_config/test.conf.json*
 The config is in json and should contain 
@@ -36,7 +45,8 @@ The config is in json and should contain
 - h: Maze Height (min 5)
 - c: Percentage of backedges to keep 
 - t: Transformations {t1: [0,1], t2: {min:0,max:10}, t3: [10,15,20],...}
-- g: Type of constraint generation: ["default_gen","equality\*_gen", "CVE\*_gen"]              
+- g: Type of constraint generation: ["default_gen","equality[0,25,50,75,100]_gen", "CVE_gen"]  
+- s: /path/to/smt/dir            
 - r: Random seed
 - n: Number of mazes to chain 
 
