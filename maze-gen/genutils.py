@@ -23,7 +23,7 @@ def parse_transformations(t_type):
     transformations = t_type.split('_')
     shuffle = False
     storm = False
-    keepId = False
+    keepId = t_type == 'id'
     dc = 0
     for t in transformations:
         if t == 'sh':
