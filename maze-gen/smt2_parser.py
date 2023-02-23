@@ -279,8 +279,7 @@ def parse(file_path, check_neg):
         if ('unsat') in text:
             raise ValueError("Unsat file")
         elif('sat') not in text:
-            res = is_sat(formula, solver_name="z3")
-            assert(res)
+            raise ValueError("Not sure this is sat")
     parsed_cons = dict()
     clauses = conjunction_to_clauses(formula)
     for clause in clauses:
@@ -415,35 +414,30 @@ def get_subgroup(groups, vars_by_groups, seed):
         vars.update(extract_vars(cond, vars_by_groups[rand]))
     return subgroup, vars
 
+
 def main(file_path, resfile):    
+    return check_files(file_path, resfile)
+
+def check_files(file_path, resfile):
     print("Checking file " + file_path)
     if os.path.isdir(file_path):
         print("Going into dir " + file_path)
-        for file in os.listdir(file_path):
-            main(os.path.join(file_path,file), resfile)
+        for file in sorted(os.listdir(file_path)):
+            check_files(os.path.join(file_path,file), resfile)
     elif not file_path.endswith('.smt2'):
         return
     try:
         parse(file_path, False)
-        #for cond in conds:
-        #    vars = extract_vars(cond, variables)
-        #    print(cond)
-        #    print(vars, "\n")
-        #print("-"*100)
-        #groups, vars_by_groups = independent_formulas(conds, variables)
-        #for idx in range(len(groups)):
-        #    print(vars_by_groups[idx], "\n")
-        #    for cond in groups[idx]:
-        #        print(cond)
-                #print("Can be negated:", conds[cond], "\n")
-            #print("*"*100)    
     except Exception as e:
         print("Error in " + file_path + ': ' + str(e))
         traceback.print_exc()
+        return
     
-    resfile.write(file_path + '\n')
+    f = open(resfile, 'a')
+    f.write(file_path + '\n')
+    f.close()
 
 if __name__ == '__main__':
-    resfile = open('safe_files.txt', 'w')
-    for file_path in sys.argv:
-        main(file_path, resfile)
+    resfile = sys.argv[1]
+    for i in range(2, len(sys.argv)):
+        main(sys.argv[i], resfile)

@@ -9,6 +9,7 @@ CP_CMD = 'docker cp %s:/home/%s/outputs %s'
 CP_FRCON_CMD = 'docker cp %s:%s %s'
 MOVE_CMD = 'mv %s %s'
 REMOVE_CMD = 'rm -r %s'
+REMOVE_MAZE_CMD = 'rm %s/temp/src/%s '
 KILL_CMD = 'docker kill %s'
 
 def wait_for_procs(procs):
@@ -91,15 +92,15 @@ def get_random_params(conf):
             for tkey, tvalue in value.items():
                 body += pick_values(tkey, tvalue, '_')
             body = body[:-1] # remove last _
+        elif key == 's':
+            if value.endswith('.smt2'):
+                body = value
+            else:
+                body = os.path.join(value,random.choice(os.listdir(value)))
         else:
             body = pick_values('', value, '')
             ## Special cases
                         
-        if 'CVE' in body: 
-            file = body.split('_')[0]
-            body = 'CVE_gen'
-            res['s'] = '%s/CVEs/%s.smt2' % (conf['fuzzleRoot'], file)
-
         res[key] = body
     
     # default values 
@@ -110,7 +111,7 @@ def get_random_params(conf):
     set_default(res,'n',1)
     set_default(res,'t','id')
     set_default(res,'r',int(time.time()))
-    set_default(res,'c',100)
+    set_default(res,'c',0)
     set_default(res,'g','default_gen')
     set_default(res,'u',0)
 
@@ -149,18 +150,13 @@ def generateMaze(conf, params):
                                                                                                                               # Or just set greater values for transforms 
 def fetch_works(conf,targets):
     works = []
-    #procs = []
     for i in range(conf['workers']):
         if len(targets) <= 0:
             break
-        t = targets.pop(0)
-        if t[2] % (int(conf['transforms'])) == 0:
-            generateMaze(conf,t[3])
+        _, tool, id, params = t = targets.pop(0)
+        if id % (int(conf['transforms'])) == 0 and tool == conf['tool'][0]:
+            generateMaze(conf,params)
         works.append(t)
-        #procs.append(generateMaze(conf,t[3]))
-
-    #for p in procs: # Wait for all mazes to be done
-    #    p.wait()
     return works
 
 def spawn_containers(conf, works):
@@ -239,7 +235,7 @@ def store_outputs(conf, out_dir, works):
             run_cmd(REMOVE_CMD % out_path)
             break
         with open(out_dir + '/summary.csv', 'a') as f:
-            f.write(tool + ',' + str(id) + ',')
+            f.write(tool + ',' + str(id % conf['transforms']) + ',')
             for key, value in params.items():
                 if key == 'g':
                     f.write(str(params['s'].split('/')[-1])[:-5] + ',')
@@ -271,8 +267,11 @@ def kill_containers(works):
         procs.append(spawn_cmd(cmd))
     wait_for_procs(procs)
 
-def cleanup(conf):
+def cleanup(conf, targets):
+    _, tool, id, params = targets[0]
     run_cmd(REMOVE_CMD % os.path.join(conf['fuzzleRoot'],'temp'))
+    if not (id % conf['transforms'] == 0 and tool == conf['tool'][0]) : # Maze will be generated anyways
+        generateMaze(conf,params)
 
 def main(conf_path, out_dir):
     os.system('mkdir -p %s' % out_dir)
@@ -280,14 +279,14 @@ def main(conf_path, out_dir):
     conf = load_config(conf_path)
     targets = get_targets(conf)
     write_summary_header(conf, out_dir)
-    
+        
     while len(targets) > 0:
         works = fetch_works(conf, targets)
         spawn_containers(conf, works)
         run_tools(conf, works)
         store_outputs(conf, out_dir, works)
         kill_containers(works)
-    cleanup(conf)
+        cleanup(conf, targets) 
 
 
 if __name__ == '__main__':
