@@ -156,8 +156,8 @@ def convert(symbs,node, cons):
         ext_start = node.bv_extract_start()
         ext_end = node.bv_extract_end()
         dif = ext_end - ext_start + 1
-        m = node.bv_width()
         (l,) = node.args()
+        m = l.bv_width()
         mask = binary_to_decimal("1" * (dif))
         newtype = bits_to_utype(dif) 
         cons.write("(" + newtype +") ((")
@@ -274,12 +274,6 @@ def parse(file_path, check_neg):
             if (str)(arg) != "model_version":
                 decl_arr.append(arg)
     formula = script.get_strict_formula()
-    with open(file_path, 'r') as file:
-        text = file.read()
-        if ('unsat') in text:
-            raise ValueError("Unsat file")
-        elif('sat') not in text:
-            raise ValueError("Not sure this is sat")
     parsed_cons = dict()
     clauses = conjunction_to_clauses(formula)
     for clause in clauses:
@@ -426,13 +420,13 @@ def check_files(file_path, resfile):
             check_files(os.path.join(file_path,file), resfile)
     elif not file_path.endswith('.smt2'):
         return
-    try:
-        parse(file_path, False)
-    except Exception as e:
-        print("Error in " + file_path + ': ' + str(e))
-        traceback.print_exc()
-        return
-    
+    else:
+        try:
+            parse(file_path, False)
+        except Exception as e:
+            print("Error in " + file_path + ': ' + str(e))
+            traceback.print_exc()
+            return
     f = open(resfile, 'a')
     f.write(file_path + '\n')
     f.close()
