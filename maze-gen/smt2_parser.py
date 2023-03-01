@@ -162,7 +162,7 @@ def convert(symbs,node, cons):
         newtype = bits_to_utype(dif) 
         cons.write("(" + newtype +") ((")
         convert(symbs,l, cons)
-        cons.write(" >> " + str(m - ext_end) + ") & " + mask + ")")
+        cons.write(" >> " + str(m - ext_end + 1) + ") & " + mask + ")")
     elif node.is_select():
         (l, r) = node.args()
         if l.is_symbol() and r.is_bv_constant():

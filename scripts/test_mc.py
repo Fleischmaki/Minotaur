@@ -130,7 +130,7 @@ def get_targets(conf):
         mazes = get_maze_names(params, int(conf['transforms']))
         for tool in conf['tool']:
             for j in range(len(mazes)):
-                targets.append((mazes[j], tool,i*j + j,params))
+                targets.append((mazes[j], tool,i*conf['transforms'] + j,params))
     return targets
 
 def get_maze_names(params,transforms):

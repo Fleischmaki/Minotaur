@@ -106,4 +106,6 @@ class smtObject(object):
             self.model = get_model(self.orig_ast)
         if self.orig_satisfiability == "unsat":
             self.model = get_model(self.negated_ast)
+        if self.orig_satisfiability == "timeout":
+            raise AttributeError("No model found yet")
         return self.model
