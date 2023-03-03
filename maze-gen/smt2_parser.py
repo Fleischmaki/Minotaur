@@ -148,9 +148,8 @@ def convert(symbs,node, cons):
         (l,r) = node.args()
         if (l.bv_width() + r.bv_width() > 64):
             error(1,node)   
-        cons.write('(')
         convert(symbs,l, cons)
-        cons.write(' << %d) | ' % r.bv_width())
+        cons.write(' << %d | ' % r.bv_width())
         convert(symbs,r,cons)
     elif node.is_bv_extract():
         ext_start = node.bv_extract_start()
@@ -159,10 +158,14 @@ def convert(symbs,node, cons):
         (l,) = node.args()
         m = l.bv_width()
         mask = binary_to_decimal("1" * (dif))
+        #print(ext_start,ext_end,dif,m,m-ext_end-1)
         newtype = bits_to_utype(dif) 
-        cons.write("(" + newtype +") ((")
+        cons.write("(" + newtype +") (")
         convert(symbs,l, cons)
-        cons.write(" >> " + str(m - ext_end + 1) + ") & " + mask + ")")
+        cons.write(" >> " + str(ext_start))
+        if ext_end != m:
+            cons.write(" & " + mask)
+        cons.write(")")
     elif node.is_select():
         (l, r) = node.args()
         if l.is_symbol() and r.is_bv_constant():
@@ -185,14 +188,13 @@ def convert(symbs,node, cons):
         convert_helper(symbs,node, cons, " || ")
     elif node.is_not():
         (b,) = node.args()
-        cons.write("!(")
+        cons.write("!")
         convert(symbs,b, cons)
-        cons.write(")")
     elif node.is_implies():
         (l,r) = node.args()
-        cons.write("!(")
+        cons.write("!")
         convert(symbs,l,cons)
-        cons.write(") | ")
+        cons.write(" | ")
         convert(symbs,r,cons)
     elif node.is_ite():
         (g,p,n) = node.args()
