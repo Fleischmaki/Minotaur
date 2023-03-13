@@ -268,8 +268,10 @@ def kill_containers(works):
     wait_for_procs(procs)
 
 def cleanup(conf, targets):
-    _, tool, id, params = targets[0]
     run_cmd(REMOVE_CMD % os.path.join(conf['fuzzleRoot'],'temp'))
+    if len(targets == 0):
+        run_cmd(REMOVE_CMD % os.path.join(conf['fuzzleRoote'], 'temp.txt')) # We are done
+    _, tool, id, params = targets[0]
     if not (id % conf['transforms'] == 0 and tool == conf['tool'][0]) : # Maze will be generated anyways
         generateMaze(conf,params)
 

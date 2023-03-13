@@ -40,7 +40,9 @@ def run_storm(smt_file,mutant_path, seed,n):
     if n <= 0:
         return
     smt_obj = smtObject(smt_file, mutant_path)
-    smt_obj.check_satisfiability(5*60)
+    smt_obj.check_satisfiability(10*60)
+    if smt_obj.orig_satisfiability == "timeout":
+        return [smt_file] * n
     fpars = get_parameters_dict(False, 0)
     fpars['number_of_mutants'] = n
     generate_mutants(smt_obj, mutant_path, fpars['max_depth'],fpars['max_assert'],seed, 'QF_AUFBV',fpars)
