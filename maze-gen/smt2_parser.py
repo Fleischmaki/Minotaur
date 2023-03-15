@@ -76,7 +76,7 @@ def type_to_c(type):
     if type.is_bool_type():
         return 'bool'
     elif type.is_bv_type():
-        return bits_to_utype(type.width)
+        return bits_to_type(type.width)
     elif type.is_function_type():
         return type_to_c(type.return_type)
     elif type.is_array_type():
@@ -163,20 +163,6 @@ def convert(symbs,node, cons):
         cons.write("(" + newtype +") ((")
         convert(symbs,l, cons)
         cons.write(" >> " + str(m - ext_end + 1) + ") & " + mask + ")")
-    elif node.is_select():
-        (l, r) = node.args()
-        if l.is_symbol() and r.is_bv_constant():
-            array = str(l) + "_" + str(r.constant_value())
-            symbs.add(array)
-            cons.write(array)
-        else:
-            error(1,node)
-    elif node.is_store():
-        (a, p, v) = node.args()
-        if a.is_symbol() and p.is_bv_constant():
-            cons.write(str(a) + "_" + str(p.constant_value()) + " = ")
-            symbs.add(str(a) + "_" + str(p.constant_value()))
-            convert(symbs,v, cons)
     elif node.is_and():
         node = deflatten(node.args(),And)
         convert_helper(symbs,node, cons, " && ")
@@ -221,6 +207,18 @@ def convert(symbs,node, cons):
     elif node.is_symbol():
         cons.write(str(node))
         symbs.add(str(node))
+    elif node.is_select():
+        (a, p) = node.args()
+        cons.write(str(a) + "[")
+        convert(symbs,p,cons)
+        cons.write("]")
+        symbs.add(str(a))
+    elif node.is_store():
+        (a, p, v) = node.args()
+        cons.write(str(a) + "[")
+        convert(symbs,p,cons)
+        cons.write("] = ")
+        convert(symbs,v,cons)
     elif node.is_function_application():
         for n in node.args():
             if not n.is_bv_constant():
@@ -297,7 +295,10 @@ def parse(file_path, check_neg):
                 decl = symb.split("_")[0]
                 for i in range(len(decl_arr)):
                     if decl == str(decl_arr[i]):
-                        type_in_c = type_to_c(decl_arr[i].get_type())  
+                        vartype = decl_arr[i].get_type()
+                        type_in_c = type_to_c(vartype)
+                        if vartype.is_array_type():
+                            symb += "[ARRAY_SIZE]"
                         variables[symb] = type_in_c
     return parsed_cons, variables
 
@@ -310,10 +311,10 @@ def check_indices(symbol,maxArity,maxId, cons_in_c):
         res = res.union(check_indices(var, maxArity-1,maxId,cons_in_c))
     return res    
 
-def extract_vars(cond, variables):
+def extract_vars(cond, variables):    
     vars = dict()
     for var, type in variables.items():
-        if var + " " in cond or var + ")" in cond:
+        if var + " " in cond or var + ")" in cond or cond.split('[')[0] in cond:
             vars[var] = type
     return vars
 
