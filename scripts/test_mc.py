@@ -25,6 +25,7 @@ def load_config(path):
     assert conf['duration'] > 0
     assert conf['workers'] > 0
     assert conf['memory'] > 0
+    assert conf['transforms'] >= 0
 
     if 'verbosity' not in conf.keys():
         conf.verbosity = 'all'
@@ -155,7 +156,7 @@ def fetch_works(conf,targets):
             break
         _, tool, id, params = t = targets.pop(0)
         if id % (int(conf['transforms'])) == 0 and tool == conf['tool'][0]:
-            generateMaze(conf,params)
+            generateMaze(conf,params) # lazily generate mazes
         works.append(t)
     return works
 
@@ -269,10 +270,11 @@ def kill_containers(works):
 
 def cleanup(conf, targets):
     run_cmd(REMOVE_CMD % os.path.join(conf['fuzzleRoot'],'temp'))
-    if len(targets == 0):
-        run_cmd(REMOVE_CMD % os.path.join(conf['fuzzleRoote'], 'temp.txt')) # We are done
+    if len(targets) == 0:
+        run_cmd(REMOVE_CMD % os.path.join(conf['fuzzleRoot'], 'temp.txt')) 
+        return # We are done
     _, tool, id, params = targets[0]
-    if not (id % conf['transforms'] == 0 and tool == conf['tool'][0]) : # Maze will be generated anyways
+    if not (id % int(conf['transforms']) == 0 and tool == conf['tool'][0]) : # Maze will be generated anyways
         generateMaze(conf,params)
 
 def main(conf_path, out_dir):
@@ -289,7 +291,8 @@ def main(conf_path, out_dir):
         store_outputs(conf, out_dir, works)
         kill_containers(works)
         cleanup(conf, targets) 
-
+    
+    cleanup(conf, targets) 
 
 if __name__ == '__main__':
     conf_path = sys.argv[1]

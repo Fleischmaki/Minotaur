@@ -40,8 +40,13 @@ class Generator:
                     vars = vars.union(self.vars[group_idx + cnt])
                 buggy_constraints = ""
                 for var in vars:
-                    buggy_constraints += "\t\t{} {} = read_input(copy, {});\n".format(self.vars_all[var], var, copy_idx)
-                    copy_idx += 1
+                    if '[' in var: #Arrays
+                        buggy_constraints += "\t\t{} {};\n".format(self.vars_all[var],var)
+                        buggy_constraints += """\t\tfor(int i = 0; i < ARRAY_SIZE; i++){{{}[i] = __VERIFIER_nondet_char();}}\n""".format(var.split('[')[0])
+                    else:
+                        buggy_constraints += "\t\t{} {} = read_input(copy, {});\n".format(self.vars_all[var], var, copy_idx)
+                        copy_idx += 1
+                    
                 buggy_constraints += "\t\tchar c = read_input(copy, {});\n".format(len(vars))
                 buggy_constraints += "\t\tint flag = 0;\n"
                 for constraint in constraints:
