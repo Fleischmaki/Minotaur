@@ -1,0 +1,13 @@
+FROM maze-base
+
+# Install dependencies
+RUN apt -y install make clang
+
+WORKDIR /home/maze/tools/
+
+USER maze
+
+# Add scripts
+ADD run_ultimate.sh /home/maze/tools/run_ultimate.sh
+ADD get_tcs.py /home/maze/tools/get_tcs.py
+ADD unreach.prp /home/maze/workspace/unreach.prp

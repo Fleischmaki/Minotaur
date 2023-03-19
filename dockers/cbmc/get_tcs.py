@@ -21,22 +21,20 @@ def main(dest_dir):
 
     respath = '%s/res' %(OUTDIR)
     resfile = open(respath, 'r').read()
-    if ('FALSE' in resfile):
+    if ('VERIFICATION FAILED' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'tp')
 
-    elif ('TRUE' in resfile):
+    elif ('VERIFICATION SUCCESSFUL' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'fn')
 
-    elif ('UNKNOWN' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time, 'uk')
+    #elif ('UNKNOWN' in resfile):
+    #    save_tc(dest_dir, respath, start_time, end_time, 'uk')
     # Timeout
-    elif ('Killed' in resfile):  # Killed by 15
-        save_tc(dest_dir, respath, start_time, end_time, 'to')
+    #elif ('Killed' in resfile):  # Killed by 15
+    #    save_tc(dest_dir, respath, start_time, end_time, 'to')
     else:
-        save_tc(dest_dir, respath, start_time, end_time, 'er')
+        save_tc(dest_dir, respath, start_time, end_time, 'to')
     
-    resfile.close()
-
 if __name__ == '__main__':
     dest_dir = sys.argv[1]
     main(dest_dir)

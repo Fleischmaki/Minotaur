@@ -20,22 +20,20 @@ def main(dest_dir):
     end_time = os.path.getmtime(end_file)       
 
     respath = '%s/res' %(OUTDIR)
-    resfile = open(respath, 'r').read()
-    # True positives
+    resfile = open(respath,'r').read()
     if ('FALSE' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'tp')
 
-    # False negatives
     elif ('TRUE' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'fn')
 
-    # Crashes/Errors
     elif ('UNKNOWN' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'uk')
-
     # Timeout
-    else: 
+    elif ('Killed' in resfile):  # Killed by 15
         save_tc(dest_dir, respath, start_time, end_time, 'to')
+    else:
+        save_tc(dest_dir, respath, start_time, end_time, 'er')
 
 if __name__ == '__main__':
     dest_dir = sys.argv[1]
