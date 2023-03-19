@@ -42,7 +42,6 @@ class Generator:
                 for var in vars:
                     if '[' in var: #Arrays
                         buggy_constraints += "\t\t{} {};\n".format(self.vars_all[var],var)
-                        buggy_constraints += """\t\tfor(int i = 0; i < ARRAY_SIZE; i++){{{}[i] = __VERIFIER_nondet_char();}}\n""".format(var.split('[')[0])
                     else:
                         buggy_constraints += "\t\t{} {} = read_input(copy, {});\n".format(self.vars_all[var], var, copy_idx)
                         copy_idx += 1

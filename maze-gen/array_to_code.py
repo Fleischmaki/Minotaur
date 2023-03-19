@@ -161,7 +161,7 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     f.write(bug_headers)
     f.write("extern char __VERIFIER_nondet_char(void);\n")
     f.write("""#define MAX_LIMIT {}\n\n""".format(total_bytes))
-    f.write("""#define ARRAY_SIZE {}\n\n""".format(64))
+    f.write("""#define ARRAY_SIZE {}\n\n""".format(255))
     function_format_declaration = """void func_{}(char *input, int index, int length);\n"""
     function_declarations = ""
     for k in range(size):

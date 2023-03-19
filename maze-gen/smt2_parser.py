@@ -2,6 +2,7 @@ import sys, random, traceback, math, os
 from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict
 from pysmt.shortcuts import is_sat, Not, BV, Or, And
+from storm.smt.smt_object import smtObject
 
 def error(flag, *nodes):
     if flag == 0:
@@ -158,7 +159,6 @@ def convert(symbs,node, cons):
         (l,) = node.args()
         m = l.bv_width()
         mask = binary_to_decimal("1" * (dif))
-        #print(ext_start,ext_end,dif,m,m-ext_end-1)
         newtype = bits_to_utype(dif) 
         cons.write("(" + newtype +") (")
         convert(symbs,l, cons)
@@ -166,20 +166,6 @@ def convert(symbs,node, cons):
         if ext_end != m:
             cons.write(" & " + mask)
         cons.write(")")
-    elif node.is_select():
-        (l, r) = node.args()
-        if l.is_symbol() and r.is_bv_constant():
-            array = str(l) + "_" + str(r.constant_value())
-            symbs.add(array)
-            cons.write(array)
-        else:
-            error(1,node)
-    elif node.is_store():
-        (a, p, v) = node.args()
-        if a.is_symbol() and p.is_bv_constant():
-            cons.write(str(a) + "_" + str(p.constant_value()) + " = ")
-            symbs.add(str(a) + "_" + str(p.constant_value()))
-            convert(symbs,v, cons)
     elif node.is_and():
         node = deflatten(node.args(),And)
         convert_helper(symbs,node, cons, " && ")
@@ -251,7 +237,7 @@ def convert(symbs,node, cons):
 
 def rotate_helper(symbs, node, cons, op):
     (l,) = node.args()
-    m = node.bv_length()
+    m = node.bv_width()
     i = node.bv_rotation_step()
     convert(symbs,l,cons)
     cons.write('((')
@@ -315,6 +301,7 @@ def parse(file_path, check_neg):
                         type_in_c = type_to_c(vartype)
                         if vartype.is_array_type():
                             symb += "[ARRAY_SIZE]"
+#                            symb += "[{}]".format(min(2**31 - 1, 2**vartype.index_type.width - 1)) #CPA does not support larger arrays
                         variables[symb] = type_in_c
     return parsed_cons, variables
 
@@ -440,6 +427,10 @@ def check_files(file_path, resfile):
     else:
         try:
             parse(file_path, False)
+            so = smtObject(file_path,'temp')
+            so.check_satisfiability(2*60)
+            if so.orig_satisfiability == 'timeout':
+                raise ValueError('Takes too long to process')
         except Exception as e:
             print("Error in " + file_path + ': ' + str(e))
             traceback.print_exc()
