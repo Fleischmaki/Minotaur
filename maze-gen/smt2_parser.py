@@ -81,7 +81,7 @@ def type_to_c(type):
     elif type.is_function_type():
         return type_to_c(type.return_type)
     elif type.is_array_type():
-        return type_to_c(type.elem_type)
+        return 'int' # otherwise store might be unsound, we can always cast afterwards
     elif type.is_string_type():
         return 'string'
     else:
@@ -211,16 +211,20 @@ def convert(symbs,node, cons):
         symbs.add(str(node))
     elif node.is_select():
         (a, p) = node.args()
-        cons.write(str(a) + "[")
+        convert(symbs, a, cons)
+        cons.write("[")
         convert(symbs,p,cons)
         cons.write("]")
-        symbs.add(str(a))
+        #symbs.add(str(a))
     elif node.is_store():
         (a, p, v) = node.args()
-        cons.write(str(a) + "[")
+        cons.write("array_store(")
+        convert(symbs, a, cons)
+        cons.write(",")
         convert(symbs,p,cons)
-        cons.write("] = ")
+        cons.write(",")
         convert(symbs,v,cons)
+        cons.write(")")
     elif node.is_function_application():
         for n in node.args():
             if not n.is_bv_constant():
@@ -233,6 +237,7 @@ def convert(symbs,node, cons):
         
         return("")
     cons.write(')')
+    #print(node,node.get_type())
     return ""
 
 def rotate_helper(symbs, node, cons, op):
@@ -426,11 +431,11 @@ def check_files(file_path, resfile):
         return
     else:
         try:
-            parse(file_path, False)
             so = smtObject(file_path,'temp')
             so.check_satisfiability(2*60)
             if so.orig_satisfiability == 'timeout':
                 raise ValueError('Takes too long to process')
+            parse(file_path, False)
         except Exception as e:
             print("Error in " + file_path + ': ' + str(e))
             traceback.print_exc()

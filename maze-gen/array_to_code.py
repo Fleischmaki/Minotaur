@@ -182,6 +182,9 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     } else {
     \treturn 1;
     }\n}\n""")
+    f.write("""int* array_store(int* a,int p,int v){
+    a[p] = v;
+    return a;\n}\n""")
 
     function_begin_format = """void func_{}(char *input, int index, int length){{
     int bytes_to_use = {};
