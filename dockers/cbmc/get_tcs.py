@@ -30,8 +30,8 @@ def main(dest_dir):
     #elif ('UNKNOWN' in resfile):
     #    save_tc(dest_dir, respath, start_time, end_time, 'uk')
     # Timeout
-    #elif ('Killed' in resfile):  # Killed by 15
-    #    save_tc(dest_dir, respath, start_time, end_time, 'to')
+    elif ('ERROR' in resfile):  # Killed by 15
+        save_tc(dest_dir, respath, start_time, end_time, 'er')
     else:
         save_tc(dest_dir, respath, start_time, end_time, 'to')
     

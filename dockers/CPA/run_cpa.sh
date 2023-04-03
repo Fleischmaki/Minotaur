@@ -17,7 +17,7 @@ mkdir -p $OUTDIR
 # Create dummy file to indicate running start
 touch $WORKDIR/.start
 let TIMEOUT=60*$2
-/home/maze/tools/cpa/scripts/cpa.sh -preprocess -svcompNotl -timelimit $TIMEOUT $1 > $OUTDIR/res
+/home/maze/tools/cpa/scripts/cpa.sh -preprocess -svcompNotl -timelimit $TIMEOUT $1 &> $OUTDIR/res
 touch $WORKDIR/.end
 
 mv output outputs/output

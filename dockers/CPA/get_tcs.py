@@ -33,6 +33,9 @@ def main(dest_dir):
     elif ('UNKNOWN' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'uk')
 
+    elif ('Error' in resfile):
+        save_tc(dest_dir, respath, start_time, end_time, 'er')
+
     # Timeout
     else: 
         save_tc(dest_dir, respath, start_time, end_time, 'to')
