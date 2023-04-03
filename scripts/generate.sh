@@ -148,7 +148,12 @@ else
     NAME_EXT="_"$CYCLE"percent_"$GEN"_"$BUGTYPE
     python3 $MAZEGEN_DIR/array_to_code.py $SEED $BUGTYPE $T_TYPE $T_NUMB $OUTPUT_DIR $CYCLE $UNIT $GEN $MAZES
 fi
-for (( T_INDEX=0; T_INDEX<=$T_NUMB; T_INDEX++ ))
+
+MIN=1
+if [[ "$T_TYPE" == *"keepId"* ]]; then
+    MIN=0
+fi
+for (( T_INDEX=$MIN; T_INDEX<=$T_NUMB; T_INDEX++ ))
 do
     NAME_P=$NAME"0_"$T_TYPE"_t"$T_INDEX$NAME_EXT;
     #gcc -O3 -w -o $NAME_P".bin" $NAME_P".c"

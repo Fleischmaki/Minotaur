@@ -139,7 +139,8 @@ def get_maze_names(params,transforms):
         generator = '%s_gen' % params['s'].split('/')[-1][0:-5]
     else:
         generator = params['g']
-    return ['%s_%sx%s_%s_0_%s_t%d_%spercent_%s_ve.c' %  (params['a'], params['w'], params['h'],params['r'], params['t'],i,params['c'], generator) for i in range(transforms)]
+    min = 0 if 'keepId' in params['t'] else 1
+    return ['%s_%sx%s_%s_0_%s_t%d_%spercent_%s_ve.c' %  (params['a'], params['w'], params['h'],params['r'], params['t'],i,params['c'], generator) for i in range(min,transforms)]
 
 
 def generateMaze(conf, params):
