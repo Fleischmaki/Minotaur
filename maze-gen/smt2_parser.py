@@ -1,3 +1,4 @@
+import re
 import sys, random, traceback, math, os
 from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict
@@ -207,8 +208,9 @@ def convert(symbs,node, cons):
         constant =  "1" if node.is_bool_constant(True) else "0"
         cons.write(constant)
     elif node.is_symbol():
-        cons.write(str(node))
-        symbs.add(str(node))
+        node = clean_string(str(node))
+        cons.write(node)
+        symbs.add(node)
     elif node.is_select():
         (a, p) = node.args()
         convert(symbs, a, cons)
@@ -229,8 +231,9 @@ def convert(symbs,node, cons):
             if not n.is_bv_constant():
                 error(1, node)
         index = "".join(["_" + str(n.constant_value()) for n in node.args()])
-        cons.write(str(node.function_name()) + index)
-        symbs.add(str(node.function_name()) + index)
+        fn = clean_string(str(node.function_name()))
+        cons.write(fn + index)
+        symbs.add(fn + index)
     else:
         error(0, node)
         return("")
@@ -266,6 +269,9 @@ def conjunction_to_clauses(formula):
         clauses = set([formula])
     return clauses
 
+def clean_string(s):
+    return re.sub('[^A-Za-z0-9_]+','',s)
+
 def parse(file_path, check_neg):
     parser = SmtLibParser()
     script = parser.get_script_fname(file_path)
@@ -297,7 +303,7 @@ def parse(file_path, check_neg):
             else:
                 parsed_cons[cons_in_c] = ""
             for symb in symbs:
-                decls = list(map(lambda x: str(x), decl_arr))
+                decls = list(map(lambda x: clean_string(str(x)), decl_arr))
                 if symb in decls:
                     decl = symb
                 else:
@@ -308,6 +314,7 @@ def parse(file_path, check_neg):
                 if vartype.is_array_type():
                     symb += "[ARRAY_SIZE]"
                     #symb += "[{}]".format(min(2**31 - 1, 2**vartype.index_type.width - 1)) #CPA does not support larger arrays
+                symb = symb.replace('-','_')
                 variables[symb] = type_in_c
     return parsed_cons, variables
 
