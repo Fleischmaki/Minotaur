@@ -215,7 +215,6 @@ def convert(symbs,node, cons):
         cons.write("[")
         convert(symbs,p,cons)
         cons.write("]")
-        #symbs.add(str(a))
     elif node.is_store():
         (a, p, v) = node.args()
         cons.write("array_store(")
@@ -234,7 +233,6 @@ def convert(symbs,node, cons):
         symbs.add(str(node.function_name()) + index)
     else:
         error(0, node)
-        
         return("")
     cons.write(')')
     #print(node,node.get_type())
@@ -299,15 +297,18 @@ def parse(file_path, check_neg):
             else:
                 parsed_cons[cons_in_c] = ""
             for symb in symbs:
-                decl = symb.split("_")[0]
-                for i in range(len(decl_arr)):
-                    if decl == str(decl_arr[i]):
-                        vartype = decl_arr[i].get_type()
-                        type_in_c = type_to_c(vartype)
-                        if vartype.is_array_type():
-                            symb += "[ARRAY_SIZE]"
-#                            symb += "[{}]".format(min(2**31 - 1, 2**vartype.index_type.width - 1)) #CPA does not support larger arrays
-                        variables[symb] = type_in_c
+                decls = list(map(lambda x: str(x), decl_arr))
+                if symb in decls:
+                    decl = symb
+                else:
+                    decl = symb.split("_")[0]
+                i = decls.index(decl)
+                vartype = decl_arr[i].get_type()
+                type_in_c = type_to_c(vartype)
+                if vartype.is_array_type():
+                    symb += "[ARRAY_SIZE]"
+                    #symb += "[{}]".format(min(2**31 - 1, 2**vartype.index_type.width - 1)) #CPA does not support larger arrays
+                variables[symb] = type_in_c
     return parsed_cons, variables
 
 def check_indices(symbol,maxArity,maxId, cons_in_c):
