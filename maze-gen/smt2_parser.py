@@ -98,8 +98,18 @@ def convert_helper(symbs,node, cons, op, cast = ''):
     convert(symbs,r, cons)
 
 def convert(symbs,node, cons):
-    cons.write('(')
+    #cons.write('(')
     if node.is_iff() or node.is_equals() or node.is_bv_comp():
+        (l, r) = node.args()
+        if "Array" in str(l.get_type()):
+            if "Array" in str(r.get_type()):
+                cons.write("array_comp(")
+                convert(symbs,l,cons)
+                cons.write(",")
+                convert(symbs,r,cons)
+                cons.write(")")
+                return
+            error(1, node)
         convert_helper(symbs,node, cons, " == ")
     elif node.is_bv_sle():
         convert_helper(symbs,node, cons, " <= ", 's')
@@ -185,11 +195,13 @@ def convert(symbs,node, cons):
         convert(symbs,r,cons)
     elif node.is_ite():
         (g,p,n) = node.args()
+        cons.write("(")
         convert(symbs,g,cons)
         cons.write(' ? ')
         convert(symbs,p, cons)
         cons.write(' : ')
         convert(symbs,n, cons)
+        cons.write(')')
     elif node.is_bv_neg():
         (s,) = node.args()
         base = binary_to_decimal("1" + "0" * (node.bv_width()-1))
@@ -237,7 +249,7 @@ def convert(symbs,node, cons):
     else:
         error(0, node)
         return("")
-    cons.write(')')
+    #cons.write(')')
     #print(node,node.get_type())
     return ""
 
@@ -289,7 +301,9 @@ def parse(file_path, check_neg):
         symbs = set()
         tempfile = open('temp.txt', 'w+')
         #try:
+        tempfile.write('(')
         convert(symbs,clause, tempfile)
+        tempfile.write(')')
         #except Exception as e:
         #    print(e)
         #    traceback.print_exc()
