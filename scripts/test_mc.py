@@ -233,9 +233,10 @@ def store_outputs(conf, out_dir, works):
         for filename in os.listdir(os.path.join(out_path,'outputs')):
             if '_' in filename:
                 runtime, tag = filename.split('_')
-        if conf['verbosity'] == 'bug' and tag not in ('fp', 'fn', 'er'):
+        if (conf['verbosity'] == 'bug' or conf['verbosity'] == 'bug_only') and tag not in ('fp', 'fn', 'er'):
             run_cmd(REMOVE_CMD % out_path)
-            break
+            if conf['verbosity'] == 'bug_only':
+                break
         with open(out_dir + '/summary.csv', 'a') as f:
             f.write(tool + ',' + str(id % conf['transforms']) + ',')
             for key, value in params.items():
