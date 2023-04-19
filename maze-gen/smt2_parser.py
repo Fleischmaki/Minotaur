@@ -107,7 +107,7 @@ def convert(symbs,node, cons):
                 convert(symbs,l,cons)
                 cons.write(",")
                 convert(symbs,r,cons)
-                cons.write(")")
+                cons.write("))")
                 return
             error(1, node)
         convert_helper(symbs,node, cons, " == ")
@@ -195,13 +195,11 @@ def convert(symbs,node, cons):
         convert(symbs,r,cons)
     elif node.is_ite():
         (g,p,n) = node.args()
-        cons.write("(")
         convert(symbs,g,cons)
         cons.write(' ? ')
         convert(symbs,p, cons)
         cons.write(' : ')
         convert(symbs,n, cons)
-        cons.write(')')
     elif node.is_bv_neg():
         (s,) = node.args()
         base = binary_to_decimal("1" + "0" * (node.bv_width()-1))
