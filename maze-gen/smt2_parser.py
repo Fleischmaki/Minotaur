@@ -98,7 +98,7 @@ def convert_helper(symbs,node, cons, op, cast = ''):
     convert(symbs,r, cons)
 
 def convert(symbs,node, cons):
-    #cons.write('(')
+    cons.write('(')
     if node.is_iff() or node.is_equals() or node.is_bv_comp():
         (l, r) = node.args()
         if "Array" in str(l.get_type()):
@@ -249,7 +249,7 @@ def convert(symbs,node, cons):
     else:
         error(0, node)
         return("")
-    #cons.write(')')
+    cons.write(')')
     #print(node,node.get_type())
     return ""
 
@@ -301,9 +301,9 @@ def parse(file_path, check_neg):
         symbs = set()
         tempfile = open('temp.txt', 'w+')
         #try:
-        tempfile.write('(')
+        #tempfile.write('(')
         convert(symbs,clause, tempfile)
-        tempfile.write(')')
+        #tempfile.write(')')
         #except Exception as e:
         #    print(e)
         #    traceback.print_exc()
