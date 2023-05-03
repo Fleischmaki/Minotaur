@@ -110,7 +110,7 @@ def get_random_params(conf):
     set_default(res,'h',5)
     set_default(res,'b','ve')
     set_default(res,'n',1)
-    set_default(res,'t','id')
+    set_default(res,'t','keepId')
     set_default(res,'r',int(time.time()))
     set_default(res,'c',0)
     set_default(res,'g','default_gen')
@@ -131,7 +131,7 @@ def get_targets(conf):
         mazes = get_maze_names(params, int(conf['transforms']))
         for tool in conf['tool']:
             for j in range(len(mazes)):
-                targets.append((mazes[j], tool,i*conf['transforms'] + j,params))
+                targets.append((mazes[j], tool,i*conf['transforms'] + j + 1 if 'keepId' in params['t'] else 1,params))
     return targets
 
 def get_maze_names(params,transforms):
