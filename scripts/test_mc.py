@@ -131,7 +131,7 @@ def get_targets(conf):
         mazes = get_maze_names(params, int(conf['transforms']))
         for tool in conf['tool']:
             for j in range(len(mazes)):
-                targets.append((mazes[j], tool,i*conf['transforms'] + j + (0 if 'keepId' in params['t'] else 1),params))
+                targets.append((mazes[j], tool,i*conf['transforms'] + j,params))
     return targets
 
 def get_maze_names(params,transforms):
@@ -237,8 +237,9 @@ def store_outputs(conf, out_dir, works):
             run_cmd(REMOVE_CMD % out_path)
             if conf['verbosity'] == 'bug_only':
                 break
+        offset = 0 if 'keepId' in params['t'] else 1
         with open(out_dir + '/summary.csv', 'a') as f:
-            f.write(tool + ',' + str(id % conf['transforms']) + ',')
+            f.write(tool + ',' + str(id % conf['transforms'] + offset) + ',')
             for key, value in params.items():
                 if key == 'g':
                     f.write(str(params['s'].split('/')[-1])[:-5] + ',')
