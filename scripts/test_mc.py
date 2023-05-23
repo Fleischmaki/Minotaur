@@ -88,7 +88,7 @@ def get_targets(conf):
         mazes = ru.get_maze_names(params)
         for tool in conf['tool']:
             for j in range(len(mazes)):
-                targets.append((mazes[j], tool,i*params['m'] + j + 1 if 'keepId' in params['t'] else 1,params))
+                targets.append((mazes[j], tool,i*conf['m'] + j,params))
     return targets
                                                                                                                               # Or just set greater values for transforms 
 def fetch_works(conf,targets):
@@ -142,8 +142,9 @@ def store_outputs(conf, out_dir, works):
             ru.run_cmd(REMOVE_CMD % out_path)
             if conf['verbosity'] == 'bug_only':
                 break
+        offset = 0 if 'keepId' in params['t'] else 1
         with open(out_dir + '/summary.csv', 'a') as f:
-            f.write(tool + ',' + str(id % conf['transforms']) + ',')
+            f.write(tool + ',' + str(id % conf['transforms'] + offset) + ',')
             for key, value in params.items():
                 if key == 'g':
                     f.write(str(params['s'].split('/')[-1])[:-5] + ',')
