@@ -7,6 +7,7 @@ class Generator:
         self.size = size
         self.edges = edges
         self.sln = sln
+        self.array_size = genutils.get_minimum_array_size(smt_file)
         self.constraints, self.vars_all = smt2_parser.parse(smt_file, check_neg = False)
         genutils.remove_constraints(self.constraints, transformations['dc'])
         self.groups, self.vars = smt2_parser.independent_formulas(self.constraints, self.vars_all)
@@ -24,6 +25,20 @@ class Generator:
             random.shuffle(self.insert)
     def get_logic_def(self):
         logic_def = "char read_input(char *input, int index){ return input[index]; }\n"
+        if self.array_size > 0:
+            logic_def += "#define ARRAY_SIZE %d\n" % self.array_size
+            logic_def += """int* array_store(int* a,int p,int v){
+    int a2[ARRAY_SIZE];
+    for(int i = 0; i < ARRAY_SIZE; i++)
+        a2[i] = a[i];
+    a2[p] = v;
+    return a2;\n}\n"""
+            logic_def += ("""int array_comp(int* a1, int* a2){
+    for(int i = 0; i < ARRAY_SIZE; i++){
+    \tif(a1[i] == a2[i]) return 0;
+    }
+    return 0;\n}\n""")
+
         return logic_def
 
     def get_logic_c(self):

@@ -161,7 +161,6 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     f.write(bug_headers)
     f.write("extern char __VERIFIER_nondet_char(void);\n")
     f.write("""#define MAX_LIMIT {}\n\n""".format(total_bytes))
-    f.write("""#define ARRAY_SIZE {}\n\n""".format(255))
     function_format_declaration = """void func_{}(char *input, int index, int length);\n"""
     function_declarations = ""
     for k in range(size):
@@ -182,14 +181,6 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     } else {
     \treturn 1;
     }\n}\n""")
-    f.write("""int* array_store(int* a,int p,int v){
-    a[p] = v;
-    return a;\n}\n""")
-    f.write("""int array_comp(int* a1, int* a2){
-    for(int i = 0; i < ARRAY_SIZE; i++){
-    \tif(a1[i] == a2[i]) return 0;
-    }
-    return 0;\n}\n""")
 
     function_begin_format = """void func_{}(char *input, int index, int length){{
     int bytes_to_use = {};

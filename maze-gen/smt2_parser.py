@@ -98,6 +98,8 @@ def convert_helper(symbs,node, cons, op, cast = ''):
     convert(symbs,r, cons)
 
 def convert(symbs,node, cons):
+    if cons.tell() > 2**20:
+        raise ValueError("Parse result too large") # Avoid file sizes > 1 GB
     cons.write('(')
     if node.is_iff() or node.is_equals() or node.is_bv_comp():
         (l, r) = node.args()
@@ -248,7 +250,6 @@ def convert(symbs,node, cons):
         error(0, node)
         return("")
     cons.write(')')
-    #print(node,node.get_type())
     return ""
 
 def rotate_helper(symbs, node, cons, op):
@@ -292,20 +293,16 @@ def parse(file_path, check_neg):
         for arg in d.args:
             if (str)(arg) != "model_version":
                 decl_arr.append(arg)
-    formula = script.get_strict_formula()
     parsed_cons = dict()
+    formula = script.get_strict_formula()
     clauses = conjunction_to_clauses(formula)
     for clause in clauses:
         symbs = set()
         tempfile = open('temp.txt', 'w+')
-        #try:
-        #tempfile.write('(')
-        convert(symbs,clause, tempfile)
-        #tempfile.write(')')
-        #except Exception as e:
-        #    print(e)
-        #    traceback.print_exc()
-        #    break
+        try:
+            convert(symbs,clause, tempfile)
+        except Exception as e:
+            print("Could not convert clause: ", e)
         tempfile.seek(0)
         cons_in_c =  tempfile.read()
         if "model_version" not in cons_in_c:
@@ -437,6 +434,16 @@ def get_subgroup(groups, vars_by_groups, seed):
         vars.update(extract_vars(cond, vars_by_groups[rand]))
     return subgroup, vars
 
+def get_array_calls(formula):
+    calls = []
+    if formula.is_store() or formula.is_select():
+        calls = [formula]
+
+    for subformula in formula.args():
+        if not (subformula.is_constant() or subformula.is_literal()):
+            calls = calls + get_array_calls(subformula)
+    return calls
+    
 
 def main(file_path, resfile):    
     return check_files(file_path, resfile)
@@ -444,22 +451,36 @@ def main(file_path, resfile):
 def check_files(file_path, resfile):
     print("Checking file " + file_path)
     if os.path.isdir(file_path):
-        print("Going into dir " + file_path)
+        print("Going into dir %s" % file_path)
         for file in sorted(os.listdir(file_path)):
             check_files(os.path.join(file_path,file), resfile)
+        return
     elif not file_path.endswith('.smt2'):
         return
-    else:
-        try:
-            so = smtObject(file_path,'temp')
-            so.check_satisfiability(2*60)
-            if so.orig_satisfiability == 'timeout':
-                raise ValueError('Takes too long to process')
-            parse(file_path, False)
-        except Exception as e:
-            print("Error in " + file_path + ': ' + str(e))
-            traceback.print_exc()
-            return
+    try:
+        # Check number of atoms
+        parser = SmtLibParser()
+        script = parser.get_script_fname(file_path)
+        formula = script.get_strict_formula()
+        if len(formula.get_atoms()) < 50:
+            raise ValueError("Not enough atoms") 
+
+        # Check that everything is understood by the parser
+        # and file doesn't get too large
+        parse(file_path, False)
+
+        # Check that satisfiability is easily found
+        # (else STORM will take a long time to run)
+        so = smtObject(file_path,'temp')
+        so.check_satisfiability(60)
+        if so.orig_satisfiability == 'timeout':
+            raise ValueError('Takes too long to process')
+
+    except Exception as e:
+        print("Error in " + file_path + ': ' + str(e))
+        traceback.print_exc()
+        return
+    
     f = open(resfile, 'a')
     f.write(file_path + '\n')
     f.close()
