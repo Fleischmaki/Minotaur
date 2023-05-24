@@ -1,13 +1,27 @@
-import sys, random
+import re
+import sys, random, traceback, math, os
 from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict
-from pysmt.shortcuts import is_sat, Not, And, Or
+from pysmt.shortcuts import is_sat, Not, BV, Or, And
+from storm.smt.smt_object import smtObject
 
 def error(flag, *nodes):
     if flag == 0:
-        raise Exception("ERROR: node type not recognized: ", nodes, nodes[0].is_function_application())
+        raise ValueError("ERROR: node type not recognized: ", nodes, map(lambda n: n.get_type()))
     elif flag == 1:
-        raise Exception("ERROR: nodes not supported", nodes, nodes[0].is_symbol())
+        raise ValueError("ERROR: nodes not supported", nodes)
+
+def deflatten(args, op):
+    x = args[0]
+    for i in range(1,len(args)):
+        y = args[i]
+        x = op(x,y)
+    return x
+
+def binary_to_decimal(binary):
+    if len(binary) > 64:
+        error(1, binary)
+    return str(BV(binary).constant_value())
 
 def bits_to_type(n):
     if n <= 8:
@@ -60,50 +74,57 @@ def cast_to_unsigned(l, r):
         cast = '(' + bits_to_utype(extend_step+1) + ')'
     return cast
 
-def convert_helper(symbs,node, cons, op):
+def type_to_c(type):
+    if type.is_bool_type():
+        return 'bool'
+    elif type.is_bv_type():
+        return bits_to_type(type.width)
+    elif type.is_function_type():
+        return type_to_c(type.return_type)
+    elif type.is_array_type():
+        return 'int' # otherwise store might be unsound, we can always cast afterwards
+    elif type.is_string_type():
+        return 'string'
+    else:
+        error(1)
+
+def convert_helper(symbs,node, cons, op, cast = ''):
     (l, r) = node.args()
+    if cast != '':
+        cast = cast_to_signed(l,r) if cast == 's' else cast_to_unsigned(l,r)
+    cons.write(cast)
     convert(symbs,l, cons)
-    cons.write(op)
+    cons.write(op + cast)
     convert(symbs,r, cons)
 
 def convert(symbs,node, cons):
-    if type(node) is tuple:
-        error(1, node)
+    if cons.tell() > 2**20:
+        raise ValueError("Parse result too large") # Avoid file sizes > 1 GB
     cons.write('(')
-    if node.is_iff() or node.is_equals():
+    if node.is_iff() or node.is_equals() or node.is_bv_comp():
+        (l, r) = node.args()
+        if "Array" in str(l.get_type()):
+            if "Array" in str(r.get_type()):
+                cons.write("array_comp(")
+                convert(symbs,l,cons)
+                cons.write(",")
+                convert(symbs,r,cons)
+                cons.write("))")
+                return
+            error(1, node)
         convert_helper(symbs,node, cons, " == ")
     elif node.is_bv_sle():
-        (l, r) = node.args()
-        cast = cast_to_signed(l, r)
-        cons.write("(" + cast)
-        convert(symbs,l, cons)
-        cons.write(" <= " + cast)
-        convert(symbs,r, cons)
-        cons.write(")")
+        convert_helper(symbs,node, cons, " <= ", 's')
     elif node.is_bv_ule():
-        (l, r) = node.args()
-        cast = cast_to_unsigned(l, r)
-        cons.write("(" + cast)
-        convert(symbs,l, cons)
-        cons.write(" <= " + cast)
-        convert(symbs,r, cons)
-        cons.write(")")
+        convert_helper(symbs,node, cons, " <= ", 'u')
     elif node.is_bv_slt():
-        (l, r) = node.args()
-        cast = cast_to_signed(l, r)
-        cons.write("(" + cast)
-        convert(symbs,l, cons)
-        cons.write(" < " + cast)
-        convert(symbs,r, cons)
-        cons.write(")")
+        convert_helper(symbs,node, cons, " < ", 's')
     elif node.is_bv_ult():
-        (l, r) = node.args()
-        cast = cast_to_unsigned(l, r)
-        cons.write("(" + cast)
-        convert(symbs,l, cons)
-        cons.write(" < " + cast)
-        convert(symbs,r, cons)
-        cons.write(")")
+        convert_helper(symbs,node, cons, " < ", 'u')
+    elif node.is_bv_lshr():
+        convert_helper(symbs,node, cons, " >> ", 'u') # C >> is logical for unsigned, arithmetic for signed
+    elif node.is_bv_ashr():
+        convert_helper(symbs,node, cons, " >> ", 's')
     elif node.is_bv_add():
         convert_helper(symbs,node, cons, " + ")
     elif node.is_bv_sub():
@@ -111,9 +132,9 @@ def convert(symbs,node, cons):
     elif node.is_bv_mul():
         convert_helper(symbs,node, cons, " * ")
     elif node.is_bv_udiv() or node.is_bv_sdiv():
-        convert_helper(symbs,node, cons, " / ")
+        convert_helper(symbs,node, cons, " / ", "s")
     elif node.is_bv_urem() or node.is_bv_srem():
-        convert_helper(symbs,node, cons, " % ")
+        convert_helper(symbs,node, cons, " % ", "s")
     elif node.is_bv_xor():
         convert_helper(symbs,node, cons, " ^ ")
     elif node.is_bv_or():
@@ -122,20 +143,18 @@ def convert(symbs,node, cons):
         convert_helper(symbs,node, cons, " & ")
     elif node.is_bv_lshl():
         convert_helper(symbs,node, cons, " << ")
-    elif node.is_bv_lshr():
-        convert_helper(symbs,node, cons, " >> ")
     elif node.is_bv_not():
-        b = node.args()
+        (b,) = node.args()
         cons.write("~")
         convert(symbs,b, cons)
     elif node.is_bv_sext():
         extend_step = node.bv_extend_step()
-        (l, ) = node.args()
+        (l,) = node.args()
         cons.write('(' + bits_to_type(extend_step) + ')')
         convert(symbs,l, cons)
     elif node.is_bv_zext():
         extend_step = node.bv_extend_step()
-        (l, ) = node.args()
+        (l,) = node.args()
         if extend_step in (8,16,24,32,48,56):
             cons.write('(' + bits_to_utype(extend_step) + ')')
         convert(symbs,l, cons)
@@ -143,61 +162,38 @@ def convert(symbs,node, cons):
         (l,r) = node.args()
         if (l.bv_width() + r.bv_width() > 64):
             error(1,node)   
-             
-        cons.write('(')
         convert(symbs,l, cons)
-        cons.write(' << %d) | ' % r.bv_width())
+        cons.write(' << %d | ' % r.bv_width())
         convert(symbs,r,cons)
     elif node.is_bv_extract():
         ext_start = node.bv_extract_start()
         ext_end = node.bv_extract_end()
-        (l, ) = node.args()
-        extract = ""
-        ul = False
-        if ext_start == 0 and ext_end == 7:
-            extract = "(unsigned char) "
-        elif ext_start == 0 and ext_end == 15:
-            extract = "(unsigned short) "
-        elif ext_start == 0 and ext_end == 31:
-            extract = "(unsigned int) "
-        elif ext_start == 0 and ext_end == 63:
-            extract = "(unsigned long) "
-            ul = True
-        else:
-            error(1,node)
-            
-        cons.write(extract + "(")
+        dif = ext_end - ext_start + 1
+        (l,) = node.args()
+        m = l.bv_width()
+        mask = binary_to_decimal("1" * (dif))
+        newtype = bits_to_utype(dif) 
+        cons.write("(" + newtype +") (")
         convert(symbs,l, cons)
-        cons.write("UL)" if ul else ")")
-    elif node.is_select():
-        (l, r) = node.args()
-        if l.is_symbol() and r.is_bv_constant():
-            array = str(l) + "_" + str(r.constant_value())
-            symbs.add(array)
-            cons.write(array)
-        else:
-            error(1,node)
-            
-    elif node.is_store():
-        (a, p, v) = node.args()
-        if a.is_symbol() and p.is_bv_constant():
-            cons.write(str(a) + "_" + str(p.constant_value) + " = ")
-            symbs.add(str(a) + "_" + str(p.constant_value))
-            convert(symbs,v, cons)
+        cons.write(" >> " + str(ext_start))
+        if ext_end != m:
+            cons.write(" & " + mask)
+        cons.write(")")
     elif node.is_and():
+        node = deflatten(node.args(),And)
         convert_helper(symbs,node, cons, " && ")
     elif node.is_or():
+        node = deflatten(node.args(),Or)
         convert_helper(symbs,node, cons, " || ")
     elif node.is_not():
-        (b) = node.args()
-        cons.write("!(")
+        (b,) = node.args()
+        cons.write("!")
         convert(symbs,b, cons)
-        cons.write(")")
     elif node.is_implies():
         (l,r) = node.args()
-        cons.write("!(")
+        cons.write("!")
         convert(symbs,l,cons)
-        cons.write(") | ")
+        cons.write(" | ")
         convert(symbs,r,cons)
     elif node.is_ite():
         (g,p,n) = node.args()
@@ -207,9 +203,14 @@ def convert(symbs,node, cons):
         cons.write(' : ')
         convert(symbs,n, cons)
     elif node.is_bv_neg():
-        s = node.args()
-        cons.write('0b1' + '0' * (node.bv_width() - 1) + ' - ')
+        (s,) = node.args()
+        base = binary_to_decimal("1" + "0" * (node.bv_width()-1))
+        cons.write(base + ' - ')
         convert(symbs,s,cons)
+    elif node.is_bv_rol():
+        rotate_helper(symbs, node, cons, "<<")
+    elif node.is_bv_ror():
+        rotate_helper(symbs, node, cons, ">>")
     elif node.is_bv_constant():
         constant =  "(" + bits_to_utype(node.bv_width()) + ") " + str(node.constant_value())
         if node.bv_width() > 32:
@@ -219,22 +220,48 @@ def convert(symbs,node, cons):
         constant =  "1" if node.is_bool_constant(True) else "0"
         cons.write(constant)
     elif node.is_symbol():
-        cons.write(str(node))
-        symbs.add(str(node))
+        node = clean_string(str(node))
+        cons.write(node)
+        symbs.add(node)
+    elif node.is_select():
+        (a, p) = node.args()
+        convert(symbs, a, cons)
+        cons.write("[")
+        convert(symbs,p,cons)
+        cons.write("]")
+    elif node.is_store():
+        (a, p, v) = node.args()
+        cons.write("array_store(")
+        convert(symbs, a, cons)
+        cons.write(",")
+        convert(symbs,p,cons)
+        cons.write(",")
+        convert(symbs,v,cons)
+        cons.write(")")
     elif node.is_function_application():
         for n in node.args():
             if not n.is_bv_constant():
                 error(1, node)
-                
-        index = ["_" + str(n.constant_value()) for n in node.args()]
-        cons.write(str(node.function_name()) + index)
-        symbs.add(str(node.function_name()) + index)
+        index = "".join(["_" + str(n.constant_value()) for n in node.args()])
+        fn = clean_string(str(node.function_name()))
+        cons.write(fn + index)
+        symbs.add(fn + index)
     else:
         error(0, node)
-        
         return("")
     cons.write(')')
     return ""
+
+def rotate_helper(symbs, node, cons, op):
+    (l,) = node.args()
+    m = node.bv_width()
+    i = node.bv_rotation_step()
+    convert(symbs,l,cons)
+    cons.write('((')
+    convert(symbs,l,cons)
+    cons.write(' %s %s) & ((1 %s %s+1) - 1)) | (') % (op, i, op, i) # TODO exponential blowup possible
+    convert(symbs,l,cons)
+    cons.write(' %s (%s-%s) )') % (op, i, m)
 
 def is_neg_sat(c, clauses):
     form_neg = Not(c)
@@ -253,20 +280,21 @@ def conjunction_to_clauses(formula):
         clauses = set([formula])
     return clauses
 
+def clean_string(s):
+    return re.sub('[^A-Za-z0-9_]+','',s)
+
 def parse(file_path, check_neg):
     parser = SmtLibParser()
     script = parser.get_script_fname(file_path)
     decl_arr = list()
-    variables = set()
+    variables = dict()
     decls = script.filter_by_command_name("declare-fun")
     for d in decls:
         for arg in d.args:
             if (str)(arg) != "model_version":
-                decl_arr.append(str(arg))
-    formula = script.get_strict_formula()
-    #res = is_sat(formula, solver_name="z3")
-    #assert(res)
+                decl_arr.append(arg)
     parsed_cons = dict()
+    formula = script.get_strict_formula()
     clauses = conjunction_to_clauses(formula)
     for clause in clauses:
         symbs = set()
@@ -274,8 +302,7 @@ def parse(file_path, check_neg):
         try:
             convert(symbs,clause, tempfile)
         except Exception as e:
-            print(e)
-            break
+            print("Could not convert clause: ", e)
         tempfile.seek(0)
         cons_in_c =  tempfile.read()
         if "model_version" not in cons_in_c:
@@ -285,9 +312,19 @@ def parse(file_path, check_neg):
             else:
                 parsed_cons[cons_in_c] = ""
             for symb in symbs:
-                decl = symb.split("_")[0]
-                if decl in decl_arr:
-                    variables.add(symb)
+                decls = list(map(lambda x: clean_string(str(x)), decl_arr))
+                if symb in decls:
+                    decl = symb
+                else:
+                    decl = symb.split("_")[0]
+                i = decls.index(decl)
+                vartype = decl_arr[i].get_type()
+                type_in_c = type_to_c(vartype)
+                if vartype.is_array_type():
+                    symb += "[ARRAY_SIZE]"
+                    #symb += "[{}]".format(min(2**31 - 1, 2**vartype.index_type.width - 1)) #CPA does not support larger arrays
+                symb = symb.replace('-','_')
+                variables[symb] = type_in_c
     return parsed_cons, variables
 
 def check_indices(symbol,maxArity,maxId, cons_in_c):
@@ -299,11 +336,11 @@ def check_indices(symbol,maxArity,maxId, cons_in_c):
         res = res.union(check_indices(var, maxArity-1,maxId,cons_in_c))
     return res    
 
-def extract_vars(cond, variables):
-    vars = set()
-    for var in variables:
-        if var + " " in cond or var + ")" in cond:
-            vars.add(var)
+def extract_vars(cond, variables):    
+    vars = dict()
+    for var, type in variables.items():
+        if var + " " in cond or var + ")" in cond or cond.split('[')[0] in cond:
+            vars[var] = type
     return vars
 
 class Graph:
@@ -339,14 +376,14 @@ def independent_formulas(conds, variables):
     for cond in conds:
         vars = extract_vars(cond, variables)
         for other in conds:
-            if len(vars.intersection(extract_vars(other, variables))) > 0:
+            if len(vars.keys() & extract_vars(other, variables).keys()) > 0:
                 formula.add_edge(cond, other)
     groups = formula.separate()
     vars_by_groups = list()
     for group in groups:
-        used_vars = set()
+        used_vars = dict()
         for cond in group:
-            used_vars = used_vars.union(extract_vars(cond, variables))
+            used_vars.update(extract_vars(cond, variables))
         vars_by_groups.append(sorted(used_vars))
     return groups, vars_by_groups
 
@@ -391,27 +428,64 @@ def get_subgroup(groups, vars_by_groups, seed):
     # get a subset of a randomly selected independent group
     random.seed(seed)
     rand = random.randint(0, len(groups)-1)
-    vars = set()
+    vars = dict()
     subgroup = groups[rand]
     for cond in subgroup:
-        vars = vars.union(extract_vars(cond, vars_by_groups[rand]))
+        vars.update(extract_vars(cond, vars_by_groups[rand]))
     return subgroup, vars
 
-def main(file_path):
-    conds, variables = parse(file_path, True)
-    for cond in conds:
-        vars = extract_vars(cond, variables)
-        print(cond)
-        print(vars, "\n")
-    print("-"*100)
-    groups, vars_by_groups = independent_formulas(conds, variables)
-    for idx in range(len(groups)):
-        print(vars_by_groups[idx], "\n")
-        for cond in groups[idx]:
-            print(cond)
-            print("Can be negated:", conds[cond], "\n")
-        print("*"*100)
+def get_array_calls(formula):
+    calls = []
+    if formula.is_store() or formula.is_select():
+        calls = [formula]
+
+    for subformula in formula.args():
+        if not (subformula.is_constant() or subformula.is_literal()):
+            calls = calls + get_array_calls(subformula)
+    return calls
+    
+
+def main(file_path, resfile):    
+    return check_files(file_path, resfile)
+
+def check_files(file_path, resfile):
+    print("Checking file " + file_path)
+    if os.path.isdir(file_path):
+        print("Going into dir %s" % file_path)
+        for file in sorted(os.listdir(file_path)):
+            check_files(os.path.join(file_path,file), resfile)
+        return
+    elif not file_path.endswith('.smt2'):
+        return
+    try:
+        # Check number of atoms
+        parser = SmtLibParser()
+        script = parser.get_script_fname(file_path)
+        formula = script.get_strict_formula()
+        if len(formula.get_atoms()) < 50:
+            raise ValueError("Not enough atoms") 
+
+        # Check that everything is understood by the parser
+        # and file doesn't get too large
+        parse(file_path, False)
+
+        # Check that satisfiability is easily found
+        # (else STORM will take a long time to run)
+        so = smtObject(file_path,'temp')
+        so.check_satisfiability(60)
+        if so.orig_satisfiability == 'timeout':
+            raise ValueError('Takes too long to process')
+
+    except Exception as e:
+        print("Error in " + file_path + ': ' + str(e))
+        traceback.print_exc()
+        return
+    
+    f = open(resfile, 'a')
+    f.write(file_path + '\n')
+    f.close()
 
 if __name__ == '__main__':
-    file_path = sys.argv[1]
-    main(file_path)
+    resfile = sys.argv[1]
+    for i in range(2, len(sys.argv)):
+        main(sys.argv[i], resfile)

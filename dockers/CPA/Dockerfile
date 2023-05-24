@@ -20,7 +20,6 @@ ADD run_cpa.sh /home/maze/tools/run_cpa.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD svcompNotl.properties /home/maze/tools/cpa/config/svcompNotl.properties
 
-
 RUN /home/maze/tools/cpa/scripts/cpa.sh
 
 WORKDIR /home/maze/workspace
