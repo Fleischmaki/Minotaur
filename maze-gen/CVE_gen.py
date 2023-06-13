@@ -35,9 +35,9 @@ class Generator:
     return a2;\n}\n"""
             logic_def += ("""int array_comp(int* a1, int* a2){
     for(int i = 0; i < ARRAY_SIZE; i++){
-    \tif(a1[i] == a2[i]) return 0;
+    \tif(a1[i] != a2[i]) return 0;
     }
-    return 0;\n}\n""")
+    return 1;\n}\n""")
 
         return logic_def
 
