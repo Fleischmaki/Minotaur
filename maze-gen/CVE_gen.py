@@ -28,11 +28,8 @@ class Generator:
         if self.array_size > 0:
             logic_def += "#define ARRAY_SIZE %d\n" % self.array_size
             logic_def += """int* array_store(int* a,int p,int v){
-    int a2[ARRAY_SIZE];
-    for(int i = 0; i < ARRAY_SIZE; i++)
-        a2[i] = a[i];
-    a2[p] = v;
-    return a2;\n}\n"""
+    a[p] = v;
+    return a;\n}\n"""
             logic_def += ("""int array_comp(int* a1, int* a2){
     for(int i = 0; i < ARRAY_SIZE; i++){
     \tif(a1[i] != a2[i]) return 0;
