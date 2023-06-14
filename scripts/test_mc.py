@@ -88,33 +88,42 @@ def get_targets(conf):
         mazes = ru.get_maze_names(params)
         for tool in conf['tool']:
             for j in range(len(mazes)):
-                targets.append((mazes[j], tool,i*conf['m'] + j,params))
+                targets.append((mazes[j], tool,i*params['m'] + j,params))
     return targets
                                                                                                                               # Or just set greater values for transforms 
 def fetch_works(conf,targets):
     works = []
+    mazes = []
     for i in range(conf['workers']):
         if len(targets) <= 0:
             break
         _, tool, id, params = t = targets.pop(0)
-        if id % (int(conf['transforms'])) == 0 and tool == conf['tool'][0]:
-            ru.generate_maze(conf['fuzzleRoot'],params) # lazily generate mazes
         works.append(t)
+        if id % (int(conf['transforms'])) == 0 and tool == conf['tool'][0]:
+            mazes.append(params)
+    ru.generate_mazes(mazes, get_temp_dir(conf))
+
     return works
+
+def get_temp_dir(conf):
+    return os.path.join(conf['fuzzleRoot'], 'temp')
+
+def get_maze_dir(conf, maze=''):
+    return os.path.join(get_temp_dir(conf),'src', maze)
 
 def spawn_containers(conf, works):
     procs = []
     for i in range(len(works)):
         maze, tool, id, _ = works[i]
-        procs.append(ru.spawn_docker(conf['memory'], id, tool,i))
-    ru.wait_for_procs(procs)
+        ru.spawn_docker(conf['memory'], id, tool,i).wait()
 
     procs = []
     for i in range(len(works)):
         maze, tool, id, _ = works[i]
         # Copy maze in the container
-        procs.append(ru.set_docker_maze(os.path.join(conf['fuzzleRoot'], 'temp','src',maze), id,tool))
+        procs.append(ru.set_docker_maze(get_maze_dir(conf,maze), id,tool))
     ru.wait_for_procs(procs)
+    print("Done waiting")
 
 def run_tools(conf,works):
     duration = conf['duration']
@@ -124,13 +133,16 @@ def run_tools(conf,works):
     time.sleep(duration*60 + 5) 
 
 def store_outputs(conf, out_dir, works):
-    # Next, store outputs to host filesystem
+    for i in range(len(works)):
+        maze, tool, id, params = works[i]
+        ru.collect_docker_results(tool, id)
+    time.sleep(10)
+
     for i in range(len(works)):
         maze, tool, id, params = works[i]
         out_path = os.path.join(out_dir, tool, maze)
         os.system('mkdir -p %s' % out_path)
-
-        ru.get_docker_results(tool, id, out_path)
+        ru.copy_docker_results(tool, id, out_path)
 
         # Write file details into summary
         runtime = 'notFound'
@@ -171,22 +183,22 @@ def kill_containers(works):
     procs = []
     for i in range(len(works)):
         _, tool, id, _ = works[i]
-        procs.append(ru.kill_container(tool,id))
+        procs.append(ru.kill_docker(tool,id))
     ru.wait_for_procs(procs)
 
 def cleanup(conf, targets):
-    ru.run_cmd(REMOVE_CMD % os.path.join(conf['fuzzleRoot'],'temp'))
+    ru.run_cmd(REMOVE_CMD % get_temp_dir(conf))
     if len(targets) == 0:
-        ru.run_cmd(REMOVE_CMD % os.path.join(conf['fuzzleRoot'], 'temp.txt')) 
         return # We are done
     _, tool, id, params = targets[0]
     if not (id % int(conf['transforms']) == 0 and tool == conf['tool'][0]) : # Maze will be generated anyways
-        ru.generate_maze(conf['fuzzleRoot'],params)
+        ru.generate_mazes([params], get_temp_dir(conf))
 
 def main(conf_path, out_dir):
     os.system('mkdir -p %s' % out_dir)
 
     conf = load_config(conf_path)
+
     targets = get_targets(conf)
     write_summary_header(conf, out_dir)
         

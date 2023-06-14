@@ -2,7 +2,7 @@ import re
 import sys, random, traceback, math, os
 from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict
-from pysmt.shortcuts import is_sat, Not, BV, Or, And
+from pysmt.shortcuts import is_sat, Not, BV, Or, And, FreshSymbol, Equals, Store
 from storm.smt.smt_object import smtObject
 
 def error(flag, *nodes):
@@ -283,6 +283,25 @@ def conjunction_to_clauses(formula):
 def clean_string(s):
     return re.sub('[^A-Za-z0-9_]+','',s)
 
+def rename_arrays(formula):
+    constraints = set()
+    subs = dict()
+
+    for sub in formula.args():
+        new_formula, new_constraints = rename_arrays(sub)
+        subs.update({sub: new_formula})
+        constraints = constraints.union(new_constraints)
+
+    if formula.is_store():
+        old = formula.arg(0)
+        if old.is_symbol():
+            new = FreshSymbol(typename=old.get_type())
+            constraints.add(Equals(old,new))
+            subs.update({old : new})
+
+    formula = formula.substitute(subs)
+    return formula, constraints
+
 def parse(file_path, check_neg):
     parser = SmtLibParser()
     script = parser.get_script_fname(file_path)
@@ -297,6 +316,12 @@ def parse(file_path, check_neg):
     formula = script.get_strict_formula()
     clauses = conjunction_to_clauses(formula)
     for clause in clauses:
+        clause, constraints = rename_arrays(clause)
+        if len(constraints) > 0:
+            print("Added %d new arrays" % len(constraints))
+        ldecl_arr = decl_arr
+        ldecl_arr.extend(map(lambda c: c.args()[1],constraints))
+        clause = And(clause, *constraints)
         symbs = set()
         tempfile = open('temp.txt', 'w+')
         try:
@@ -312,17 +337,16 @@ def parse(file_path, check_neg):
             else:
                 parsed_cons[cons_in_c] = ""
             for symb in symbs:
-                decls = list(map(lambda x: clean_string(str(x)), decl_arr))
+                decls = list(map(lambda x: clean_string(str(x)), ldecl_arr))
                 if symb in decls:
                     decl = symb
                 else:
                     decl = symb.split("_")[0]
                 i = decls.index(decl)
-                vartype = decl_arr[i].get_type()
+                vartype = ldecl_arr[i].get_type()
                 type_in_c = type_to_c(vartype)
                 if vartype.is_array_type():
-                    symb += "[ARRAY_SIZE]"
-                    #symb += "[{}]".format(min(2**31 - 1, 2**vartype.index_type.width - 1)) #CPA does not support larger arrays
+                    symb += "[ARRAY_SIZE]" # Will be defined by generator
                 symb = symb.replace('-','_')
                 variables[symb] = type_in_c
     return parsed_cons, variables
