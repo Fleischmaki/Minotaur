@@ -26,13 +26,14 @@ The config is in json and should contain
     "repeats" : \d+,                        //Number of mazes to generate
     "transforms": \d+,                      //Number of transformed mazes per generated maze
     "duration" : \d+,                       //Timeout per maze, in minutes
-    "fuzzleRoot": /path/to/Fuzzle",         //Path to Fuzzle roo
-    "tool": ["tools","to","be","tested"]    //Currently seahorn, cpa, ua
+    "fuzzleRoot": /path/to/Fuzzle",         //Path to Fuzzle root
+    "tool": ["tools","to","be","tested"]    //Currently seahorn, cpa, Ultimate Toolchain (ua, ut, ugc, uk), cbmc
     "workers": \d+                          //Number of parallel workers
     "memory": \d+                           //Memory per workers (in GB)
-    "verbosity": [all|summary|bugs]         //"all" preserves all outputs,
+    "verbosity": [all|summary|bug|bug_only] //"all" preserves all outputs,
+                                            //"bug" preserves buggy outputs
                                             //"summary" only csv summary,
-                                            //"bugs" log bugs only
+                                            //"bug_only" only logs bugs/errors and keeps their outputs
     "parameters": [                         //List of parameters for maze generation
         par1: [val1,val2,val3],             //Either fixed values or 
         par2: {min: i, max: j},             //min/max (if numeric)
