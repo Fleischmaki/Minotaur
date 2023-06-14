@@ -220,7 +220,8 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     f.write("""int main(){{
     char input[MAX_LIMIT];
     int index = 0;
-    func_start(input, index, MAX_LIMIT);\n}}\n""")
+    func_start(input, index, MAX_LIMIT);
+    return 0;\n}}\n""")
     f.close()
 
 def generate_maze(t_index, size, maze, unit):

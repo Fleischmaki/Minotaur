@@ -9,7 +9,7 @@ CP_CMD = 'docker cp %s:/home/%s/workspace/outputs %s'
 KILL_CMD = 'docker kill %s'
 GENERATE_CMD = '%s/scripts/generate.sh -o %s %s'
 MV_CMD = 'mv %s %s'
-RM_CMD = 'rm %s'
+RM_CMD = 'rm -r %s'
 
 def wait_for_procs(procs):
     for p in procs:
@@ -25,7 +25,9 @@ def spawn_cmd(cmd_str):
         exit(1)
 
 def run_cmd(cmd_str):
-    return spawn_cmd(cmd_str).wait()
+    print('[*] Executing: %s' % cmd_str)
+    cmd_args = cmd_str.split()
+    return subprocess.run(cmd_args)
 
 def spawn_cmd_in_docker(container, cmd_str):
     print('[*] Executing (in container): %s' % cmd_str)
@@ -67,21 +69,22 @@ def run_docker(duration, tool, name):
     script = '/home/%s/tools/run_%s.sh' % (user, tool)
     src_path = '/home/%s/maze.c' % (user)
     cmd = '%s %s %s' % (script, src_path, duration)
-    run_cmd_in_docker(get_container(tool,name), cmd)# sleep timeout + extra 5 secs.
+    spawn_cmd_in_docker(get_container(tool,name), cmd)# sleep timeout + extra 5 secs.
 
-def get_docker_results(tool, name, out_path):
+def collect_docker_results(tool,name):
     user = get_user(tool)
-    # First collect results in /outputs
-    cmd = 'python3 /home/%s/tools/get_tcs.py /home/%s/outputs' % (user,user)
-    run_cmd_in_docker(get_container(tool,name), cmd)
-    time.sleep(5)
-    # Then copy them to the out_path
+    cmd = 'python3 /home/%s/tools/get_tcs.py /home/%s/workspace/outputs' % (user,user)
+    return spawn_cmd_in_docker(get_container(tool,name), cmd)
+
+def copy_docker_results(tool, name , out_path):
+    user = get_user(tool)
     return copy_docker_output(tool, name, out_path, user)
 
 def copy_docker_output(tool, name, out_path, user):
-    run_cmd(CP_CMD % (get_container(tool,name), user, out_path))
-    run_cmd(MV_CMD % (os.path.join(out_path,'outputs','*'),out_path))
-    return run_cmd(RM_CMD % os.path.join(out_path,'outputs'))
+    return run_cmd(CP_CMD % (get_container(tool,name), user, out_path if not os.path.isdir(out_path) else os.path.join(out_path,'.')))
+    #for file in os.listdir(os.path.join(out_path,'outputs')):
+    #    run_cmd(MV_CMD % (os.path.join(out_path,'outputs', file),out_path))
+    #return run_cmd(RM_CMD % os.path.join(out_path,'outputs'))
 
 def kill_docker(tool,name):
     cmd = KILL_CMD % (get_container(tool,name))
@@ -156,7 +159,8 @@ def run_mc(tool, name, memory, fuzzle, params,outdir):
     set_docker_maze(maze_path,name,tool).wait()
     run_docker(1, tool, name)
     time.sleep(60)
-    get_docker_results(tool,name,outdir)
+    collect_docker_results(tool,name).wait()
+    copy_docker_results(tool,name,outdir)
     kill_docker(tool, name).wait()
 
 if __name__ == "__main__":
