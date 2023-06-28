@@ -1,7 +1,7 @@
 import sys, os
 import random
 import importlib
-import genutils
+import transforms
 from collections import defaultdict
 
 UNIT_MATRIX = [['1','0','1'],['1','0','1'],['1','0','1']]
@@ -255,9 +255,9 @@ def generate_maze_chain(mazes, cycle, t_index, unit):
 
 def main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, unit, smt_file, CVE_name):
     random.seed(seed)
-    transformations = genutils.parse_transformations(t_type)
+    transformations = transforms.parse_transformations(t_type)
     if transformations["storm"]:
-        smt_files = [smt_file] + genutils.run_storm(smt_file, os.path.join(output_dir,'smt'), seed, t_numb)
+        smt_files = [smt_file] + transforms.run_storm(smt_file, os.path.join(output_dir,'smt'), seed, t_numb)
     else:
         smt_files = [smt_file]*(t_numb+1)
     for t_index in range(t_numb+1):
@@ -266,7 +266,7 @@ def main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, uni
         if t_index != 0:
             render_program(c_file, graph.graph, size, generator, solution, bugtype, smt_files[t_index], transformations)
         elif transformations["keepId"]:
-            render_program(c_file, graph.graph, size, generator, solution, bugtype, smt_files[t_index],genutils.parse_transformations(""))
+            render_program(c_file, graph.graph, size, generator, solution, bugtype, smt_files[t_index],transforms.parse_transformations(""))
 
 if __name__ == '__main__':
     seed = int(sys.argv[1])

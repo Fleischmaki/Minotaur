@@ -13,7 +13,7 @@ echo "[*] Done!"
 #Build maze-gen image
 echo "[*] Build maze-generation Docker image..."
 cd $DOCKERDIR/gen 
-docker build --rm -t maze-gen .
+docker build --rm --no-cache -t maze-gen .  # Make sure to pull latest version
 echo "[*] Done!"
 
 

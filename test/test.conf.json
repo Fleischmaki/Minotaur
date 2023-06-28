@@ -1,0 +1,43 @@
+{
+	"verbosity": "all",
+	"repeats" : 10,
+	"duration" : 1,
+	"workers" : 12,
+	"transforms" : 4,
+	"memory" : 2,
+	"tool" : ["cpa", "ua", "seahorn"],
+	"parameters" : {
+		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
+		"w" : {
+			"min" : 5,
+			"max" : 10
+		},
+		"h" : {
+			"min" : 5,
+			"max" : 10
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 100
+		},
+		"t" : {
+			"rw": {
+				"min" : 0,
+				"max" : 20
+			},
+			"dc": {
+				"min" : 0,
+				"max" : 10
+			},
+			"sh": [0,1],
+			"storm" : [1],
+			"keepId" : [1]
+		},
+		"g": ["default_gen", "CVE_gen", "equality0_gen", "equality25_gen", "equality50_gen", "equality75_gen", "equality100_gen"],
+		"s": "/path/to/Fuzzle/CVEs",
+		"r" : {
+			"min" : 0,
+			"max" : 32767
+		}
+	}
+}

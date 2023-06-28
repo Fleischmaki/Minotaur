@@ -2,7 +2,7 @@ import random
 import sys, os
 import json
 import time
-from Fuzzle.runner import *
+from runner import *
 
 REMOVE_CMD = 'rm -r %s'
 
@@ -12,9 +12,10 @@ def load_config(path):
     conf = json.loads(txt)
 
     if 'verbosity' not in conf.keys():
-        conf.verbosity = 'all'
+        conf['verbosity'] = 'all'
     if 'maze_gen' not in conf.keys():
-        conf.maze_gen = 'local'
+        conf['maze_gen'] = 'local'
+
 
     assert conf['repeats'] > 0
     assert conf['duration'] > 0
@@ -80,6 +81,8 @@ def get_random_params(conf):
     if 'u' in res.keys():
         res['w'] = 1
         res['h'] = 1
+    elif res['w'] < 5 and res['h'] < 5:
+        res['h'] = 5 # mazelib gets stuck when generating 4x4 or smaller mazes
     return res
 
 
@@ -89,11 +92,12 @@ def get_targets(conf):
     repeats = conf['repeats']
     for i in range(repeats):
         params = get_random_params(conf)
-        mazes = docker.get_maze_names(params)
+        mazes = maze_gen.get_maze_names(params)
         for tool in conf['tool']:
             for j in range(len(mazes)):
                 targets.append((mazes[j], tool,i*params['m'] + j,params))
     return targets # Or just set greater values for transforms 
+
 def fetch_works(conf,targets):
     works = []
     mazes = []
@@ -106,13 +110,13 @@ def fetch_works(conf,targets):
             if conf['maze_gen'] == 'container':
                 mazes.append(params)
             else:
-                maze_gen.generate_maze(conf['fuzzleRoot'], params, get_temp_dir(conf))
+                maze_gen.generate_maze(get_fuzzle_root(), params, get_temp_dir(conf))
     if conf['maze_gen'] == 'container':
         maze_gen.generate_mazes(mazes, get_temp_dir(conf))
     return works
 
 def get_temp_dir(conf):
-    return os.path.join(conf['fuzzleRoot'], 'temp')
+    return os.path.join(get_fuzzle_root(), 'temp')
 
 def get_maze_dir(conf, maze=''):
     return os.path.join(get_temp_dir(conf),'src', maze)
@@ -136,13 +140,13 @@ def run_tools(conf,works):
     for i in range(len(works)):
         _, tool, id, _ = works[i]
         docker.run_docker(duration, tool, id)
-    time.sleep(duration*60 + 5) 
+    time.sleep(duration*60 + 15) 
 
 def store_outputs(conf, out_dir, works):
     for i in range(len(works)):
         maze, tool, id, params = works[i]
         docker.collect_docker_results(tool, id)
-    time.sleep(30)
+    time.sleep(10)
 
     for i in range(len(works)):
         maze, tool, id, params = works[i]
@@ -156,7 +160,7 @@ def store_outputs(conf, out_dir, works):
         for filename in os.listdir(os.path.join(out_path,'outputs')):
             if '_' in filename:
                 runtime, tag = filename.split('_')
-        if (conf['verbosity'] == 'bug' or conf['verbosity'] == 'bug_only') and tag not in ('fp', 'fn', 'er'):
+        if (conf['verbosity'] == 'bug' or conf['verbosity'] == 'bug_only') and tag not in ('fp', 'fn', 'er', 'uk', 'notFound'):
             commands.run_cmd(REMOVE_CMD % out_path)
             if conf['verbosity'] == 'bug_only':
                 break
@@ -202,7 +206,10 @@ def cleanup(conf, targets):
         if conf['maze_gen'] == 'container':
             maze_gen.generate_mazes([params], get_temp_dir(conf))
         else:
-            maze_gen.generate_maze(conf['fuzzleRoot'], params, get_temp_dir(conf))
+            maze_gen.generate_maze(get_fuzzle_root(), params, get_temp_dir(conf))
+
+def get_fuzzle_root():
+    return os.path.dirname(os.path.realpath(__file__))
 
 def main(conf_path, out_dir):
     os.system('mkdir -p %s' % out_dir)
@@ -218,11 +225,11 @@ def main(conf_path, out_dir):
         run_tools(conf, works)
         store_outputs(conf, out_dir, works)
         kill_containers(works)
-        #cleanup(conf, targets) 
+        cleanup(conf, targets) 
     
     cleanup(conf, targets) 
 
 if __name__ == '__main__':
-    conf_path = sys.argv[1]
+    conf_path = os.path.join(get_fuzzle_root(),'test',sys.argv[1] + '.conf.json')
     out_dir = sys.argv[2]
     main(conf_path, out_dir)

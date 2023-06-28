@@ -1,5 +1,6 @@
 import re
 import sys, random, traceback, math, os
+import transforms
 from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict
 from pysmt.shortcuts import is_sat, Not, BV, Or, And, FreshSymbol, Equals, Store
@@ -321,13 +322,13 @@ def parse(file_path, check_neg):
             print("Added %d new arrays" % len(constraints))
         ldecl_arr = decl_arr
         ldecl_arr.extend(map(lambda c: c.args()[1],constraints))
-        clause = And(clause, *constraints)
+        clause = And(*constraints, clause) # Make sure to render constraints first
         symbs = set()
         tempfile = open('temp.txt', 'w+')
-        try:
-            convert(symbs,clause, tempfile)
-        except Exception as e:
-            print("Could not convert clause: ", e)
+        #try:
+        convert(symbs,clause, tempfile) # This should always succeed on prefiltered files
+        #except Exception as e:
+        #    print("Could not convert clause: ", e)
         tempfile.seek(0)
         cons_in_c =  tempfile.read()
         if "model_version" not in cons_in_c:
@@ -468,6 +469,25 @@ def get_array_calls(formula):
             calls = calls + get_array_calls(subformula)
     return calls
     
+def get_minimum_array_size(smt_file):
+    sat = False
+    array_size = 2
+    parser = SmtLibParser()
+    script = parser.get_script_fname(smt_file)
+    formula = script.get_strict_formula()
+    if not is_sat(formula):
+        formula = Not(formula)
+    array_ops = get_array_calls(formula)
+    if len(array_ops) == 0:
+        return 0
+    while not sat:
+        if array_size >= 2**31:  
+            raise ValueError("Minimum array size too large")
+        assertions = [i <= array_size for i in map(lambda x: x.args()[1], array_ops)]
+        new_formula = And(*assertions, formula)
+        sat = is_sat(new_formula)
+        array_size *= 2 
+    return array_size // 2
 
 def main(file_path, resfile):    
     return check_files(file_path, resfile)
@@ -499,6 +519,9 @@ def check_files(file_path, resfile):
         so.check_satisfiability(60)
         if so.orig_satisfiability == 'timeout':
             raise ValueError('Takes too long to process')
+        
+        # Check that it is satisfiable on bounded arrays
+        transforms.get_minimum_array_size(file_path)
 
     except Exception as e:
         print("Error in " + file_path + ': ' + str(e))

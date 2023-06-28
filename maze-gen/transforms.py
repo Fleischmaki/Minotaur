@@ -3,7 +3,6 @@ from storm.smt.smt_object import smtObject
 from storm.fuzzer.fuzzer import generate_mutants
 from storm.parameters import get_parameters_dict
 import math as m
-import sys
 import smt2_parser as sp
 
 from z3 import *
@@ -52,24 +51,6 @@ def run_storm(smt_file,mutant_path, seed,n):
         return [smt_file] * n
     fpars = get_parameters_dict(False, 0)
     fpars['number_of_mutants'] = n
+    fpars['max_depth'] = 10 # Reduce the depth, we want simpler formulas
     generate_mutants(smt_obj, mutant_path, fpars['max_depth'],fpars['max_assert'],seed, 'QF_AUFBV',fpars)
     return [mutant_path + '/mutant_%s.smt2' % i for i in range(n)]
-
-def get_minimum_array_size(smt_file):
-    sat = False
-    array_size = 2
-    parser = SmtLibParser()
-    script = parser.get_script_fname(smt_file)
-    formula = script.get_strict_formula()
-    array_ops = sp.get_array_calls(formula)
-    if len(array_ops) < 0:
-        return -1
-    while not sat:
-        assertions = [i <= array_size for i in map(lambda x: x.args()[1], array_ops)]
-        new_formula = And(formula, *assertions)
-        sat = is_sat(new_formula)
-        array_size *= 2 
-    return array_size // 2
-
-if __name__ == '__main__':
-    print(get_minimum_array_size(sys.argv[1]))

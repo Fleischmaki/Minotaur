@@ -98,7 +98,7 @@ fi
 
 if [ -z ${T_TYPE} ]; then
     echo "NOTE: No transformations where specified. No transformations will be performed"
-    T_TYPE="id"
+    T_TYPE="keepId"
     T_NUMB=0
 fi
 
