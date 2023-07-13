@@ -169,12 +169,6 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     f.write("""void func_start(char *input, int index, int length){{ func_0(input,index,length); }}\n""")
     f.write("""void func_bug(char *input, int index, int length){{ {} }}\n""".format(bug))
     f.write(logic_def)
-    f.write("""char* copy_input(char *input, int index, int bytes_to_use){
-    char copy[bytes_to_use];
-    for(int i = 0; i < bytes_to_use; i++){
-        \tcopy[i] = __VERIFIER_nondet_char();
-    }
-    return (char*)copy;\n}\n""")
     f.write("""int is_within_limit(char *input, int index, int bytes_to_use, int length){
     if (index + (bytes_to_use - 1) >= MAX_LIMIT || index + (bytes_to_use - 1) >= length){
     \treturn 0;
@@ -185,9 +179,7 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     function_begin_format = """void func_{}(char *input, int index, int length){{
     int bytes_to_use = {};
     if (is_within_limit(input, index, bytes_to_use, length)){{
-    \tchar *copy;
-    \tcopy = copy_input(input, index, bytes_to_use);\n {}
-    \tcopy = NULL;
+    \tchar copy[bytes_to_use];\n{}
     """
     function_format = """\t{} ({}) {{
     \t\tfunc_{}(input, index + bytes_to_use, length);

@@ -1,6 +1,5 @@
 import re
-import sys, random, traceback, math, os
-import transforms
+import sys, random, os
 from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict
 from pysmt.shortcuts import is_sat, Not, BV, Or, And, FreshSymbol, Equals, Store
@@ -521,11 +520,11 @@ def check_files(file_path, resfile):
             raise ValueError('Takes too long to process')
         
         # Check that it is satisfiable on bounded arrays
-        transforms.get_minimum_array_size(file_path)
+        get_minimum_array_size(file_path)
 
     except Exception as e:
         print("Error in " + file_path + ': ' + str(e))
-        traceback.print_exc()
+        #traceback.print_exc()
         return
     
     f = open(resfile, 'a')
