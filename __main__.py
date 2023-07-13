@@ -93,9 +93,13 @@ def get_targets(conf):
     for i in range(repeats):
         params = get_random_params(conf)
         mazes = maze_gen.get_maze_names(params)
-        for tool in conf['tool']:
+        for tool in conf['tool'].keys():
+            variant = random.choice(conf['tool'][tool])
+            if tool == 'ultimate': 
+                tool = variant
+                variant = '' # ultimate toolchain is done in different dockers
             for j in range(len(mazes)):
-                targets.append((mazes[j], tool,i*params['m'] + j,params))
+                targets.append((mazes[j], tool,i*params['m'] + j,params, variant))
     return targets # Or just set greater values for transforms 
 
 def fetch_works(conf,targets):
@@ -104,55 +108,55 @@ def fetch_works(conf,targets):
     for i in range(conf['workers']):
         if len(targets) <= 0:
             break
-        _, tool, id, params = t = targets.pop(0)
+        _, tool, id, params, _ = t = targets.pop(0)
         works.append(t)
-        if id % (int(conf['transforms'])) == 0 and tool == conf['tool'][0]:
+        if id % (int(conf['transforms'])) == 0 and tool == list(conf['tool'].keys())[0]:
             if conf['maze_gen'] == 'container':
                 mazes.append(params)
             else:
-                maze_gen.generate_maze(get_fuzzle_root(), params, get_temp_dir(conf))
+                maze_gen.generate_maze(get_fuzzle_root(), params, get_temp_dir())
     if conf['maze_gen'] == 'container':
-        maze_gen.generate_mazes(mazes, get_temp_dir(conf))
+        maze_gen.generate_mazes(mazes, get_temp_dir())
     return works
 
-def get_temp_dir(conf):
+def get_temp_dir():
     return os.path.join(get_fuzzle_root(), 'temp')
 
-def get_maze_dir(conf, maze=''):
-    return os.path.join(get_temp_dir(conf),'src', maze)
+def get_maze_dir(maze=''):
+    return os.path.join(get_temp_dir(),'src', maze)
 
 def spawn_containers(conf, works):
     procs = []
     for i in range(len(works)):
-        maze, tool, id, _ = works[i]
-        docker.spawn_docker(conf['memory'], id, tool,i).wait()
+        maze, tool, id, _, variant = works[i]
+        docker.spawn_docker(conf['memory'], id, tool,i, variant).wait()
 
     procs = []
     for i in range(len(works)):
-        maze, tool, id, _ = works[i]
+        maze, tool, id, _, variant = works[i]
         # Copy maze in the container
-        procs.append(docker.set_docker_maze(get_maze_dir(conf,maze), id,tool))
+        procs.append(docker.set_docker_maze(get_maze_dir(maze), id,tool, variant))
     commands.wait_for_procs(procs)
     time.sleep(10)
 
 def run_tools(conf,works):
     duration = conf['duration']
     for i in range(len(works)):
-        _, tool, id, _ = works[i]
-        docker.run_docker(duration, tool, id)
+        _, tool, id, _, variant = works[i]
+        docker.run_docker(duration, tool, id, variant)
     time.sleep(duration*60 + 15) 
 
 def store_outputs(conf, out_dir, works):
     for i in range(len(works)):
-        maze, tool, id, params = works[i]
-        docker.collect_docker_results(tool, id)
+        maze, tool, id, params, variant = works[i]
+        docker.collect_docker_results(tool, id, variant)
     time.sleep(10)
 
     for i in range(len(works)):
-        maze, tool, id, params = works[i]
+        maze, tool, id, params, variant = works[i]
         out_path = os.path.join(out_dir, tool, maze)
         os.system('mkdir -p %s' % out_path)
-        docker.copy_docker_results(tool, id, out_path)
+        docker.copy_docker_results(tool, id, out_path, variant)
 
         # Write file details into summary
         runtime = 'notFound'
@@ -166,7 +170,7 @@ def store_outputs(conf, out_dir, works):
                 break
         offset = 0 if 'keepId' in params['t'] else 1
         with open(out_dir + '/summary.csv', 'a') as f:
-            f.write(tool + ',' + str(id % conf['transforms'] + offset) + ',')
+            f.write(tool + ',' + variant + ',' + str(id % conf['transforms'] + offset) + ',')
             for key, value in params.items():
                 if key == 'g':
                     f.write(str(params['s'].split('/')[-1])[:-5] + ',')
@@ -183,7 +187,7 @@ def store_outputs(conf, out_dir, works):
 
 def write_summary_header(conf, out_dir):
     with open(out_dir + '/summary.csv', 'w') as f:
-        f.write('tool,id,')
+        f.write('tool,variant,id,')
         for key in conf['parameters'].keys():
             f.write(str(key)+',')
         f.write('runtime,status\n')
@@ -192,21 +196,21 @@ def write_summary_header(conf, out_dir):
 def kill_containers(works):
     procs = []
     for i in range(len(works)):
-        _, tool, id, _ = works[i]
-        procs.append(docker.kill_docker(tool,id))
+        _, tool, id, _, variant = works[i]
+        procs.append(docker.kill_docker(tool,id, variant))
     commands.wait_for_procs(procs)
     time.sleep(10)
 
 def cleanup(conf, targets):
-    commands.run_cmd(REMOVE_CMD % get_temp_dir(conf))
+    commands.run_cmd(REMOVE_CMD % get_temp_dir())
     if len(targets) == 0:
         return # We are done
-    _, tool, id, params = targets[0]
-    if not (id % int(conf['transforms']) == 0 and tool == conf['tool'][0]) : # Maze will be generated anyways
+    _, tool, id, params, _ = targets[0]
+    if not (id % int(conf['transforms']) == 0 and tool == list(conf['tool'].keys())[0]) : # Maze will be generated anyways
         if conf['maze_gen'] == 'container':
-            maze_gen.generate_mazes([params], get_temp_dir(conf))
+            maze_gen.generate_mazes([params], get_temp_dir())
         else:
-            maze_gen.generate_maze(get_fuzzle_root(), params, get_temp_dir(conf))
+            maze_gen.generate_maze(get_fuzzle_root(), params, get_temp_dir())
 
 def get_fuzzle_root():
     return os.path.dirname(os.path.realpath(__file__))
