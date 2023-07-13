@@ -133,7 +133,7 @@ def spawn_containers(conf, works):
         # Copy maze in the container
         procs.append(docker.set_docker_maze(get_maze_dir(conf,maze), id,tool))
     commands.wait_for_procs(procs)
-    print("Done waiting")
+    time.sleep(10)
 
 def run_tools(conf,works):
     duration = conf['duration']
