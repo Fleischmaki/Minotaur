@@ -1,0 +1,36 @@
+{
+	"verbosity": "bug",
+	"repeats" : 100,
+	"duration" : 1,
+	"workers" : 120,
+	"memory" : 4,
+	"transforms" : 30,
+	"maze_gen" : "container",
+	"tool" : ["cpa", "seahorn", "ua", "ut", "uk", "ugc", "cbmc"],
+	"parameters" : {
+		"u" : [1],
+		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
+		"w" : {
+			"min" : 4,
+			"max" : 6
+		},
+		"h" : {
+			"min" : 5,
+			"max" : 6
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 0
+		},
+		"t" : {
+			"storm": [1],
+			"keepId": [0]
+		},
+		"g": ["CVE_gen"],
+		"s": "/home/mfleischmann/Fuzzle/SMTs",
+		"r" : {
+			"min" : 0,
+			"max" : 65536
+		}
+	}
+}

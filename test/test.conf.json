@@ -5,7 +5,6 @@
 	"workers" : 12,
 	"transforms" : 4,
 	"memory" : 2,
-	"fuzzleRoot" : "Fuzzle",
 	"tool" : ["cpa", "ua", "seahorn"],
 	"parameters" : {
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],

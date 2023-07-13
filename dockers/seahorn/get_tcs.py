@@ -20,14 +20,15 @@ def main(dest_dir):
 
     respath = '%s/res' %(OUTDIR)
     resfile = open(respath, 'r').read()
-    # True positives
-    if ('sat' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time, 'tp')
 
     # False negatives
-    elif ('unsat' in resfile):
+    if ('unsat' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'uk') # For seahorn, unknown = unsat...
+    # True positives
+    elif ('sat' in resfile):
+        save_tc(dest_dir, respath, start_time, end_time, 'tp')
 
+    
     ## Crashes/Errors
     #if ('UNKNOWN' in resfile):
     #    save_tc(dest_dir, respath, start_time, end_time, i, 'uk')

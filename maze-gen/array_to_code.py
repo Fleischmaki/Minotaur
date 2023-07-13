@@ -1,7 +1,7 @@
 import sys, os
 import random
 import importlib
-import genutils
+import transforms
 from collections import defaultdict
 
 UNIT_MATRIX = [['1','0','1'],['1','0','1'],['1','0','1']]
@@ -169,12 +169,6 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     f.write("""void func_start(char *input, int index, int length){{ func_0(input,index,length); }}\n""")
     f.write("""void func_bug(char *input, int index, int length){{ {} }}\n""".format(bug))
     f.write(logic_def)
-    f.write("""char* copy_input(char *input, int index, int bytes_to_use){
-    char copy[bytes_to_use];
-    for(int i = 0; i < bytes_to_use; i++){
-        \tcopy[i] = __VERIFIER_nondet_char();
-    }
-    return (char*)copy;\n}\n""")
     f.write("""int is_within_limit(char *input, int index, int bytes_to_use, int length){
     if (index + (bytes_to_use - 1) >= MAX_LIMIT || index + (bytes_to_use - 1) >= length){
     \treturn 0;
@@ -185,9 +179,7 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     function_begin_format = """void func_{}(char *input, int index, int length){{
     int bytes_to_use = {};
     if (is_within_limit(input, index, bytes_to_use, length)){{
-    \tchar *copy;
-    \tcopy = copy_input(input, index, bytes_to_use);\n {}
-    \tcopy = NULL;
+    \tchar copy[bytes_to_use];\n{}
     """
     function_format = """\t{} ({}) {{
     \t\tfunc_{}(input, index + bytes_to_use, length);
@@ -255,9 +247,9 @@ def generate_maze_chain(mazes, cycle, t_index, unit):
 
 def main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, unit, smt_file, CVE_name):
     random.seed(seed)
-    transformations = genutils.parse_transformations(t_type)
+    transformations = transforms.parse_transformations(t_type)
     if transformations["storm"]:
-        smt_files = [smt_file] + genutils.run_storm(smt_file, os.path.join(output_dir,'smt'), seed, t_numb)
+        smt_files = [smt_file] + transforms.run_storm(smt_file, os.path.join(output_dir,'smt'), seed, t_numb)
     else:
         smt_files = [smt_file]*(t_numb+1)
     for t_index in range(t_numb+1):
@@ -266,7 +258,7 @@ def main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, uni
         if t_index != 0:
             render_program(c_file, graph.graph, size, generator, solution, bugtype, smt_files[t_index], transformations)
         elif transformations["keepId"]:
-            render_program(c_file, graph.graph, size, generator, solution, bugtype, smt_files[t_index],genutils.parse_transformations(""))
+            render_program(c_file, graph.graph, size, generator, solution, bugtype, smt_files[t_index],transforms.parse_transformations(""))
 
 if __name__ == '__main__':
     seed = int(sys.argv[1])

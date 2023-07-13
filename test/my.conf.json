@@ -1,0 +1,39 @@
+{
+	"verbosity": "all",
+	"repeats" : 1,
+	"transforms" : 2,
+	"duration" : 1,
+	"workers" : 7,
+	"memory" : 3,
+	"tool" : ["cpa", "seahorn", "ua", "ut", "uk", "ugc", "cbmc"],
+	"parameters" : {
+		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
+		"w" : {
+			"min" : 3,
+			"max" : 7
+		},
+		"h" : {
+			"min" : 3,
+			"max" : 7
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 100
+		},
+		"t" : {
+			"storm" : [1],
+			"keepId" : [0]
+		},
+		"u" : [0,1],
+		"n" : {
+			"min" : 1,
+			"max" : 3
+ 		},
+		"g": ["CVE_gen"],
+		"s": "/home/markus/MasterThesis/Fuzzle/SMTs",
+		"r": {
+			"min": 0,
+			"max" : 65536
+			}	
+		}
+}
