@@ -78,7 +78,7 @@ def type_to_c(type):
     if type.is_bool_type():
         return 'bool'
     elif type.is_bv_type():
-        return bits_to_type(type.width)
+        return bits_to_utype(type.width)
     elif type.is_function_type():
         return type_to_c(type.return_type)
     elif type.is_array_type():
