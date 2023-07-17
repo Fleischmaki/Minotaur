@@ -69,10 +69,6 @@ def get_params_from_string(param_string):
         params[arg] = value
 
         i+=1
-
-    for key, value in params.items():
-        print(key,value)
-
     return params
 
 
