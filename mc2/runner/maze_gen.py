@@ -21,6 +21,7 @@ def get_params_from_maze(maze,smt_path = ''):
         params['g'] += 'gen'
     return params
 
+
 def get_maze_names(params):
     if params['g'] == 'CVE_gen':
         generator = '%s_gen' % params['s'].split('/')[-1][0:-5]
@@ -37,15 +38,43 @@ def generate_maze_in_docker(params, index = 0):
     if params['s'] is not None:
         docker.set_docker_seed(params['s'], index, 'gen').wait()
 
+    param_string = get_string_from_params(params)
+    
+    cmd = './Fuzzle/scripts/generate.sh ' + param_string
+
+    return docker.spawn_cmd_in_docker(docker.get_container('gen','', index),  cmd)
+
+def get_string_from_params(params):
     param_string = '-o ' + 'outputs '
     for param, value in params.items():
         if param == 's':
             value = '/home/maze/' + params['s'].split('/')[-1]
         param_string += '-%s %s ' % (param, value)
-    
-    cmd = './Fuzzle/scripts/generate.sh ' + param_string
+    return param_string
 
-    return docker.spawn_cmd_in_docker(docker.get_container('gen','', index),  cmd)
+def get_params_from_string(param_string):
+    params = dict()
+    options = param_string.split(' ')
+    i = 0
+    while i < len(options)-1:
+        arg = options[i][1:] #cut the -
+        if i == len(options)-1 or options[i+1].startswith('-'):
+            if arg == 'u':
+                params['w'] = 1
+                params['h'] = 1
+            value = ""
+        else:
+            value = options[i+1]
+            i+=1
+        params[arg] = value
+
+        i+=1
+
+    for key, value in params.items():
+        print(key,value)
+
+    return params
+
 
 def generate_mazes(paramss, outdir):
     pipes = []
@@ -66,9 +95,3 @@ def generate_maze(fuzzle, params, out_dir = ''):
     param_string += ' -o %s' % out_dir
     return commands.run_cmd(GENERATE_CMD % (fuzzle, out_dir, param_string)) # TODO: Figure out how to multithread this
 
-def load(argv):
-    maze_path = argv[0]
-    maze = maze_path.split('/')[-1][:-2] # Cut .c
-    smt_path = argv[1]
-    out_dir = argv[2]
-    return generate_mazes([get_params_from_maze(maze,smt_path)], out_dir)

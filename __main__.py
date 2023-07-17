@@ -1,7 +1,6 @@
 import sys, os
 import subprocess
-from mc2.tools import minimize, test_mc
-from mc2.runner import maze_gen
+from mc2.tools import *
 
 if __name__ == '__main__':
     mode = sys.argv[1]
@@ -13,10 +12,10 @@ if __name__ == '__main__':
         argv = sys.argv[2:]
 
     if mode == "t":
-        test_mc.load(argv)
+        test.load(argv)
     elif mode == "m":
         minimize.load(argv)
     elif mode == "g":
-        maze_gen.load(argv)
+        generate.load(argv)
     else:
         print("Invalid mode")
