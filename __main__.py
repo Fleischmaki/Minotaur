@@ -17,6 +17,6 @@ if __name__ == '__main__':
     elif mode == "m":
         minimize.load(argv)
     elif mode == "g":
-        print("Not Implemented")
+        maze_gen.load(argv)
     else:
         print("Invalid mode")

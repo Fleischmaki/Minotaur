@@ -65,3 +65,10 @@ def generate_maze(fuzzle, params, out_dir = ''):
     out_dir = os.path.join(fuzzle, 'temp') if out_dir == '' else out_dir
     param_string += ' -o %s' % out_dir
     return commands.run_cmd(GENERATE_CMD % (fuzzle, out_dir, param_string)) # TODO: Figure out how to multithread this
+
+def load(argv):
+    maze_path = argv[0]
+    maze = maze_path.split('/')[-1][:-2] # Cut .c
+    smt_path = argv[1]
+    out_dir = argv[2]
+    return generate_mazes([get_params_from_maze(maze,smt_path)], out_dir)
