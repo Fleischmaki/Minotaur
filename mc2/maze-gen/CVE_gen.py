@@ -60,7 +60,7 @@ class Generator:
                     if '[' in var: #Arrays
                         buggy_constraints += "\t\tunsigned {} {};\n".format(self.vars_all[var],var)
                     else:
-                        buggy_constraints += "\t\tunsigned{} {} = read_input(copy, {});\n".format(self.vars_all[var], var, copy_idx)
+                        buggy_constraints += "\t\tunsigned {} {} = read_input(copy, {});\n".format(self.vars_all[var], var, copy_idx)
                         copy_idx += 1
                     
                 buggy_constraints += "\t\tchar c = read_input(copy, {});\n".format(len(vars))
