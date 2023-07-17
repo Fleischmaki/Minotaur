@@ -45,7 +45,7 @@ def generate_maze_in_docker(params, index = 0):
     
     cmd = './Fuzzle/scripts/generate.sh ' + param_string
 
-    return docker.spawn_cmd_in_docker(docker.get_container('gen', index),  cmd)
+    return docker.spawn_cmd_in_docker(docker.get_container('gen','', index),  cmd)
 
 def generate_mazes(paramss, outdir):
     pipes = []

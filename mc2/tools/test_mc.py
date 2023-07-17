@@ -5,6 +5,7 @@ import time
 from ..runner import *
 
 REMOVE_CMD = 'rm -r %s'
+CP_CMD = 'cp %s %s'
 
 def load_config(path):
     with open(path) as f:
@@ -153,7 +154,7 @@ def store_outputs(conf, out_dir, works):
     time.sleep(10)
 
     for i in range(len(works)):
-        maze, tool, id, params, variant = works[i]
+        maze, tool, id, params, variant = w = works[i]
         out_path = os.path.join(out_dir, tool, maze)
         os.system('mkdir -p %s' % out_path)
         docker.copy_docker_results(tool, id, out_path, variant)
@@ -164,26 +165,34 @@ def store_outputs(conf, out_dir, works):
         for filename in os.listdir(os.path.join(out_path,'outputs')):
             if '_' in filename:
                 runtime, tag = filename.split('_')
-        if (conf['verbosity'] == 'bug' or conf['verbosity'] == 'bug_only') and tag not in ('fp', 'fn', 'er', 'uk', 'notFound'):
-            commands.run_cmd(REMOVE_CMD % out_path)
-            if conf['verbosity'] == 'bug_only':
-                break
-        offset = 0 if 'keepId' in params['t'] else 1
-        with open(out_dir + '/summary.csv', 'a') as f:
-            f.write(tool + ',' + variant + ',' + str(id % conf['transforms'] + offset) + ',')
-            for key, value in params.items():
-                if key == 'g':
-                    f.write(str(params['s'].split('/')[-1])[:-5] + ',')
-                elif key == 'u':
-                    f.write('1,')
-                elif key in conf['parameters'].keys():
-                    f.write(str(value) + ',')
-            f.write('%s,%s,' % (runtime, tag))
-            f.write('\n')
-        if conf['verbosity'] == 'summary': 
-            commands.run_cmd(REMOVE_CMD % out_path)
-
+                if (tag == 'fn'):
+                    commands.run_cmd(CP_CMD % (filename, out_path)) # Keep buggy maze
+                write_summary(conf, out_dir, w, tag, runtime)
+                
     time.sleep(5)
+
+def write_summary(conf,out_dir, target,tag,runtime):
+    maze, tool, id, params, variant = target
+    out_path = os.path.join(out_dir, tool, maze)
+    if (conf['verbosity'] == 'bug' or conf['verbosity'] == 'bug_only') and tag not in ('fp', 'fn', 'er', 'uk', 'notFound'):
+        commands.run_cmd(REMOVE_CMD % out_path)
+        if conf['verbosity'] == 'bug_only':
+            return
+    offset = 0 if 'keepId' in params['t'] else 1
+    with open(out_dir + '/summary.csv', 'a') as f:
+        f.write(tool + ',' + variant + ',' + str(id % conf['transforms'] + offset) + ',')
+        for key, value in params.items():
+            if key == 'g':
+                f.write(str(params['s'].split('/')[-1])[:-5] + ',')
+            elif key == 'u':
+                f.write('1,')
+            elif key in conf['parameters'].keys():
+                f.write(str(value) + ',')
+        f.write('%s,%s,' % (runtime, tag))
+        f.write('\n')
+    if conf['verbosity'] == 'summary': 
+        commands.run_cmd(REMOVE_CMD % out_path)
+
 
 def write_summary_header(conf, out_dir):
     with open(out_dir + '/summary.csv', 'w') as f:
@@ -202,7 +211,7 @@ def kill_containers(works):
     time.sleep(10)
 
 def cleanup(conf, targets):
-    if len(targets) == 0 or (id % int(conf['transforms']) == 0 and targets[0][1] == list(conf['tool'].keys())[0]):
+    if len(targets) == 0 or (targets[0][2] % int(conf['transforms']) == 0 and targets[0][1] == list(conf['tool'].keys())[0]):
         commands.run_cmd(REMOVE_CMD % get_temp_dir())
 
 def get_fuzzle_root():

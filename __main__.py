@@ -5,14 +5,14 @@ from mc2.runner import maze_gen
 
 if __name__ == '__main__':
     mode = sys.argv[1]
-    if not mode.startswith("-"):
-        mode = input("Run tests [r], generate [g] or minimize [m]")
+    if not mode.startswith("--"):
+        mode = input("Run tests [t], generate maze [g] or minimize [m]")
         argv = sys.argv[1:]
     else:
-        mode = mode[1:]
+        mode = mode[2:]
         argv = sys.argv[2:]
 
-    if mode == "r":
+    if mode == "t":
         test_mc.load(argv)
     elif mode == "m":
         minimize.load(argv)
