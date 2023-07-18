@@ -5,13 +5,13 @@ class Generator:
         self.sln = sln
 
     def get_logic_def(self):
-        logic_def = "char read_input(char *input, int index){ return input[index]; }\n\n"
+        logic_def = ""
         return logic_def
 
     def get_logic_c(self):
         logic_c = list()
         for idx in range(self.size):
-            logic_c.append("\t\tchar c = read_input(copy, 0);")
+            logic_c.append("\t\tchar c = __VERIFIER_nondet_char();")
         return logic_c
 
     def get_numb_bytes(self):

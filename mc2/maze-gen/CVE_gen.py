@@ -29,7 +29,7 @@ class Generator:
             random.shuffle(self.insert)
             
     def get_logic_def(self):
-        logic_def = "char read_input(char *input, int index){ return input[index]; }\n"
+        logic_def = ""
         if self.array_size > 0:
             logic_def += "#define ARRAY_SIZE %d\n" % self.array_size
             logic_def += """int* array_store(int* a,int p,int v){
@@ -48,29 +48,28 @@ class Generator:
         group_idx = 0
         for idx in range(self.size):
             if self.insert[idx] == 0:
-                logic_c.append("\t\tchar c = read_input(copy, 0);")
+                logic_c.append("\t\tchar c = __VERIFIER_nondet_char();")
             else:
-                copy_idx, tab_cnt = 0, 0
+                tab_cnt = 0
                 constraints, vars = set(), set()
                 for cnt in range(self.insert[idx]):
                     constraints = constraints.union(self.groups[group_idx + cnt])
                     vars = vars.union(self.vars[group_idx + cnt])
-                buggy_constraints = ""
+                buggy_constraints = ""  
                 for var in vars:
                     if '[' in var: #Arrays
-                        buggy_constraints += "\t\tunsigned {} {};\n".format(self.vars_all[var],var)
+                        buggy_constraints += "\t{} {};\n".format(self.vars_all[var],var)
                     else:
-                        buggy_constraints += "\t\tunsigned {} {} = read_input(copy, {});\n".format(self.vars_all[var], var, copy_idx)
-                        copy_idx += 1
+                        buggy_constraints += "\t{} {} = __VERIFIER_nondet_{}();\n".format(self.vars_all[var], var, 'u' + self.vars_all[var][9:])
                     
-                buggy_constraints += "\t\tchar c = read_input(copy, {});\n".format(len(vars))
-                buggy_constraints += "\t\tint flag = 0;\n"
+                buggy_constraints += "\tchar c = __VERIFIER_nondet_char();\n".format(len(vars))
+                buggy_constraints += "\tint flag = 0;\n"
                 for constraint in constraints:
-                    buggy_constraints += "\t"*tab_cnt + "\t\tif{}{{\n".format(constraint)
+                    buggy_constraints += "\t"*tab_cnt + "\tif{}{{\n".format(constraint)
                     tab_cnt += 1
-                buggy_constraints += "\t"*tab_cnt + "\t\tflag = 1;\n"
+                buggy_constraints += "\t"*tab_cnt + "\tflag = 1;\n"
                 for k in range(len(constraints)-1, -1, -1):
-                    buggy_constraints += "\t"*k + "\t\t}\n"
+                    buggy_constraints += "\t"*k + "\t}\n"
                 logic_c.append(buggy_constraints)
                 group_idx += self.insert[idx]
         return logic_c

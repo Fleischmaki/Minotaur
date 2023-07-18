@@ -148,8 +148,6 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     generator = generator.Generator(size, graph, sln, smt_file, transformations)     
     logic_def = generator.get_logic_def()
     logic_c = generator.get_logic_c()
-    numb_bytes = generator.get_numb_bytes()
-    total_bytes = generator.get_total_bytes()
     guard = generator.get_guard()
     bug, bug_headers = get_bug(bugtype)
 
@@ -158,41 +156,32 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     "#include <string.h>\n" \
     "#include <unistd.h>\n" \
     "#include <stdint.h>\n")
-    f.write(bug_headers)
-    f.write("extern char __VERIFIER_nondet_char(void);\n")
-    f.write("""#define MAX_LIMIT {}\n\n""".format(total_bytes))
-    function_format_declaration = """void func_{}(char *input, int index, int length);\n"""
-    function_declarations = ""
+    f.write('\n%s\n' % bug_headers)
+    for type in ['char','uchar', 'short', 'ushort', 'int', 'uint', 'long', 'ulong']:
+        ctype = 'unsigned ' + type[1:] if type.startswith('u') else type
+        f.write("extern %s __VERIFIER_nondet_%s(void);\n" % (ctype, type))
+    function_format_declaration = """void func_{}();\n"""
+    function_declarations = "\n"
     for k in range(size):
         function_declarations += function_format_declaration.format(k)
     f.write(function_declarations)
-    f.write("""void func_start(char *input, int index, int length){{ func_0(input,index,length); }}\n""")
-    f.write("""void func_bug(char *input, int index, int length){{ {} }}\n""".format(bug))
+    f.write("""\nvoid func_start(){{ func_0(); }}\n""")
+    f.write("""void func_bug(){{ {} }}\n""".format(bug))
     f.write(logic_def)
-    f.write("""int is_within_limit(char *input, int index, int bytes_to_use, int length){
-    if (index + (bytes_to_use - 1) >= MAX_LIMIT || index + (bytes_to_use - 1) >= length){
-    \treturn 0;
-    } else {
-    \treturn 1;
-    }\n}\n""")
 
-    function_begin_format = """void func_{}(char *input, int index, int length){{
-    int bytes_to_use = {};
-    if (is_within_limit(input, index, bytes_to_use, length)){{
-    \tchar copy[bytes_to_use];\n{}
-    """
+    function_begin_format = """\nvoid func_{}(){{\n{}"""
     function_format = """\t{} ({}) {{
-    \t\tfunc_{}(input, index + bytes_to_use, length);
+    \t\tfunc_{}();
     \t}}
     """
     function_end = """\telse {
     \t\tprintf("User-provided conditions were not satisfied by the input");
     \t}
-    }\n}\n"""
-    function_deadend = """}\n}\n"""
+    }\n"""
+    function_deadend = """}\n"""
 
     for idx in range(size):
-        f.write(function_begin_format.format(idx, numb_bytes[idx], logic_c[idx]))
+        f.write(function_begin_format.format(idx, logic_c[idx]))
         valid_edges = len(graph[idx])
         if valid_edges == 0:
             f.write(function_deadend)
@@ -209,11 +198,9 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
                 edge_counter += 1
         f.write(function_end)
 
-    f.write("""int main(){{
-    char input[MAX_LIMIT];
-    int index = 0;
-    func_start(input, index, MAX_LIMIT);
-    return 0;\n}}\n""")
+    f.write("""\nint main(){
+    func_start();
+    return 0;\n}\n""")
     f.close()
 
 def generate_maze(t_index, size, maze, unit):
