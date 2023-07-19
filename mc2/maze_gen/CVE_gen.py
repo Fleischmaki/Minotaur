@@ -1,6 +1,11 @@
-import smt2_parser
+if __name__ == 'CVE_gen':
+    import smt2_parser
+    import transforms
+else:
+    from . import smt2_parser, transforms
+
 import random
-import transforms
+
 
 class Generator:
     def __init__(self, size, edges, sln, smt_file, transformations):

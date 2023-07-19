@@ -3,13 +3,6 @@ import sys, random, os
 from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict
 from pysmt.shortcuts import is_sat, Not, BV, Or, And, FreshSymbol, Equals, Store, write_smtlib
-from storm.smt.smt_object import smtObject
-
-def error(flag, *nodes):
-    if flag == 0:
-        raise ValueError("ERROR: node type not recognized: ", nodes, map(lambda n: n.get_type()))
-    elif flag == 1:
-        raise ValueError("ERROR: nodes not supported", nodes)
 
 def deflatten(args, op):
     x = args[0]
@@ -17,6 +10,12 @@ def deflatten(args, op):
         y = args[i]
         x = op(x,y)
     return x
+
+def error(flag, *nodes):
+    if flag == 0:
+        raise ValueError("ERROR: node type not recognized: ", nodes, map(lambda n: n.get_type()))
+    elif flag == 1:
+        raise ValueError("ERROR: nodes not supported", nodes)
 
 def binary_to_decimal(binary):
     if len(binary) > 64:
@@ -303,7 +302,11 @@ def rename_arrays(formula):
     return formula, constraints
 
 def write_to_file(formula, file):
-    write_smtlib(formula, file)
+    if type(formula) == list:
+        formula = And(*formula)
+    if not file.endswith('.smt2'): 
+        file += '.smt2'
+    return write_smtlib(formula, file)
 
 def parse(file_path, check_neg):
     decl_arr, variables, parsed_cons, formula = read_file(file_path)
@@ -476,16 +479,14 @@ def get_array_calls(formula):
     return calls
     
 def get_minimum_array_size(smt_file):
-    sat = False
-    array_size = 2
-    parser = SmtLibParser()
-    script = parser.get_script_fname(smt_file)
-    formula = script.get_strict_formula()
-    if not is_sat(formula):
-        formula = Not(formula)
+    formula = read_file(smt_file)[3]
     array_ops = get_array_calls(formula)
     if len(array_ops) == 0:
         return 0
+    sat = False
+    array_size = 2
+    if not is_sat(formula):
+        formula = Not(formula)
     while not sat:
         if array_size >= 2**31:  
             raise ValueError("Minimum array size too large")
@@ -539,6 +540,7 @@ def check_files(file_path, resfile):
     f.close()
 
 if __name__ == '__main__':
+    from storm.smt import smtObject
     resfile = sys.argv[1]
     for i in range(2, len(sys.argv)):
         main(sys.argv[i], resfile)
