@@ -14,9 +14,8 @@ from pysmt.smtlib.solver import *
 def remove_constraints(constraints, dc):
     curr = len(constraints)
     rm = m.ceil(curr*(dc/100)) 
-    #random.shuffle(constraints)
     while rm > 0:
-        r = list(constraints.keys())[0]
+        r = random.choice(list(constraints.keys()))
         constraints.pop(r)
         rm -= 1
 

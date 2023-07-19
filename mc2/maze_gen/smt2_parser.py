@@ -2,7 +2,7 @@ import re
 import sys, random, os
 from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict
-from pysmt.shortcuts import is_sat, Not, BV, Or, And, FreshSymbol, Equals, Store
+from pysmt.shortcuts import is_sat, Not, BV, Or, And, FreshSymbol, Equals, Store, write_smtlib
 from storm.smt.smt_object import smtObject
 
 def error(flag, *nodes):
@@ -302,18 +302,11 @@ def rename_arrays(formula):
     formula = formula.substitute(subs)
     return formula, constraints
 
+def write_to_file(formula, file):
+    write_smtlib(formula, file)
+
 def parse(file_path, check_neg):
-    parser = SmtLibParser()
-    script = parser.get_script_fname(file_path)
-    decl_arr = list()
-    variables = dict()
-    decls = script.filter_by_command_name("declare-fun")
-    for d in decls:
-        for arg in d.args:
-            if (str)(arg) != "model_version":
-                decl_arr.append(arg)
-    parsed_cons = dict()
-    formula = script.get_strict_formula()
+    decl_arr, variables, parsed_cons, formula = read_file(file_path)
     clauses = conjunction_to_clauses(formula)
     for clause in clauses:
         clause, constraints = rename_arrays(clause)
@@ -350,6 +343,20 @@ def parse(file_path, check_neg):
                 symb = symb.replace('-','_')
                 variables[symb] = type_in_c
     return parsed_cons, variables
+
+def read_file(file_path):
+    parser = SmtLibParser()
+    script = parser.get_script_fname(file_path)
+    decl_arr = list()
+    variables = dict()
+    decls = script.filter_by_command_name("declare-fun")
+    for d in decls:
+        for arg in d.args:
+            if (str)(arg) != "model_version":
+                decl_arr.append(arg)
+    parsed_cons = dict()
+    formula = script.get_strict_formula()
+    return decl_arr,variables,parsed_cons,formula
 
 def check_indices(symbol,maxArity,maxId, cons_in_c):
     if maxArity == 0:
