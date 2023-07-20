@@ -14,4 +14,4 @@ RUN pip install -r requirements.txt
 ADD token.txt /home/maze/workspace/token.txt
 RUN sudo chmod +r token.txt
 
-RUN git clone https://$(cat token.txt)@github.com/Fleischmaki/Fuzzle.git -c core.sshCommand 
+RUN git clone https://$(cat token.txt)@github.com/Fleischmaki/Minotaur.git -c core.sshCommand 
