@@ -125,15 +125,15 @@ def convert(symbs,node, cons):
     elif node.is_bv_ult():
         convert_helper(symbs,node, cons, " < ", 'u')
     elif node.is_bv_lshr():
-        convert_helper(symbs,node, cons, " >> ", 'u', True) # C >> is logical for unsigned, arithmetic for signed
+        convert_helper(symbs,node, cons, " >> ", cut_overflow=True) # C >> is logical for unsigned, arithmetic for signed
     elif node.is_bv_ashr():
         convert_helper(symbs,node, cons, " >> ", 's')
     elif node.is_bv_add():
-        convert_helper(symbs,node, cons, " + ", 'u', True) # Recast on all operations that can exceed value ranges
+        convert_helper(symbs,node, cons, " + ", cut_overflow=True) # Recast on all operations that can exceed value ranges
     elif node.is_bv_sub():
         convert_helper(symbs,node, cons, " - ")
     elif node.is_bv_mul():
-        convert_helper(symbs,node, cons, " * ", 'u', True)# Recast on all operations that can exceed value ranges
+        convert_helper(symbs,node, cons, " * ", cut_overflow=True)# Recast on all operations that can exceed value ranges
     elif node.is_bv_udiv() or node.is_bv_sdiv():
         convert_helper(symbs,node, cons, " / ", "s")
     elif node.is_bv_urem() or node.is_bv_srem():
