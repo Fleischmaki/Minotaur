@@ -83,7 +83,10 @@ def generate_mazes(paramss, outdir):
         pipes.append(docker.kill_docker('gen', i))
     commands.wait_for_procs(pipes)
 
-def generate_maze(fuzzle, params, out_dir = ''):
+def generate_maze(params, fuzzle = '', out_dir = ''):
+    if(fuzzle == ''):
+        import __main__
+        fuzzle = '/'.join(__main__.__file__.split('/')[:-1])
     param_string = ''
     for param, value in params.items():
         param_string += '-%s %s ' % (param, value)
