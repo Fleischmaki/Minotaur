@@ -87,14 +87,18 @@ def type_to_c(type):
     else:
         error(1)
 
-def convert_helper(symbs,node, cons, op, cast = ''):
+def convert_helper(symbs,node, cons, op, cast = '', cut_overflow = False):
     (l, r) = node.args()
     if cast != '':
         cast = cast_to_signed(l,r) if cast == 's' else cast_to_unsigned(l,r)
+    if cut_overflow:
+        cons.write('(' + bits_to_utype(node.bv_width()) + ')(')
     cons.write(cast)
     convert(symbs,l, cons)
     cons.write(op + cast)
     convert(symbs,r, cons)
+    if cut_overflow:
+        cons.write(')')
 
 def convert(symbs,node, cons):
     if cons.tell() > 2**20:
@@ -121,15 +125,15 @@ def convert(symbs,node, cons):
     elif node.is_bv_ult():
         convert_helper(symbs,node, cons, " < ", 'u')
     elif node.is_bv_lshr():
-        convert_helper(symbs,node, cons, " >> ", 'u') # C >> is logical for unsigned, arithmetic for signed
+        convert_helper(symbs,node, cons, " >> ", 'u', True) # C >> is logical for unsigned, arithmetic for signed
     elif node.is_bv_ashr():
         convert_helper(symbs,node, cons, " >> ", 's')
     elif node.is_bv_add():
-        convert_helper(symbs,node, cons, " + ")
+        convert_helper(symbs,node, cons, " + ", 'u', True) # Recast on all operations that can exceed value ranges
     elif node.is_bv_sub():
         convert_helper(symbs,node, cons, " - ")
     elif node.is_bv_mul():
-        convert_helper(symbs,node, cons, " * ")
+        convert_helper(symbs,node, cons, " * ", 'u', True)# Recast on all operations that can exceed value ranges
     elif node.is_bv_udiv() or node.is_bv_sdiv():
         convert_helper(symbs,node, cons, " / ", "s")
     elif node.is_bv_urem() or node.is_bv_srem():
@@ -304,8 +308,6 @@ def rename_arrays(formula):
 def write_to_file(formula, file):
     if type(formula) == list:
         formula = And(*formula)
-    if not file.endswith('.smt2'): 
-        file += '.smt2'
     return write_smtlib(formula, file)
 
 def parse(file_path, check_neg):
@@ -540,7 +542,7 @@ def check_files(file_path, resfile):
     f.close()
 
 if __name__ == '__main__':
-    from storm.smt import smtObject
+    from storm.smt.smt_object import smtObject
     resfile = sys.argv[1]
     for i in range(2, len(sys.argv)):
         main(sys.argv[i], resfile)
