@@ -115,13 +115,13 @@ def fetch_works(conf,targets):
             if conf['maze_gen'] == 'container':
                 mazes.append(params)
             else:
-                maze_gen.generate_maze(get_fuzzle_root(), params, get_temp_dir())
+                maze_gen.generate_maze(get_minotaur_root(), params, get_temp_dir())
     if conf['maze_gen'] == 'container':
         maze_gen.generate_mazes(mazes, get_temp_dir())
     return works
 
 def get_temp_dir():
-    return os.path.join(get_fuzzle_root(), 'temp')
+    return os.path.join(get_minotaur_root(), 'temp')
 
 def get_maze_dir(maze=''):
     return os.path.join(get_temp_dir(),'src', maze)
@@ -214,7 +214,7 @@ def cleanup(conf, targets):
     if len(targets) == 0 or (targets[0][2] % int(conf['transforms']) == 0 and targets[0][1] == list(conf['tool'].keys())[0]):
         commands.run_cmd(REMOVE_CMD % get_temp_dir())
 
-def get_fuzzle_root():
+def get_minotaur_root():
     return os.path.dirname(os.path.realpath(sys.modules['__main__'].__file__))
 
 def main(conf_path, out_dir):
@@ -236,6 +236,6 @@ def main(conf_path, out_dir):
     cleanup(conf, targets)
 
 def load(argv):
-    conf_path = os.path.join(get_fuzzle_root(),'test',argv[0] + '.conf.json')
+    conf_path = os.path.join(get_minotaur_root(),'test',argv[0] + '.conf.json')
     out_dir = argv[1]
     main(conf_path, out_dir)

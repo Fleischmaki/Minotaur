@@ -40,7 +40,7 @@ def generate_maze_in_docker(params, index = 0):
 
     param_string = get_string_from_params(params)
     
-    cmd = './Fuzzle/scripts/generate.sh ' + param_string
+    cmd = './Minotaur/scripts/generate.sh ' + param_string
 
     return docker.spawn_cmd_in_docker(docker.get_container('gen','', index),  cmd)
 
@@ -83,14 +83,14 @@ def generate_mazes(paramss, outdir):
         pipes.append(docker.kill_docker('gen', i))
     commands.wait_for_procs(pipes)
 
-def generate_maze(params, fuzzle = '', out_dir = ''):
-    if(fuzzle == ''):
+def generate_maze(params, minotaur = '', out_dir = ''):
+    if(minotaur == ''):
         import __main__
-        fuzzle = '/'.join(__main__.__file__.split('/')[:-1])
+        minotaur = '/'.join(__main__.__file__.split('/')[:-1])
     param_string = ''
     for param, value in params.items():
         param_string += '-%s %s ' % (param, value)
-    out_dir = os.path.join(fuzzle, 'temp') if out_dir == '' else out_dir
+    out_dir = os.path.join(minotaur, 'temp') if out_dir == '' else out_dir
     param_string += ' -o %s' % out_dir
-    return commands.run_cmd(GENERATE_CMD % (fuzzle, out_dir, param_string)) # TODO: Figure out how to multithread this
+    return commands.run_cmd(GENERATE_CMD % (minotaur, out_dir, param_string)) # TODO: Figure out how to multithread this
 
