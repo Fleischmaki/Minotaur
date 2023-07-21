@@ -125,7 +125,7 @@ def convert(symbs,node, cons):
     elif node.is_bv_ult():
         convert_helper(symbs,node, cons, " < ", 'u')
     elif node.is_bv_lshr():
-        convert_helper(symbs,node, cons, " >> ", cut_overflow=True) # C >> is logical for unsigned, arithmetic for signed
+        convert_helper(symbs,node, cons, " >> ", 'u') # C >> is logical for unsigned, arithmetic for signed
     elif node.is_bv_ashr():
         convert_helper(symbs,node, cons, " >> ", 's')
     elif node.is_bv_add():
