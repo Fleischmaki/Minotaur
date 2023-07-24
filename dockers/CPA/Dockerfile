@@ -1,7 +1,5 @@
 FROM maze-base
 
-#RUN apt-get -y install gcc
-
 # Install
 WORKDIR /home/maze/tools/
 
@@ -12,6 +10,9 @@ RUN mv cpachecker-trunk cpa
 
 WORKDIR /home/maze/tools/cpa
 RUN ant
+
+# Get gcc for preprocessing
+RUN apt-get -y install gcc
 
 
 ### Add scripts
