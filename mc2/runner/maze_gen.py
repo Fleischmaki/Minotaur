@@ -56,7 +56,7 @@ def get_params_from_string(param_string):
     params = dict()
     options = param_string.split(' ')
     i = 0
-    while i < len(options)-1:
+    while i < len(options):
         arg = options[i][1:] #cut the -
         if i == len(options)-1 or options[i+1].startswith('-'):
             if arg == 'u':
@@ -67,7 +67,6 @@ def get_params_from_string(param_string):
             value = options[i+1]
             i+=1
         params[arg] = value
-
         i+=1
     return params
 
@@ -83,14 +82,15 @@ def generate_mazes(paramss, outdir):
         pipes.append(docker.kill_docker('gen', i))
     commands.wait_for_procs(pipes)
 
-def generate_maze(params, minotaur = '', out_dir = ''):
+def generate_maze(params, out_dir = '', minotaur = ''):
     if(minotaur == ''):
         import __main__
         minotaur = '/'.join(__main__.__file__.split('/')[:-1])
     param_string = ''
+    print(params)
     for param, value in params.items():
         param_string += '-%s %s ' % (param, value)
     out_dir = os.path.join(minotaur, 'temp') if out_dir == '' else out_dir
     param_string += ' -o %s' % out_dir
-    return commands.run_cmd(GENERATE_CMD % (minotaur, out_dir, param_string)) # TODO: Figure out how to multithread this
+    return commands.run_cmd(GENERATE_CMD % (minotaur, out_dir, param_string)) 
 

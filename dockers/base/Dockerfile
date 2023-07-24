@@ -18,6 +18,6 @@ RUN mkdir -p /home/maze/workspace
 USER root
 
 ### Install common packages
-RUN apt update
-RUN apt install -y vim git wget unzip sudo python3 openjdk-11-jre
+RUN apt-get update
+RUN apt-get install -y vim git wget unzip sudo python3 openjdk-17-jre
 RUN echo 'maze  ALL=(root) NOPASSWD: ALL' >> /etc/sudoers

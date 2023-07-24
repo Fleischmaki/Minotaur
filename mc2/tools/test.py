@@ -115,7 +115,7 @@ def fetch_works(conf,targets):
             if conf['maze_gen'] == 'container':
                 mazes.append(params)
             else:
-                maze_gen.generate_maze(get_minotaur_root(), params, get_temp_dir())
+                maze_gen.generate_maze(params, get_temp_dir(), get_minotaur_root())
     if conf['maze_gen'] == 'container':
         maze_gen.generate_mazes(mazes, get_temp_dir())
     return works
