@@ -4,10 +4,10 @@ set -e
 
 DOCKERDIR=$(readlink -f $(dirname "$0")/..)/dockers
 
-# Build base image
+## Build base image
 echo "[*] Build maze-base Docker image..."
 cd $DOCKERDIR/base 
-docker build --rm -t maze-base .
+docker build --rm --no-cache -t maze-base . # Make sure to always update apt-get
 echo "[*] Done!"
 
 #Build maze-gen image
@@ -16,8 +16,7 @@ cd $DOCKERDIR/gen
 docker build --rm --no-cache -t maze-gen .  # Make sure to pull latest version
 echo "[*] Done!"
 
-
-# Build Ultimate base image
+## Build Ultimate base image
 echo "[*] Build ultimate-base Docker image..."
 cd $DOCKERDIR/UBase 
 docker build --rm -t ultimate-base .
@@ -47,19 +46,19 @@ cd $DOCKERDIR/UK
 docker build --rm -t maze-uk .
 echo "[*] Done!"
 
-# Build CPA image
+## Build CPA image
 echo "[*] Build maze-CPA Docker image..."
 cd $DOCKERDIR/CPA
 docker build --rm -t maze-cpa .
 echo "[*] Done!"
 
-# Build seahorn image
+## Build seahorn image
 echo "[*] Build maze-seahorn Docker image..."
 cd $DOCKERDIR/seahorn
 docker build --rm -t maze-seahorn .
 echo "[*] Done!"
 
-# Build cbmc image
+## Build cbmc image
 echo "[*] Build maze-cbmc Docker image..."
 cd $DOCKERDIR/cbmc
 docker build --rm -t maze-cbmc .

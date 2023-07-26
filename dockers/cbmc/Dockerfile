@@ -1,6 +1,6 @@
 FROM maze-base
 
-RUN apt -y install cbmc
+RUN apt-get -y install cbmc
 
 USER maze
 
