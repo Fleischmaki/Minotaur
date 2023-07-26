@@ -102,7 +102,7 @@ def convert_helper(symbs,node, cons, op, cast = '', cut_overflow = False):
 
 def convert(symbs,node, cons):
     if cons.tell() > 2**20:
-        raise ValueError("Parse result too large") # Avoid file sizes > 1 GB
+        raise ValueError("Parse result too large") # Avoid file sizes > 1 MB
     cons.write('(')
     if node.is_iff() or node.is_equals() or node.is_bv_comp():
         (l, r) = node.args()
@@ -490,7 +490,7 @@ def get_minimum_array_size(smt_file):
     if not is_sat(formula):
         formula = Not(formula)
     while not sat:
-        if array_size >= 2**31:  
+        if array_size >= 2**10:  
             raise ValueError("Minimum array size too large")
         assertions = [i <= array_size for i in map(lambda x: x.args()[1], array_ops)]
         new_formula = And(*assertions, formula)
@@ -502,47 +502,54 @@ def main(file_path, resfile):
     return check_files(file_path, resfile)
 
 def check_files(file_path, resfile):
-    print("Checking file " + file_path)
     if os.path.isdir(file_path):
-        print("Going into dir %s" % file_path)
+        print("Going into dir %s\n" % file_path)
         for file in sorted(os.listdir(file_path)):
             check_files(os.path.join(file_path,file), resfile)
         return
-    elif not file_path.endswith('.smt2'):
+    if not file_path.endswith('.smt2'):
         return
+    print("Checking file " + file_path)
     try:
         # Check number of atoms
-        parser = SmtLibParser()
-        script = parser.get_script_fname(file_path)
-        formula = script.get_strict_formula()
+        print("Check atoms:")
+        formula = read_file(file_path)[3]
         if len(formula.get_atoms()) < 50:
             raise ValueError("Not enough atoms") 
+        print("Done")
 
         # Check that everything is understood by the parser
         # and file doesn't get too large
+        print("Check parser:")
         parse(file_path, False)
+        print("Done.")
 
         # Check that satisfiability is easily found
         # (else STORM will take a long time to run)
+        print("Check sat:", end =" ")
         so = smtObject(file_path,'temp')
         so.check_satisfiability(60)
         if so.orig_satisfiability == 'timeout':
             raise ValueError('Takes too long to process')
-        
+        print("Done")
+
         # Check that it is satisfiable on bounded arrays
+        print("Check array size")
         get_minimum_array_size(file_path)
+        print("Done")
 
     except Exception as e:
         print("Error in " + file_path + ': ' + str(e))
         #traceback.print_exc()
         return
-    
+        
     f = open(resfile, 'a')
     f.write(file_path + '\n')
     f.close()
 
 if __name__ == '__main__':
     from storm.smt.smt_object import smtObject
+    from storm.runner.z3_python_api import check_satisfiability as cs
     resfile = sys.argv[1]
     for i in range(2, len(sys.argv)):
         main(sys.argv[i], resfile)

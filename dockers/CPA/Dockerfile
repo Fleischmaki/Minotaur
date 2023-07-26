@@ -3,7 +3,7 @@ FROM maze-base
 # Install
 WORKDIR /home/maze/tools/
 
-RUN sudo apt-get install -y ant openjdk-17-jdk
+RUN sudo apt-get install -y ant openjdk-17-jdk openjdk-17-jre
 RUN wget https://github.com/sosy-lab/cpachecker/archive/refs/heads/trunk.zip
 RUN unzip trunk.zip
 RUN mv cpachecker-trunk cpa
