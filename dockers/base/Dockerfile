@@ -19,5 +19,5 @@ USER root
 
 ### Install common packages
 RUN apt-get update
-RUN apt-get install -y vim git wget unzip sudo python3  
+RUN apt-get install -y vim git wget unzip sudo python3 openjdk-17-jdk openjdk-17-jre openjdk-11-jre
 RUN echo 'maze  ALL=(root) NOPASSWD: ALL' >> /etc/sudoers

@@ -1,7 +1,7 @@
 FROM maze-base
 
 # Install dependencies
-RUN apt-get -y install make clang openjdk-11-jre
+RUN apt-get -y install make clang
 
 WORKDIR /home/maze/tools/
 

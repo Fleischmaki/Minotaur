@@ -3,16 +3,13 @@ FROM maze-base
 # Install
 WORKDIR /home/maze/tools/
 
-RUN sudo apt-get install -y ant openjdk-17-jdk openjdk-17-jre
+RUN sudo apt-get install -y gcc ant 
 RUN wget https://github.com/sosy-lab/cpachecker/archive/refs/heads/trunk.zip
 RUN unzip trunk.zip
 RUN mv cpachecker-trunk cpa
 
 WORKDIR /home/maze/tools/cpa
 RUN ant
-
-# Get gcc for preprocessing
-RUN apt-get -y install gcc
 
 
 ### Add scripts
