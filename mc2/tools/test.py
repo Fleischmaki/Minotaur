@@ -79,7 +79,7 @@ def get_random_params(conf):
     set_default(res,'u',0)
     set_default(res,'m',int(conf['transforms']))
 
-    if 'u' in res.keys():
+    if 'u' in res.keys() and res['u'] == 1:
         res['w'] = 1
         res['h'] = 1
     elif res['w'] < 5 and res['h'] < 5:
