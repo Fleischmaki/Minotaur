@@ -19,9 +19,10 @@ For more info on config files check [config.md](./config.md)
 See [params.md](./params.md)
 
 ### Minimize a maze
-`python3 Minotaur --m maze.c tool (variant) mutant.smt2 outdir`
+`python3 Minotaur --m maze.c tool [variant] mutant.smt2 outdir`
 
 ## Bugs found by Minotaur
- Tool | Issue | Status 
- -- | -- | --
- CPA - InvariantsCPA | [1114](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1114) |fixed
+ Tool | Status 
+ -- | -- 
+ CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1114)
+Ultimate | [confirmed](https://github.com/ultimate-pa/ultimate/issues/642#issuecomment-1661186726)
