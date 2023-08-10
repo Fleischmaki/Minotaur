@@ -4,7 +4,7 @@
 # Arg2: Timeout (in minutes)
 # Arg3: Variant
 
-sudo chown -R maze:maze /home/maze/maze.c
+sudo chown -R maze:maze $1
 
 WORKDIR=/home/maze/workspace
 

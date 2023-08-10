@@ -1,6 +1,10 @@
 FROM maze-base
 
-RUN apt-get -y install cbmc
+
+RUN apt-get update && apt-get install -y \
+    cbmc \
+&& rm -rf /var/lib/apt/lists/*
+
 
 USER maze
 
