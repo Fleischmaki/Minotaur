@@ -490,7 +490,7 @@ def get_minimum_array_size(smt_file):
     if not is_sat(formula):
         formula = Not(formula)
     while not sat:
-        if array_size >= 2**10:  
+        if array_size > 2**16:  
             raise ValueError("Minimum array size too large")
         assertions = [i <= array_size for i in map(lambda x: x.args()[1], array_ops)]
         new_formula = And(*assertions, formula)
