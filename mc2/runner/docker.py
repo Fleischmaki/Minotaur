@@ -50,7 +50,7 @@ def run_docker(duration, tool, name, variant=''):
     script = '/home/%s/tools/run_%s.sh' % (user, tool)
     src_path = '/home/%s/maze.c' % (user)
     cmd = '%s %s %s %s' % (script, src_path, duration, variant)
-    return spawn_cmd_in_docker(get_container(tool,variant,name), cmd)# sleep timeout + extra 5 secs.
+    return spawn_cmd_in_docker(get_container(tool,variant,name), cmd)
 
 def collect_docker_results(tool,name, variant=''):
     user = get_user(tool)
@@ -71,13 +71,13 @@ def kill_docker(tool,name,variant=''):
     return commands.spawn_cmd(cmd)
 
 
-def run_mc(tool,variant, name, memory, params,outdir):
+def run_mc(tool,variant, name, memory, params,outdir, timeout=1):
     spawn_docker(memory,name,tool,variant=variant).wait()
     maze_gen.generate_maze(params,out_dir = outdir)
     t_index = params['m'] - (0 if 'keepId' in params['t'] else 1)
     maze_path = os.path.join(outdir,'src',maze_gen.get_maze_names(params)[t_index]) #'outputs' should not be necessary but somehow it is ¯\_(ツ)_/¯
     set_docker_maze(maze_path,name,tool,variant).wait()
-    run_docker(1, tool, name, variant).wait()
+    run_docker(5, tool, name, variant).wait()
     collect_docker_results(tool,name,variant).wait()
     copy_docker_results(tool,name,outdir,variant)
     kill_docker(tool,name,variant).wait()
