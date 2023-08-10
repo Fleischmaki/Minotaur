@@ -7,48 +7,48 @@ DOCKERDIR=$(readlink -f $(dirname "$0")/..)/dockers
 ## Build base image
 echo "[*] Build maze-base Docker image..."
 cd $DOCKERDIR/base 
-docker build --rm --no-cache -t maze-base . # Make sure to always update apt-get
+docker build --rm -t maze-base . # Make sure to always update apt-get
 echo "[*] Done!"
 
 #Build maze-gen image
 echo "[*] Build maze-generation Docker image..."
 cd $DOCKERDIR/gen 
-docker build --rm --no-cache -t maze-gen .  # Make sure to pull latest version
+docker build --rm -t maze-gen .  # Make sure to pull latest version
 echo "[*] Done!"
 
 ## Build Ultimate base image
-echo "[*] Build ultimate-base Docker image..."
-cd $DOCKERDIR/UBase 
-docker build --rm -t ultimate-base .
+echo "[*] Build ultimate Docker image..."
+cd $DOCKERDIR/ultimate 
+docker build --rm -t maze-ultimate .
 echo "[*] Done!"
 
 # Build UA image
-echo "[*] Build maze-UA Docker image..."
-cd $DOCKERDIR/UA
-docker build --rm -t maze-ua .
-echo "[*] Done!"
+#echo "[*] Build maze-UA Docker image..."
+#cd $DOCKERDIR/UA
+#docker build --rm -t maze-ua .
+#echo "[*] Done!"
 
 # Build UT image
-echo "[*] Build maze-UT Docker image..."
-cd $DOCKERDIR/UT
-docker build --rm -t maze-ut .
-echo "[*] Done!"
+#echo "[*] Build maze-UT Docker image..."
+#cd $DOCKERDIR/UT
+#docker build --rm -t maze-ut .
+#echo "[*] Done!"
 
 # Build UGC image
-echo "[*] Build maze-UGC Docker image..."
-cd $DOCKERDIR/UGC
-docker build --rm -t maze-ugc .
-echo "[*] Done!"
+#echo "[*] Build maze-UGC Docker image..."
+#cd $DOCKERDIR/UGC
+#docker build --rm -t maze-ugc .
+#echo "[*] Done!"
 
 # Build UK image
-echo "[*] Build maze-UK Docker image..."
-cd $DOCKERDIR/UK
-docker build --rm -t maze-uk .
-echo "[*] Done!"
+#echo "[*] Build maze-UK Docker image..."
+#cd $DOCKERDIR/UK
+#docker build --rm -t maze-uk .
+#echo "[*] Done!"
 
 ## Build CPA image
 echo "[*] Build maze-CPA Docker image..."
-cd $DOCKERDIR/CPA
+cd $DOCKERDIR/cpa
 docker build --rm -t maze-cpa .
 echo "[*] Done!"
 

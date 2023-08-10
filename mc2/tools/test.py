@@ -34,6 +34,8 @@ def pick_values(head,value,tail):
     else: 
         choice = random.choice(value)
         if choice == 0:
+            if head == '' and tail == '':
+                return None    
             return ''
         elif choice == 1:
             body = ''
@@ -62,9 +64,9 @@ def get_random_params(conf):
                 body = os.path.join(value,random.choice(os.listdir(value)))
         else:
             body = pick_values('', value, '')
-            ## Special cases
-                        
-        res[key] = body
+
+        if body is not None:
+            res[key] = body
     
     # default values 
     set_default(res,'a','Backtracking')
@@ -76,13 +78,14 @@ def get_random_params(conf):
     set_default(res,'r',int(time.time()))
     set_default(res,'c',0)
     set_default(res,'g','default_gen')
-    set_default(res,'u',0)
     set_default(res,'m',int(conf['transforms']))
+    #set_default(res,'u',0) # not included by default
 
     if 'u' in res.keys():
         res['w'] = 1
         res['h'] = 1
-    elif res['w'] < 5 and res['h'] < 5:
+        res['u'] = ''
+    elif int(res['w']) < 5 and int(res['h']) < 5:
         res['h'] = 5 # mazelib gets stuck when generating 4x4 or smaller mazes
     return res
 
@@ -96,9 +99,9 @@ def get_targets(conf):
         mazes = maze_gen.get_maze_names(params)
         for tool in conf['tool'].keys():
             variant = random.choice(conf['tool'][tool])
-            if tool == 'ultimate': 
-                tool = variant
-                variant = '' # ultimate toolchain is done in different dockers
+            #if tool == 'ultimate': 
+            #    tool = variant
+            #    variant = '' # ultimate toolchain is done in different dockers
             for j in range(len(mazes)):
                 targets.append((mazes[j], tool,i*params['m'] + j,params, variant))
     return targets # Or just set greater values for transforms 
@@ -174,7 +177,7 @@ def store_outputs(conf, out_dir, works):
 def write_summary(conf,out_dir, target,tag,runtime):
     maze, tool, id, params, variant = target
     out_path = os.path.join(out_dir, tool, maze)
-    if (conf['verbosity'] == 'bug' or conf['verbosity'] == 'bug_only') and tag not in ('fp', 'fn', 'er', 'uk', 'notFound'):
+    if (conf['verbosity'] == 'bug' or conf['verbosity'] == 'bug_only') and tag not in ('fp', 'fn'):
         commands.run_cmd(REMOVE_CMD % out_path)
         if conf['verbosity'] == 'bug_only':
             return

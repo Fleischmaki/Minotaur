@@ -35,7 +35,7 @@ class Generator:
             
     def get_logic_def(self):
         logic_def = ""
-        if self.array_size > 0:
+        if self.array_size != 0:
             logic_def += "#define ARRAY_SIZE %d\n" % self.array_size
             logic_def += """int* array_store(int* a,int p,int v){
     a[p] = v;

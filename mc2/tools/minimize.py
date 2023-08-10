@@ -2,7 +2,7 @@ import sys, os, time
 from ..runner import *
 from ..maze_gen import smt2_parser as sp
 
-def main(maze_path,tool,variant, memory,mutant,outdir):
+def main(maze_path,tool,variant, memory,mutant,outdir,timeout,gen):
     params = get_params(maze_path)
     commands.run_cmd('mkdir -p %s' % outdir)
     commands.run_cmd("mkdir -p %s" % os.path.join(outdir,'seeds'))
@@ -17,9 +17,9 @@ def main(maze_path,tool,variant, memory,mutant,outdir):
         new_clauses = clauses[:half] if keep_first_half else clauses[half+1:]
 
         seed = os.path.join(outdir, 'seeds', str(half) + ('-first' if keep_first_half else '-second'))
-        misses_bug = check_result(tool, variant, memory, params, outdir, seed,new_clauses)
+        misses_bug = check_result(tool, variant, memory, params, outdir, seed,new_clauses,timeout,gen)
 
-        commands.run_cmd('rm -r %s' % os.path.join(outdir, 'src'))
+        commands.run_cmd('rm -r %s' % os.path.join(outdir, 'outputs', 'src'))
         if misses_bug:
             clauses = new_clauses
             print("Discarded %s half of constraints" % 'first' if keep_first_half else 'second')
@@ -35,8 +35,8 @@ def main(maze_path,tool,variant, memory,mutant,outdir):
         seed = os.path.join(outdir, 'seeds', str(len(clauses)) + '-' + str(pos+1))
         clause = clauses.pop(pos)
         
-        misses_bug = check_result(tool,variant,memory, params, outdir, seed,clauses)
-        commands.run_cmd('rm -r %s' % os.path.join(outdir, 'src'))
+        misses_bug = check_result(tool,variant,memory, params, outdir, seed,clauses,timeout,gen)
+        commands.run_cmd('rm -r %s' % os.path.join(outdir, 'outputs', 'src'))
         
         if misses_bug:
             empty_clauses += 1
@@ -48,9 +48,9 @@ def main(maze_path,tool,variant, memory,mutant,outdir):
     maze_gen.generate_maze(params,out_dir = outdir)
         
 
-def check_result(tool,variant,memory, params, outdir, seed, clauses):
+def check_result(tool,variant,memory, params, outdir, seed, clauses,timeout):
     set_seed(params, seed, clauses)
-    docker.run_mc(tool,variant, 'min', memory, params, outdir)
+    docker.run_mc(tool,variant, 'min', memory, params, outdir,timeout)
     sat = is_fn(outdir)
     return sat
 
@@ -89,13 +89,17 @@ def get_params(maze_path):
 def load(argv):
     maze = argv[0]
     tool = argv[1]
-    if len(argv) == 5:
+    if len(argv) == 7:
         variant = argv[2]
         mutant = argv[3]
         outdir = argv[4]
+        timeout = argv[5]
+        gen = argv[6]
     else:
         variant = ''
         mutant = argv[2]
         outdir = argv[3]
+        timeout = argv[4]
+        gen = argv[5]
     memory = 4
-    main(maze, tool, variant, memory, mutant,outdir)
+    main(maze, tool, variant, memory, mutant,outdir,timeout,gen)
