@@ -151,11 +151,6 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     guard = generator.get_guard()
     bug, bug_headers = get_bug(bugtype)
 
-    f.write("#include <stdio.h>\n" \
-    "#include <stdlib.h>\n" \
-    "#include <string.h>\n" \
-    "#include <unistd.h>\n" \
-    "#include <stdint.h>\n")
     f.write('\n%s\n' % bug_headers)
     for type in ['char','uchar', 'short', 'ushort', 'int', 'uint', 'long', 'ulong']:
         ctype = 'unsigned ' + type[1:] if type.startswith('u') else type
@@ -175,7 +170,7 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     \t}}
     """
     function_end = """\telse {
-    \t\tprintf("User-provided conditions were not satisfied by the input");
+    \t\t//should not happen
     \t}
     }\n"""
     function_deadend = """}\n"""

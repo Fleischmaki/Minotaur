@@ -1,22 +1,28 @@
 {
 	"verbosity": "bug",
-	"repeats" : 100,
+	"repeats" : 500,
 	"duration" : 1,
 	"workers" : 120,
 	"memory" : 4,
 	"transforms" : 30,
 	"maze_gen" : "container",
-	"tool" : ["cpa", "seahorn", "ua", "ut", "uk", "ugc", "cbmc"],
+	"tool" : {
+		"cpa" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution"],
+		"seahorn" : ["pf", "spf", "bpf", "fpcf", "fpf"], 
+		"ultimate" : ["ua","ut","uk","ugc"],
+		"cbmc": [""],
+		"symbiotic": [""]
+	},
 	"parameters" : {
-		"u" : [1],
+		"u" : [0,1],
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
 		"w" : {
 			"min" : 4,
-			"max" : 6
+			"max" : 7
 		},
 		"h" : {
 			"min" : 5,
-			"max" : 6
+			"max" : 7
 		},
 		"c" : {
 			"min" : 0,
@@ -27,7 +33,7 @@
 			"keepId": [0]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/mfleischmann/Fuzzle/SMTs",
+		"s": "/home/mfleischmann/seeds",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

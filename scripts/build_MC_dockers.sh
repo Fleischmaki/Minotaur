@@ -7,7 +7,7 @@ DOCKERDIR=$(readlink -f $(dirname "$0")/..)/dockers
 ## Build base image
 echo "[*] Build maze-base Docker image..."
 cd $DOCKERDIR/base 
-docker build --rm -t maze-base . # Make sure to always update apt-get
+docker build -t maze-base .
 echo "[*] Done!"
 
 #Build maze-gen image
@@ -21,30 +21,6 @@ echo "[*] Build ultimate Docker image..."
 cd $DOCKERDIR/ultimate 
 docker build --rm -t maze-ultimate .
 echo "[*] Done!"
-
-# Build UA image
-#echo "[*] Build maze-UA Docker image..."
-#cd $DOCKERDIR/UA
-#docker build --rm -t maze-ua .
-#echo "[*] Done!"
-
-# Build UT image
-#echo "[*] Build maze-UT Docker image..."
-#cd $DOCKERDIR/UT
-#docker build --rm -t maze-ut .
-#echo "[*] Done!"
-
-# Build UGC image
-#echo "[*] Build maze-UGC Docker image..."
-#cd $DOCKERDIR/UGC
-#docker build --rm -t maze-ugc .
-#echo "[*] Done!"
-
-# Build UK image
-#echo "[*] Build maze-UK Docker image..."
-#cd $DOCKERDIR/UK
-#docker build --rm -t maze-uk .
-#echo "[*] Done!"
 
 ## Build CPA image
 echo "[*] Build maze-CPA Docker image..."
@@ -62,4 +38,10 @@ echo "[*] Done!"
 echo "[*] Build maze-cbmc Docker image..."
 cd $DOCKERDIR/cbmc
 docker build --rm -t maze-cbmc .
+echo "[*] Done!"
+
+## Build symbiotic image
+echo "[*] Build maze-symbiotic Docker image..."
+cd $DOCKERDIR/symbiotic
+docker build --rm -t maze-symbiotic .
 echo "[*] Done!"
