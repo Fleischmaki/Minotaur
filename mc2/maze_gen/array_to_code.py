@@ -155,6 +155,7 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     for type in ['char','uchar', 'short', 'ushort', 'int', 'uint', 'long', 'ulong']:
         ctype = 'unsigned ' + type[1:] if type.startswith('u') else type
         f.write("extern %s __VERIFIER_nondet_%s(void);\n" % (ctype, type))
+    f.write("extern _Bool __VERIFIER_nondet_bool(void);\n")
     function_format_declaration = """void func_{}();\n"""
     function_declarations = "\n"
     for k in range(size):

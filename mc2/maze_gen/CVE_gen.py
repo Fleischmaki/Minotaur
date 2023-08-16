@@ -64,6 +64,8 @@ class Generator:
                 for var in vars:
                     if '[' in var: #Arrays
                         buggy_constraints += "\t{} {};\n".format(self.vars_all[var],var)
+                    elif self.vars_all[var] == 'bool':
+                        buggy_constraints += "\t_Bool {} = __VERIFIER_nondet_bool();\n".format(var)
                     else:
                         buggy_constraints += "\t{} {} = __VERIFIER_nondet_{}();\n".format(self.vars_all[var], var, 'u' + self.vars_all[var][9:])
                     
