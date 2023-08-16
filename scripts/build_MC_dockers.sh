@@ -7,7 +7,7 @@ DOCKERDIR=$(readlink -f $(dirname "$0")/..)/dockers
 ## Build base image
 echo "[*] Build maze-base Docker image..."
 cd $DOCKERDIR/base 
-docker build -t maze-base .
+docker build --rm -t maze-base .
 echo "[*] Done!"
 
 #Build maze-gen image
@@ -38,6 +38,12 @@ echo "[*] Done!"
 echo "[*] Build maze-cbmc Docker image..."
 cd $DOCKERDIR/cbmc
 docker build --rm -t maze-cbmc .
+echo "[*] Done!"
+
+## Build 2ls image
+echo "[*] Build maze-2ls Docker image..."
+cd $DOCKERDIR/2ls
+docker build --rm -t maze-2ls .
 echo "[*] Done!"
 
 ## Build symbiotic image
