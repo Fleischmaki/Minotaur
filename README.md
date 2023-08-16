@@ -25,4 +25,4 @@ See [params.md](./params.md)
  Tool | Status 
  -- | -- 
  CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1114)
-Ultimate | [confirmed](https://github.com/ultimate-pa/ultimate/issues/642#issuecomment-1661186726)
+Ultimate | [fixed](https://github.com/ultimate-pa/ultimate/issues/642#issuecomment-1661186726)
