@@ -26,6 +26,7 @@ RUN apt-get update && apt-get install -y \
     sudo \
     python3 \
     gcc \
+    make \
 && rm -rf /var/lib/apt/lists/*
 
 RUN echo 'maze  ALL=(root) NOPASSWD: ALL' >> /etc/sudoers
