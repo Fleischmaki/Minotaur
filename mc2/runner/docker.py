@@ -6,7 +6,7 @@ from . import commands, maze_gen
 SPAWN_CMD = 'docker run --rm -m=%dg -t -d --cpuset-cpus=%d --name %s %s'
 CP_MAZE_CMD = 'docker cp %s %s:/home/%s/maze.c'
 CP_SEED_CMD = 'docker cp %s %s:/home/%s/%s'
-CP_CMD = 'docker cp %s:/home/%s/workspace/outputs %s'
+CP_CMD = 'docker cp %s:/home/%s/workspace/%s %s'
 KILL_CMD = 'docker kill %s'
 REMOVE_CMD = 'docker rm %s'
 
@@ -62,7 +62,13 @@ def copy_docker_results(tool, name , out_path, variant = ''):
     return copy_docker_output(tool, name, out_path, user, variant)
 
 def copy_docker_output(tool, name, out_path, user, variant=''):
-    return commands.run_cmd(CP_CMD % (get_container(tool,variant,name), user, out_path if not os.path.isdir(out_path) else os.path.join(out_path,'.')))
+    cont = get_container(tool,variant,name)
+    if not os.path.isdir(out_path):
+        return commands.run_cmd(CP_CMD % (cont, user, 'outputs', out_path))
+    if os.path.isdir(os.path.join(out_path,'src')):
+        for dir in ['src','smt','png','txt','smt','bin']:
+            commands.run_cmd(CP_CMD % (cont, user, os.path.join('outputs',dir,'.'), os.path.join(out_path, dir)))
+    return commands.run_cmd(CP_CMD % (cont, user, 'outputs/.', out_path))
 
 def kill_docker(tool,name,variant=''):
     cmd = KILL_CMD % (get_container(tool,variant,name))
