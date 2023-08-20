@@ -4,50 +4,6 @@ set -e
 
 DOCKERDIR=$(readlink -f $(dirname "$0")/..)/dockers
 
-## Build base image
-echo "[*] Build maze-base Docker image..."
-cd $DOCKERDIR/base 
-docker build --rm -t maze-base .
-echo "[*] Done!"
-
-#Build maze-gen image
-echo "[*] Build maze-generation Docker image..."
-cd $DOCKERDIR/gen 
-docker build --rm -t maze-gen .  # Make sure to pull latest version
-echo "[*] Done!"
-
-## Build Ultimate base image
-echo "[*] Build ultimate Docker image..."
-cd $DOCKERDIR/ultimate 
-docker build --rm -t maze-ultimate .
-echo "[*] Done!"
-
-## Build CPA image
-echo "[*] Build maze-CPA Docker image..."
-cd $DOCKERDIR/cpa
-docker build --rm -t maze-cpa .
-echo "[*] Done!"
-
-## Build seahorn image
-echo "[*] Build maze-seahorn Docker image..."
-cd $DOCKERDIR/seahorn
-docker build --rm -t maze-seahorn .
-echo "[*] Done!"
-
-## Build cbmc image
-echo "[*] Build maze-cbmc Docker image..."
-cd $DOCKERDIR/cbmc
-docker build --rm -t maze-cbmc .
-echo "[*] Done!"
-
-## Build 2ls image
-echo "[*] Build maze-2ls Docker image..."
-cd $DOCKERDIR/2ls
-docker build --rm -t maze-2ls .
-echo "[*] Done!"
-
-## Build symbiotic image
-echo "[*] Build maze-symbiotic Docker image..."
-cd $DOCKERDIR/symbiotic
-docker build --rm -t maze-symbiotic .
-echo "[*] Done!"
+for tool in base 2ls cbmc cpa esbmc ultimate seahorn symbiotic gen;
+    do echo "[*] Build maze-$tool Docker image..."; cd "$DOCKERDIR/$tool"; docker build --rm -t maze-$tool .; echo "[*] Done!";
+done; 
