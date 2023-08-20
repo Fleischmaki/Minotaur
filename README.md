@@ -7,6 +7,7 @@ git clone https://github.com/Fleischmaki/Minotaur.git
 pip install -r Minotaur/requirements.txt
 ./Minotaur/scripts/build_MC_dockers.sh
 ```
+Note that the provided dockers build most tools from source. Building might take up to a few hours and several GBs of memory.
 
 ## Using Minotaur
 ### Run tests
