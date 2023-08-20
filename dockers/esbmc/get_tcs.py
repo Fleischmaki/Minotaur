@@ -22,11 +22,11 @@ def main(dest_dir):
     respath = '%s/res' %(OUTDIR)
     resfile = open(respath, 'r').read()
     # True positives
-    if ('VERIFICATION SUCCESSFUL' in resfile):
+    if ('VERIFICATION FAILED' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'tp')
 
     # False negatives
-    elif ('VERIFICATION FAILED' in resfile):
+    elif ('VERIFICATION SUCCESSFUL' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'fn')
 
     # Crashes/Errors
