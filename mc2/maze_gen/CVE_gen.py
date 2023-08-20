@@ -45,6 +45,10 @@ class Generator:
     \tif(a1[i] != a2[i]) return 0;
     }
     return 1;\n}\n""")
+            logic_def += ("""void init(int array[]){
+    for(int i = 0; i < ARRAY_SIZE; i++){
+    \tarray[i] = __VERIFIER_nondet_int();
+    }\n}""")
 
         return logic_def
 
@@ -63,7 +67,7 @@ class Generator:
                 buggy_constraints = ""  
                 for var in vars:
                     if '[' in var: #Arrays
-                        buggy_constraints += "\t{} {};\n".format(self.vars_all[var],var)
+                        buggy_constraints += "\t{} {};\n\tinit({});\n".format(self.vars_all[var],var,var[:-12])
                     elif self.vars_all[var] == 'bool':
                         buggy_constraints += "\t_Bool {} = __VERIFIER_nondet_bool();\n".format(var)
                     else:
