@@ -26,4 +26,4 @@ See [params.md](./params.md)
  -- | -- 
  CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1114)
 Ultimate | [fixed](https://github.com/ultimate-pa/ultimate/issues/642#issuecomment-1661186726)
-Symbiotic | [pending](https://github.com/staticafi/symbiotic/issues/246)
+Symbiotic | [oepn](https://github.com/staticafi/symbiotic/issues/246)
