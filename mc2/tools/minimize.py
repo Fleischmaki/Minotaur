@@ -2,7 +2,7 @@ import sys, os, time
 from ..runner import *
 from ..maze_gen import smt2_parser as sp
 
-def main(maze_path,tool,variant, memory,mutant,outdir,timeout,gen):
+def main(maze_path,tool,variant, memory,mutant,outdir,timeout):
     params = get_params(maze_path)
     commands.run_cmd('mkdir -p %s' % outdir)
     commands.run_cmd("mkdir -p %s" % os.path.join(outdir,'seeds'))
@@ -17,9 +17,9 @@ def main(maze_path,tool,variant, memory,mutant,outdir,timeout,gen):
         new_clauses = clauses[:half] if keep_first_half else clauses[half+1:]
 
         seed = os.path.join(outdir, 'seeds', str(half) + ('-first' if keep_first_half else '-second'))
-        misses_bug = check_result(tool, variant, memory, params, outdir, seed,new_clauses,timeout,gen)
+        misses_bug = check_result(tool, variant, memory, params, outdir, seed,new_clauses,timeout)
 
-        commands.run_cmd('rm -r %s' % os.path.join(outdir, 'outputs', 'src'))
+        commands.run_cmd('rm -r %s' % os.path.join(outdir, 'src'))
         if misses_bug:
             clauses = new_clauses
             print("Discarded %s half of constraints" % 'first' if keep_first_half else 'second')
@@ -35,8 +35,8 @@ def main(maze_path,tool,variant, memory,mutant,outdir,timeout,gen):
         seed = os.path.join(outdir, 'seeds', str(len(clauses)) + '-' + str(pos+1))
         clause = clauses.pop(pos)
         
-        misses_bug = check_result(tool,variant,memory, params, outdir, seed,clauses,timeout,gen)
-        commands.run_cmd('rm -r %s' % os.path.join(outdir, 'outputs', 'src'))
+        misses_bug = check_result(tool,variant,memory, params, outdir, seed,clauses,timeout)
+        commands.run_cmd('rm -r %s' % os.path.join(outdir, 'src'))
         
         if misses_bug:
             empty_clauses += 1
@@ -67,9 +67,10 @@ def get_clauses(mutant):
     return list(sp.conjunction_to_clauses(formula))
 
 def is_fn(outdir):
-    for file in os.listdir(os.path.join(outdir,'outputs')):
+    resdir = os.path.join(outdir,'res')
+    for file in os.listdir(resdir):
             if '_' in file: # Still false negative
-                commands.run_cmd('mv %s %s' % (os.path.join(outdir,'outputs',file), os.path.join(outdir,'runs')))
+                commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(outdir,'runs')))
                 if 'fn' in file: 
                     return True
     return False
@@ -89,17 +90,17 @@ def get_params(maze_path):
 def load(argv):
     maze = argv[0]
     tool = argv[1]
-    if len(argv) == 7:
+    if len(argv) == 6:
         variant = argv[2]
         mutant = argv[3]
         outdir = argv[4]
         timeout = argv[5]
-        gen = argv[6]
+        #gen = argv[6]
     else:
         variant = ''
         mutant = argv[2]
         outdir = argv[3]
         timeout = argv[4]
-        gen = argv[5]
+        #gen = argv[5]
     memory = 4
-    main(maze, tool, variant, memory, mutant,outdir,timeout,gen)
+    main(maze, tool, variant, memory, mutant,outdir,timeout)
