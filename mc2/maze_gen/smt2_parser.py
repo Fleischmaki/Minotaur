@@ -291,8 +291,9 @@ def rename_arrays(formula):
     subs = dict()
 
     for sub in formula.args():
-        new_formula, new_constraints = rename_arrays(sub)
-        subs.update({sub: new_formula})
+        new_constraints, new_subs = rename_arrays(sub)
+        subs.update(new_subs)
+        #subs.update({sub: new_formula})
         constraints = constraints.union(new_constraints)
 
     if formula.is_store():
@@ -302,8 +303,8 @@ def rename_arrays(formula):
             constraints.add(Equals(old,new))
             subs.update({old : new})
 
-    formula = formula.substitute(subs)
-    return formula, constraints
+    #formula = formula.substitute(subs)
+    return constraints, subs
 
 def write_to_file(formula, file):
     if type(formula) == list:
@@ -314,7 +315,9 @@ def parse(file_path, check_neg):
     decl_arr, variables, parsed_cons, formula = read_file(file_path)
     clauses = conjunction_to_clauses(formula)
     for clause in clauses:
-        clause, constraints = rename_arrays(clause)
+        constraints, subs = rename_arrays(clause)
+        #print(subs)
+        clause = clause.substitute(subs)
         if len(constraints) > 0:
             print("Added %d new arrays" % len(constraints))
         ldecl_arr = decl_arr
