@@ -2,16 +2,18 @@
 	"verbosity": "bug",
 	"repeats" : 500,
 	"duration" : 1,
-	"workers" : 120,
+	"workers" : 119,
 	"memory" : 4,
-	"transforms" : 30,
+	"transforms" : 17,
 	"maze_gen" : "container",
 	"tool" : {
 		"cpa" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution"],
 		"seahorn" : ["pf", "spf", "bpf", "fpcf", "fpf"], 
 		"ultimate" : ["ua","ut","uk","ugc"],
 		"cbmc": [""],
-		"symbiotic": [""]
+		"symbiotic": [""],
+		"2ls": ["", "--context-sensitive", "--inline", "--incremental-bmc", "--k-induction"],
+		"esbmc": ["", "--incremental-bmc", "--k-induction", "--interval-analysis"]
 	},
 	"parameters" : {
 		"u" : [0,1],
@@ -30,7 +32,11 @@
 		},
 		"t" : {
 			"storm": [1],
-			"keepId": [0]
+			"keepId": [0],
+			"rw": {
+				"min" : 10,
+				"max" : 30
+			}
 		},
 		"g": ["CVE_gen"],
 		"s": "/home/mfleischmann/seeds",

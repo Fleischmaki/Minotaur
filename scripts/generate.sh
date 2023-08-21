@@ -22,8 +22,8 @@ do
 done
 
 if [ -z ${ALGORITHM+x} ]; then
-    echo "No algorithm selected. Exiting..."
-    exit 1
+    echo "No algorithm selected. Backtracking will be used."
+    ALGORITHM="Backtracking"
 fi
 
 if [ -z ${UNIT+x} ]; then
@@ -79,7 +79,7 @@ fi
 
 if [ -z ${CYCLE+x} ]; then
     echo "NOTE: The percentage of cycles was not specified. Default value of 100 will be used."
-    CYCLE="100"
+    CYCLE="0"
 fi
 
 if [ -z ${BUGTYPE} ]; then

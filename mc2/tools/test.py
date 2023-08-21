@@ -99,9 +99,6 @@ def get_targets(conf):
         mazes = maze_gen.get_maze_names(params)
         for tool in conf['tool'].keys():
             variant = random.choice(conf['tool'][tool])
-            #if tool == 'ultimate': 
-            #    tool = variant
-            #    variant = '' # ultimate toolchain is done in different dockers
             for j in range(len(mazes)):
                 targets.append((mazes[j], tool,i*params['m'] + j,params, variant))
     return targets # Or just set greater values for transforms 
@@ -165,7 +162,7 @@ def store_outputs(conf, out_dir, works):
         # Write file details into summary
         runtime = 'notFound'
         tag = 'notFound'
-        for filename in os.listdir(os.path.join(out_path,'outputs')):
+        for filename in os.listdir(os.path.join(out_path)):
             if '_' in filename:
                 runtime, tag = filename.split('_')
                 if (tag == 'fn'):

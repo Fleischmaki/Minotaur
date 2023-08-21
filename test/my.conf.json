@@ -5,20 +5,28 @@
 	"duration" : 1,
 	"workers" : 7,
 	"memory" : 3,
-	"tool" : ["cpa", "seahorn", "ua", "ut", "uk", "ugc", "cbmc"],
+	"tool" : {
+		"cpa" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution"],
+		"seahorn" : ["pf", "spf", "bpf", "fpcf", "fpf"], 
+		"ultimate" : ["ua","ut","uk","ugc"],
+		"cbmc": [""],
+		"symbiotic": [""],
+		"2ls": ["", "--context-sensitive", "--inline", "--incremental-bmc", "--k-induction"],
+		"esbmc": ["", "--incremental-bmc", "--k-induction", "--interval-analysis"]
+	},
 	"parameters" : {
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
 		"w" : {
-			"min" : 3,
+			"min" : 4,
 			"max" : 7
 		},
 		"h" : {
-			"min" : 3,
+			"min" : 4,
 			"max" : 7
 		},
 		"c" : {
 			"min" : 0,
-			"max" : 100
+			"max" : 0
 		},
 		"t" : {
 			"storm" : [1],
@@ -28,12 +36,12 @@
 		"n" : {
 			"min" : 1,
 			"max" : 3
- 		},
+		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MasterThesis/Fuzzle/SMTs",
+		"s": "/home/markus/MasterThesis/seeds/copy_array66.c.smt2",
 		"r": {
 			"min": 0,
 			"max" : 65536
-			}	
-		}
+		}	
+	}
 }
