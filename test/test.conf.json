@@ -34,7 +34,7 @@
 			"keepId" : [1]
 		},
 		"g": ["default_gen", "CVE_gen", "equality0_gen", "equality25_gen", "equality50_gen", "equality75_gen", "equality100_gen"],
-		"s": "/path/to/Fuzzle/CVEs",
+		"s": "/path/to/Minotaur/CVEs",
 		"r" : {
 			"min" : 0,
 			"max" : 32767
