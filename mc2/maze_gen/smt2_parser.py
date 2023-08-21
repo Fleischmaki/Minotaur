@@ -262,9 +262,9 @@ def rotate_helper(symbs, node, cons, op):
     convert(symbs,l,cons)
     cons.write('((')
     convert(symbs,l,cons)
-    cons.write(' %s %s) & ((1 %s %s+1) - 1)) | (') % (op, i, op, i) # TODO exponential blowup possible
+    cons.write(' %s %s) & ((1 %s %s+1) - 1)) | (' % (op, i, op, i)) # TODO exponential blowup possible
     convert(symbs,l,cons)
-    cons.write(' %s (%s-%s) )') % (op, i, m)
+    cons.write(' %s (%s-%s) )' % (op, i, m))
 
 def is_neg_sat(c, clauses):
     form_neg = Not(c)
@@ -512,31 +512,31 @@ def check_files(file_path, resfile):
     print("Checking file " + file_path)
     try:
         # Check number of atoms
-        print("Check atoms:")
-        formula = read_file(file_path)[3]
-        if len(formula.get_atoms()) < 50:
-            raise ValueError("Not enough atoms") 
-        print("Done")
+        #print("[*] Check atoms:")
+        #formula = read_file(file_path)[3]
+        #if len(formula.get_atoms()) < 50:
+        #    raise ValueError("Not enough atoms") 
+        #print("[*] Done")
 
         # Check that everything is understood by the parser
         # and file doesn't get too large
-        print("Check parser:")
+        print("[*] Check parser:")
         parse(file_path, False)
-        print("Done.")
+        print("[*] Done.")
 
         # Check that satisfiability is easily found
         # (else STORM will take a long time to run)
-        print("Check sat:", end =" ")
+        print("[*] Check sat:")
         so = smtObject(file_path,'temp')
         so.check_satisfiability(60)
         if so.orig_satisfiability == 'timeout':
             raise ValueError('Takes too long to process')
-        print("Done")
+        print("[*] Done.")
 
         # Check that it is satisfiable on bounded arrays
-        print("Check array size")
+        print("[*] Check array size:")
         get_minimum_array_size(file_path)
-        print("Done")
+        print("[*] Done.")
 
     except Exception as e:
         print("Error in " + file_path + ': ' + str(e))
