@@ -17,7 +17,5 @@ mkdir -p $OUTDIR
 touch $WORKDIR/.start
 let TIMEOUT=60*$2 
 #timeout $2m /home/maze/tools/symbiotic/scripts/symbiotic --exit-on-error $1 &> $OUTDIR/res 
-timeout $2m /opt/symbiotic/install/bin/symbiotic --timeout=$2 --no-integrity-check --explicit-symbolic --undefined-are-pure $1 &> $OUTDIR/res 
+timeout $2m /opt/symbiotic/install/bin/symbiotic --timeout=$TIMEOUT --no-integrity-check --explicit-symbolic --undefined-are-pure $1 &> $OUTDIR/res 
 touch $WORKDIR/.end
-
-mv output outputs/output
