@@ -2,7 +2,8 @@ import re
 import sys, random, os
 from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict
-from pysmt.shortcuts import is_sat, Not, BV, Or, And, FreshSymbol, Equals, Store, write_smtlib
+from pysmt.shortcuts import is_sat, Not, BV, Or, And, FreshSymbol, Equals, Store, write_smtlib, reset_env
+import traceback
 
 def deflatten(args, op):
     x = args[0]
@@ -514,12 +515,13 @@ def check_files(file_path, resfile):
         return
     print("Checking file " + file_path)
     try:
-        # Check number of atoms
-        #print("[*] Check atoms:")
-        #formula = read_file(file_path)[3]
-        #if len(formula.get_atoms()) < 50:
-        #    raise ValueError("Not enough atoms") 
-        #print("[*] Done")
+        reset_env()
+        #Check number of atoms
+        print("[*] Check atoms:")
+        formula = read_file(file_path)[3]
+        if len(formula.get_atoms()) < 5:
+            raise ValueError("Not enough atoms") 
+        print("[*] Done")
 
         # Check that everything is understood by the parser
         # and file doesn't get too large
