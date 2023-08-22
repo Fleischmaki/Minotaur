@@ -515,7 +515,8 @@ def check_files(file_path, resfile):
         return
     print("Checking file " + file_path)
     try:
-        reset_env()
+        env = reset_env()
+        env.enable_infix_notation = True
         #Check number of atoms
         print("[*] Check atoms:")
         formula = read_file(file_path)[3]
