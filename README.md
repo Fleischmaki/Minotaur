@@ -28,6 +28,7 @@ See [params.md](./params.md)
  CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1114)
 Ultimate | [fixed](https://github.com/ultimate-pa/ultimate/issues/642#issuecomment-1661186726)
 Symbiotic | [open](https://github.com/staticafi/symbiotic/issues/246)
+CPA -kInduction | [open](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1130)
 
 ## About
 ```mermaid
