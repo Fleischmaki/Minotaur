@@ -52,7 +52,7 @@ def main(maze_path,tool,variant,seeddir, outdir,timeout):
         
         
     set_seed(params,seed,clauses)
-    maze_gen.generate_mazes([params],out_dir = outdir)
+    maze_gen.generate_mazes([params],outdir)
         
 
 def check_if_tp(tool,variant,params, outdir, timeout):
