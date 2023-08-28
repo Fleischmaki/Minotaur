@@ -20,7 +20,7 @@ For more info on config files check [config.md](./config.md)
 See [params.md](./params.md)
 
 ### Minimize a maze
-`python3 Minotaur --m maze.c tool [variant] mutant.smt2 outdir`
+`python3 Minotaur --m maze.c tool [variant] outdir`
 
 ## Bugs found by Minotaur
  Tool | Status 
@@ -33,13 +33,14 @@ CPA -kInduction | [open](https://gitlab.com/sosy-lab/software/cpachecker/-/issue
 ## About
 ```mermaid
 flowchart BT
-    SMT_SEED --> STORM
-    STORM --> |CLAUSES| GENERATOR
-    MAZE --> |SCAFFOLDING| FUZZLE
-    GENERATOR --> |C-LOGIC| FUZZLE
-    FUZZLE --> |POPULATE| PROGRAM 
-    PROGRAM --> |RUNNER| TOOL
-    TOOL --> |RESULT| MINIMIZER
-    STORM --> |CLAUSES| MINIMIZER
-    MINIMIZER --> |SELECTED_CLAUSES|GENERATOR
+    SMTComp --> Storm
+    Storm --> |Clauses| Generator
+    Maze --> |Scaffolding| Fuzzle
+    Generator --> |Logic| Fuzzle
+    Fuzzle --> |Populate| Code 
+    Code -->  SMC
+    SMC --> |Result| Minimizer
+    Storm --> |Clauses| Minimizer
+    Minimizer --> | Selected Clauses | Generator
+
 ```
