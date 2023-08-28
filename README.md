@@ -20,7 +20,7 @@ For more info on config files check [config.md](./config.md)
 See [params.md](./params.md)
 
 ### Minimize a maze
-`python3 Minotaur --m maze.c tool [variant] outdir`
+`python3 Minotaur --m maze.c tool [variant] seed_dir out_dir timeout`
 
 ## Bugs found by Minotaur
  Tool | Status 
