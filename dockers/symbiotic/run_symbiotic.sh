@@ -16,6 +16,5 @@ mkdir -p $OUTDIR
 # Create dummy file to indicate running start
 touch $WORKDIR/.start
 let TIMEOUT=60*$2 
-#timeout $2m /home/maze/tools/symbiotic/scripts/symbiotic --exit-on-error $1 &> $OUTDIR/res 
-timeout $2m /opt/symbiotic/install/bin/symbiotic --timeout=$TIMEOUT --explicit-symbolic --no-witness --exit-on-error $1 &> $OUTDIR/res 
+timeout $2m /home/maze/tools/symbiotic/scripts/symbiotic --explicit-symbolic --undefined-are-pure --exit-on-error $1 &> $OUTDIR/res 
 touch $WORKDIR/.end
