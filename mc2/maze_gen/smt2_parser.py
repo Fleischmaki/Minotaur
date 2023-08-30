@@ -294,7 +294,7 @@ def rename_arrays(formula):
     for sub in formula.args():
         new_constraints, new_subs = rename_arrays(sub)
         subs.update(new_subs)
-        #subs.update({sub: new_formula})
+        subs.update({sub: sub.substitute(subs)}) # Propagate replacements upwards
         constraints = constraints.union(new_constraints)
 
     if formula.is_store():
@@ -304,7 +304,6 @@ def rename_arrays(formula):
             constraints.add(Equals(old,new))
             subs.update({old : new})
 
-    #formula = formula.substitute(subs)
     return constraints, subs
 
 def write_to_file(formula, file):
@@ -518,11 +517,11 @@ def check_files(file_path, resfile):
         env = reset_env()
         env.enable_infix_notation = True
         #Check number of atoms
-        print("[*] Check atoms:")
-        formula = read_file(file_path)[3]
-        if len(formula.get_atoms()) < 5:
-            raise ValueError("Not enough atoms") 
-        print("[*] Done")
+        #print("[*] Check atoms:")
+        #formula = read_file(file_path)[3]
+        #if len(formula.get_atoms()) < 5:
+        #    raise ValueError("Not enough atoms") 
+        #print("[*] Done")
 
         # Check that everything is understood by the parser
         # and file doesn't get too large
