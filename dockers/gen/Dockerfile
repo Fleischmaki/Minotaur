@@ -15,7 +15,7 @@ ADD token.txt /home/maze/workspace/token.txt
 RUN sudo chmod +r token.txt
 
 WORKDIR /home/maze/tools
-RUN git clone https://$(cat token.txt)@github.com/Fleischmaki/Minotaur.git -c core.sshCommand 
+RUN git clone https://$(cat /home/maze/workspace/token.txt)@github.com/Fleischmaki/Minotaur.git -c core.sshCommand 
 WORKDIR /home/maze/tools/Minotaur
 RUN git checkout working
 WORKDIR /home/maze/workspace
