@@ -64,10 +64,10 @@ def cast_to_signed(l, r):
 def cast_to_unsigned(l, r):
    cast = ""
    extend_step = 0
-   if l.is_bv_constant():
-       cast = "(" + bits_to_utype(l.bv_width()) + ") "
-   elif r.is_bv_constant():
-       cast = "(" + bits_to_utype(r.bv_width()) + ") "
+   if l.is_bv_constant() or l.is_symbol or l.is_function_application() or l.is_ite() or l.is_select():
+       cast = "(" + bits_to_type(l.bv_width()) + ") "
+   elif r.is_bv_constant() or r.is_symbol or r.is_function_application() or r.is_ite() or r.is_select():
+       cast = "(" + bits_to_type(r.bv_width()) + ") "
    elif l.is_bv_sext() or l.is_bv_zext():
        extend_step = l.bv_extend_step()
    elif r.is_bv_sext() or r.is_bv_zext():
