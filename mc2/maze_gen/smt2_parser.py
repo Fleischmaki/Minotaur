@@ -17,6 +17,8 @@ def error(flag, *nodes):
         raise ValueError("ERROR: node type not recognized: ", nodes, map(lambda n: n.get_type()))
     elif flag == 1:
         raise ValueError("ERROR: nodes not supported", nodes)
+    elif flag == 2:
+        raise ValueError("ERROR: Type not recognized",nodes)
 
 def binary_to_decimal(binary):
     if len(binary) > 64:
@@ -38,41 +40,44 @@ def bits_to_type(n):
 def bits_to_utype(n):
     return "unsigned " + bits_to_type(n)
 
-def cast_to_signed(l, r):
-    cast = ""
-    extend_step = 0
-    if l.is_bv_constant():
-        cast = "(" + bits_to_type(l.bv_width()) + ") "
-    elif r.is_bv_constant():
-        cast = "(" + bits_to_type(r.bv_width()) + ") "
-    elif l.is_bv_sext() or l.is_bv_zext():
-        extend_step = l.bv_extend_step()
-    elif r.is_bv_sext() or r.is_bv_zext():
-        extend_step = r.bv_extend_step()
-    else:
-        error(1,l,r)
-        
-    if extend_step in (8,16,24,32,48,56):
-        cast = '(' + bits_to_type(extend_step+1) + ')'
-    return cast
+#def cast_to_signed(l, r):
+#    cast = ""
+#    extend_step = 0
+#    if l.is_bv_constant():
+#        cast = "(" + bits_to_type(l.bv_width()) + ") "
+#    elif r.is_bv_constant():
+#        cast = "(" + bits_to_type(r.bv_width()) + ") "
+#    elif l.is_bv_sext() or l.is_bv_zext():
+#        extend_step = l.bv_extend_step()
+#    elif r.is_bv_sext() or r.is_bv_zext():
+##        extend_step = r.bv_extend_step()
+#    else:
+#        error(1,l,r)
+#        
+#    if extend_step in (8,16,24,32,48,56):
+#        cast = '(' + bits_to_type(extend_step+1) + ')'
+#    return cast
 
-def cast_to_unsigned(l, r):
-    cast = ""
-    extend_step = 0
-    if l.is_bv_constant():
-        cast = "(" + bits_to_utype(l.bv_width()) + ") "
-    elif r.is_bv_constant():
-        cast = "(" + bits_to_utype(r.bv_width()) + ") "
-    elif l.is_bv_sext() or l.is_bv_zext():
-        extend_step = l.bv_extend_step()
-    elif r.is_bv_sext() or r.is_bv_zext():
-        extend_step = r.bv_extend_step()
-    else:
-        error(1,l)
-        
-    if extend_step in (8,16,24,32,48,56):
-        cast = '(' + bits_to_utype(extend_step+1) + ')'
-    return cast
+def cast(node,sign):
+    return '(' + ('unsigned ' if sign == 'u' else '') + str(bits_to_type(node.bv_width())) +')'
+    
+#    _to_unsigned(l, r):
+#    cast = ""
+#    extend_step = 0
+#    if l.is_bv_constant():
+#        cast = "(" + bits_to_utype(l.bv_width()) + ") "
+#    elif r.is_bv_constant():
+#        cast = "(" + bits_to_utype(r.bv_width()) + ") "
+#    elif l.is_bv_sext() or l.is_bv_zext():
+#        extend_step = l.bv_extend_step()
+#    elif r.is_bv_sext() or r.is_bv_zext():
+#        extend_step = r.bv_extend_step()
+#    else:
+#        error(1,l)
+#        
+#    if extend_step in (8,16,24,32,48,56):
+#        cast = '(' + bits_to_utype(extend_step+1) + ')'
+#    return cast
 
 def type_to_c(type):
     if type.is_bool_type():
@@ -86,12 +91,12 @@ def type_to_c(type):
     elif type.is_string_type():
         return 'string'
     else:
-        error(1)
+        error(2, type)
 
 def convert_helper(symbs,node, cons, op, cast = '', cut_overflow = False):
     (l, r) = node.args()
     if cast != '':
-        cast = cast_to_signed(l,r) if cast == 's' else cast_to_unsigned(l,r)
+        cast = cast(node,cast)
     if cut_overflow:
         cons.write('(' + bits_to_utype(node.bv_width()) + ')(')
     cons.write(cast)
