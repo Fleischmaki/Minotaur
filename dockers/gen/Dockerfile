@@ -16,6 +16,6 @@ RUN sudo chmod +r token.txt
 
 WORKDIR /home/maze/workspace
 RUN git clone https://$(cat /home/maze/workspace/token.txt)@github.com/Fleischmaki/Minotaur.git -c core.sshCommand 
-WORKDIR /home/maze/tools/Minotaur
+WORKDIR /home/maze/workspace/Minotaur
 RUN git checkout working
 WORKDIR /home/maze/workspace
