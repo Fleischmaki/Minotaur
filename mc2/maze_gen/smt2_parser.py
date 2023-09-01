@@ -58,7 +58,7 @@ def bits_to_utype(n):
 #        cast = '(' + bits_to_type(extend_step+1) + ')'
 #    return cast
 
-def cast(node,sign):
+def get_cast(node,sign):
     return '(' + ('unsigned ' if sign == 'u' else '') + str(bits_to_type(node.bv_width())) +')'
     
 #    _to_unsigned(l, r):
@@ -96,7 +96,7 @@ def type_to_c(type):
 def convert_helper(symbs,node, cons, op, cast = '', cut_overflow = False):
     (l, r) = node.args()
     if cast != '':
-        cast = cast(node,cast)
+        cast = get_cast(node,cast)
     if cut_overflow:
         cons.write('(' + bits_to_utype(node.bv_width()) + ')(')
     cons.write(cast)
