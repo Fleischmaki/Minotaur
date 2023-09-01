@@ -96,7 +96,7 @@ def type_to_c(type):
 def convert_helper(symbs,node, cons, op, cast = '', cut_overflow = False):
     (l, r) = node.args()
     if cast != '':
-        cast = cast_to_unsigned if cast == 'u' else cast_to_unsigned
+        cast = cast_to_unsigned() if cast == 'u' else cast_to_unsigned()
     if cut_overflow:
         cons.write('(' + bits_to_utype(node.bv_width()) + ')(')
     cons.write(cast)
