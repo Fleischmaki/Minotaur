@@ -88,10 +88,12 @@ class DirGraph:
     def df_search(self, node, solution):
         visited = set()
         labels = dict()
-        i = 0
+        labels['start'] = 0
+        i = 1
         for node in solution: # Force solution to be explored first
             labels[node] = i
             i += 1
+        labels['bug'] = i
         return self.df_search_helper(node, visited, labels)
 
     def disjoint_union(self, graph):
