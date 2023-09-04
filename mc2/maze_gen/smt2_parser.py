@@ -2,7 +2,7 @@ import re
 import sys, random, os
 from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict
-from pysmt.shortcuts import is_sat, Not, BV, Or, And, FreshSymbol, Equals, Store, write_smtlib, reset_env
+from pysmt.shortcuts import is_sat, Not, BV, Or, And, FreshSymbol, Equals, write_smtlib, reset_env
 import traceback
 
 def deflatten(args, op):
@@ -17,8 +17,6 @@ def error(flag, *nodes):
         raise ValueError("ERROR: node type not recognized: ", nodes, map(lambda n: n.get_type()))
     elif flag == 1:
         raise ValueError("ERROR: nodes not supported", nodes)
-    elif flag == 2:
-        raise ValueError("ERROR: Type not recognized",nodes)
 
 def binary_to_decimal(binary):
     if len(binary) > 64:
@@ -91,20 +89,16 @@ def type_to_c(type):
     elif type.is_string_type():
         return 'string'
     else:
-        error(2, type)
+        error(0, type)
 
-def convert_helper(symbs,node, cons, op, cast = '', cut_overflow = False):
+def convert_helper(symbs,node, cons, op, cast = ''):
     (l, r) = node.args()
     if cast != '':
         cast = cast_to_unsigned(l,r) if cast == 'u' else cast_to_signed(l,r)
-    if cut_overflow:
-        cons.write('(' + bits_to_utype(node.bv_width()) + ')(')
     cons.write(cast)
     convert(symbs,l, cons)
     cons.write(op + cast)
     convert(symbs,r, cons)
-    if cut_overflow:
-        cons.write(')')
 
 def convert(symbs,node, cons):
     if cons.tell() > 2**20:
@@ -135,11 +129,11 @@ def convert(symbs,node, cons):
     elif node.is_bv_ashr():
         convert_helper(symbs,node, cons, " >> ", 's')
     elif node.is_bv_add():
-        convert_helper(symbs,node, cons, " + ", cut_overflow=True) # Recast on all operations that can exceed value ranges
+        convert_helper(symbs,node, cons, " + ", 'u') # Recast on all operations that can exceed value ranges
     elif node.is_bv_sub():
         convert_helper(symbs,node, cons, " - ")
     elif node.is_bv_mul():
-        convert_helper(symbs,node, cons, " * ", cut_overflow=True)# Recast on all operations that can exceed value ranges
+        convert_helper(symbs,node, cons, " * ", 'u')# Recast on all operations that can exceed value ranges
     elif node.is_bv_udiv() or node.is_bv_sdiv():
         convert_helper(symbs,node, cons, " / ", "s")
     elif node.is_bv_urem() or node.is_bv_srem():
@@ -321,13 +315,13 @@ def parse(file_path, check_neg):
     clauses = conjunction_to_clauses(formula)
     for clause in clauses:
         constraints, subs = rename_arrays(clause)
-        #print(subs)
         clause = clause.substitute(subs)
         if len(constraints) > 0:
             print("Added %d new arrays" % len(constraints))
         ldecl_arr = decl_arr
         ldecl_arr.extend(map(lambda c: c.args()[1],constraints))
         clause = And(*constraints, clause) # Make sure to render constraints first
+
         symbs = set()
         tempfile = open('temp.txt', 'w+')
         #try:
@@ -522,16 +516,23 @@ def check_files(file_path, resfile):
         env = reset_env()
         env.enable_infix_notation = True
         #Check number of atoms
-        #print("[*] Check atoms:")
-        #formula = read_file(file_path)[3]
-        #if len(formula.get_atoms()) < 5:
-        #    raise ValueError("Not enough atoms") 
-        #print("[*] Done")
+        print("[*] Check atoms:")
+        formula = read_file(file_path)[3]
+        if len(formula.get_atoms()) < 5:
+            raise ValueError("Not enough atoms") 
+        print("[*] Done")
 
         # Check that everything is understood by the parser
         # and file doesn't get too large
         print("[*] Check parser:")
-        parse(file_path, False)
+        _, _, _, formula = read_file(file_path)
+        clauses = conjunction_to_clauses(formula)
+        for clause in clauses:
+            symbs = set()
+            tempfile = open('temp.txt', 'w+')
+            convert(symbs,clause, tempfile) 
+            print(".",end ="")
+        print("")
         print("[*] Done.")
 
         # Check that satisfiability is easily found
@@ -550,7 +551,6 @@ def check_files(file_path, resfile):
 
     except Exception as e:
         print("Error in " + file_path + ': ' + str(e))
-        #traceback.print_exc()
         return
         
     f = open(resfile, 'a')
@@ -559,7 +559,6 @@ def check_files(file_path, resfile):
 
 if __name__ == '__main__':
     from storm.smt.smt_object import smtObject
-    from storm.runner.z3_python_api import check_satisfiability as cs
     resfile = sys.argv[1]
     for i in range(2, len(sys.argv)):
         main(sys.argv[i], resfile)
