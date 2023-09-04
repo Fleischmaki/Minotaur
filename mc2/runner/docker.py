@@ -79,7 +79,8 @@ def kill_docker(tool,name,variant=''):
 
 def run_mc(tool,variant, name, params,outdir, memory = 4,  timeout=1):
     spawn_docker(memory,name,tool,variant=variant).wait()
-    maze_gen.generate_mazes([params],outdir)
+    maze_gen.generate_maze_in_docker(params,name).wait()
+    copy_docker_results('gen', name, outdir)
     t_index = params['m'] - (0 if 'keepId' in params['t'] else 1)
     maze_path = os.path.join(outdir,'src',maze_gen.get_maze_names(params)[t_index]) #'outputs' should not be necessary but somehow it is ¯\_(ツ)_/¯
     set_docker_maze(maze_path,name,tool,variant).wait()

@@ -78,7 +78,7 @@ def generate_mazes(paramss, outdir):
     commands.wait_for_procs(pipes)
     pipes = []
     for i in range(len(paramss)):
-        docker.copy_docker_output('gen', i, outdir, 'maze')
+        docker.copy_docker_results('gen', i, outdir)
         pipes.append(docker.kill_docker('gen', i))
     commands.wait_for_procs(pipes)
 
