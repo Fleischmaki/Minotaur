@@ -91,14 +91,23 @@ def type_to_c(type):
     else:
         error(0, type)
 
-def convert_helper(symbs,node, cons, op, cast = ''):
+def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
     (l, r) = node.args()
-    if cast != '':
-        cast = cast_to_unsigned(l,r) if cast == 'u' else cast_to_signed(l,r)
-    cons.write(cast)
-    convert(symbs,l, cons)
-    cons.write(op + cast)
-    convert(symbs,r, cons)
+    cast = ''
+    if cast_sign != '':
+        cast = cast_to_unsigned(l,r) if cast_sign == 'u' else cast_to_signed(l,r)
+
+    if cast_args:
+        cons.write(cast)
+        convert(symbs,l, cons)
+        cons.write(op + cast)
+        convert(symbs,r, cons)
+    else:
+        cons.write(cast  + '(')
+        convert(symbs,l, cons)
+        cons.write(op)
+        convert(symbs,r, cons)
+        cons.write(')')
 
 def convert(symbs,node, cons):
     if cons.tell() > 2**20:
@@ -129,11 +138,11 @@ def convert(symbs,node, cons):
     elif node.is_bv_ashr():
         convert_helper(symbs,node, cons, " >> ", 's')
     elif node.is_bv_add():
-        convert_helper(symbs,node, cons, " + ", 'u') # Recast on all operations that can exceed value ranges
+        convert_helper(symbs,node, cons, " + ", 'u', False) # Recast result on all operations that can exceed value ranges
     elif node.is_bv_sub():
         convert_helper(symbs,node, cons, " - ")
     elif node.is_bv_mul():
-        convert_helper(symbs,node, cons, " * ", 'u')# Recast on all operations that can exceed value ranges
+        convert_helper(symbs,node, cons, " * ", 'u', False)# Recast result on all operations that can exceed value ranges
     elif node.is_bv_udiv() or node.is_bv_sdiv():
         convert_helper(symbs,node, cons, " / ", "s")
     elif node.is_bv_urem() or node.is_bv_srem():
