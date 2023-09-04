@@ -85,7 +85,7 @@ def type_to_c(type):
     elif type.is_function_type():
         return type_to_c(type.return_type)
     elif type.is_array_type():
-        return 'int' # otherwise store might be unsound, we can always cast afterwards
+        return 'unsigned long' # otherwise store might be unsound, we can always cast afterwards
     elif type.is_string_type():
         return 'string'
     else:
