@@ -33,7 +33,7 @@ def get_maze_names(params):
               for i in range(min,params['m'] + 1)]
 
 def generate_maze_in_docker(params, index = 0):
-    docker.spawn_docker(1, index, 'gen', cpu=index).wait()
+    docker.spawn_docker(1, index, 'gen').wait()
 
     if params['s'] is not None:
         docker.set_docker_seed(params['s'], index, 'gen').wait()

@@ -1,9 +1,9 @@
 import subprocess
-import time
-import os, sys
+import os
 from . import commands, maze_gen
 
-SPAWN_CMD = 'docker run --rm -m=%dg -t -d --cpuset-cpus=%d --name %s %s'
+SPAWN_CMD_CPU = 'docker run --rm -m=%dg -t -d --cpuset-cpus=%d --name %s %s'
+SPAWN_CMD_NOCPU = 'docker run --rm -m=%dg -t -d --name %s %s'
 CP_MAZE_CMD = 'docker cp %s %s:/home/%s/maze.c'
 CP_SEED_CMD = 'docker cp %s %s:/home/%s/%s'
 CP_CMD = 'docker cp %s:/home/%s/workspace/%s %s'
@@ -33,8 +33,11 @@ def get_user(tool): # Could not create user in seahorn docker
 def get_container(tool,variant,name):
     return tool + '-' + str(variant) + '-' + str(name)
 
-def spawn_docker(memory, name, tool, cpu = 0, variant=''):
-    cmd = SPAWN_CMD % (memory, cpu, get_container(tool,variant,name), 'maze-' + tool)
+def spawn_docker(memory, name, tool, cpu = -1, variant=''):
+    if cpu > 0:
+        cmd = SPAWN_CMD_CPU % (memory, cpu, get_container(tool,variant,name), 'maze-' + tool)
+    else:
+        cmd = SPAWN_CMD_NOCPU % (memory, get_container(tool,variant,name), 'maze-' + tool)
     return commands.spawn_cmd(cmd)
 
 def set_docker_maze(path, name, tool, variant=''):
