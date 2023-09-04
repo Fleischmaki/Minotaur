@@ -78,15 +78,20 @@ class DirGraph:
 
     def df_search_helper(self, node, visited, labels):
         visited.add(node)
-        labels[node] = len(visited)
+        if not node in labels.keys():
+            labels[node] = len(visited)
         for neighbour in self.graph[node]:
             if neighbour not in visited:
                 self.df_search_helper(neighbour, visited, labels)
         return labels
 
-    def df_search(self, node):
+    def df_search(self, node, solution):
         visited = set()
         labels = dict()
+        i = 0
+        for node in solution: # Force solution to be explored first
+            labels[node] = i
+            i += 1
         return self.df_search_helper(node, visited, labels)
 
     def disjoint_union(self, graph):
@@ -119,8 +124,8 @@ class MazeGraph(DirGraph):
             if matrix[i][j+1] == '0':
                 self.add_edge(node, maze_functions[(x, y+1)])
 
-    def remove_cycle(self, cycle):
-        graph_labels = self.df_search('start')
+    def remove_cycle(self, cycle, solution):
+        graph_labels = self.df_search('start', solution)
         numb_backedges = self.count_backedges(graph_labels)
         proportion_rm = float(1 - (cycle/100))
         numb_to_remove = int(numb_backedges*proportion_rm)
@@ -225,7 +230,7 @@ def generate_maze_chain(mazes, cycle, t_index, unit):
             graph = new_graph
         else:
             graph.append(new_graph)
-    graph.remove_cycle(cycle)
+    graph.remove_cycle(cycle, solution)
     return size,graph,solution
 
 def main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, unit, smt_file, CVE_name):
