@@ -28,8 +28,8 @@ See [params.md](./params.md)
  CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1114)
 Ultimate | [fixed](https://github.com/ultimate-pa/ultimate/issues/642#issuecomment-1661186726)
 Symbiotic | [open](https://github.com/staticafi/symbiotic/issues/246)
-CPA - InvariantsCPA | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1130)
-
+CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1130)
+CPA - Intervallanalysis | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1132#note_1544904422)
 ## About
 ```mermaid
 flowchart BT
