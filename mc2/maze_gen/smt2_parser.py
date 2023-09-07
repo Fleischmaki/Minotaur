@@ -2,7 +2,7 @@ import re
 import sys, random, os
 from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict
-from pysmt.shortcuts import is_sat, Not, BV, Or, And, FreshSymbol, Equals, Store, write_smtlib, reset_env
+from pysmt.shortcuts import is_sat, Not, BV, Or, And, FreshSymbol, Equals, write_smtlib, reset_env
 import traceback
 
 def deflatten(args, op):
@@ -39,40 +39,43 @@ def bits_to_utype(n):
     return "unsigned " + bits_to_type(n)
 
 def cast_to_signed(l, r):
-    cast = ""
-    extend_step = 0
-    if l.is_bv_constant():
-        cast = "(" + bits_to_type(l.bv_width()) + ") "
-    elif r.is_bv_constant():
-        cast = "(" + bits_to_type(r.bv_width()) + ") "
-    elif l.is_bv_sext() or l.is_bv_zext():
-        extend_step = l.bv_extend_step()
-    elif r.is_bv_sext() or r.is_bv_zext():
+   cast = ""
+   extend_step = 0
+   if l.is_bv_constant() or l.is_symbol or l.is_function_application() or l.is_ite() or l.is_select():
+       cast = "(" + bits_to_type(l.bv_width()) + ") "
+   elif r.is_bv_constant() or r.is_symbol or r.is_function_application() or r.is_ite() or r.is_select():
+       cast = "(" + bits_to_type(r.bv_width()) + ") "
+   elif l.is_bv_sext() or l.is_bv_zext():
+       extend_step = l.bv_extend_step()
+   elif r.is_bv_sext() or r.is_bv_zext():
         extend_step = r.bv_extend_step()
-    else:
-        error(1,l,r)
-        
-    if extend_step in (8,16,24,32,48,56):
-        cast = '(' + bits_to_type(extend_step+1) + ')'
-    return cast
+   else:
+       error(1,l,r)
+       
+   if extend_step in (8,16,24,32,48,56):
+       cast = '(' + bits_to_type(extend_step+1) + ')'
+   return cast
 
+#def get_cast(node,sign):
+#    return '(' + ('unsigned ' if sign == 'u' else '') + str(bits_to_type(node.bv_width())) +')'
+    
 def cast_to_unsigned(l, r):
-    cast = ""
-    extend_step = 0
-    if l.is_bv_constant():
-        cast = "(" + bits_to_utype(l.bv_width()) + ") "
-    elif r.is_bv_constant():
-        cast = "(" + bits_to_utype(r.bv_width()) + ") "
-    elif l.is_bv_sext() or l.is_bv_zext():
-        extend_step = l.bv_extend_step()
-    elif r.is_bv_sext() or r.is_bv_zext():
-        extend_step = r.bv_extend_step()
-    else:
-        error(1,l)
-        
-    if extend_step in (8,16,24,32,48,56):
-        cast = '(' + bits_to_utype(extend_step+1) + ')'
-    return cast
+   cast = ""
+   extend_step = 0
+   if l.is_bv_constant() or l.is_symbol or l.is_function_application() or l.is_ite() or l.is_select():
+       cast = "(" + bits_to_utype(l.bv_width()) + ") "
+   elif r.is_bv_constant() or r.is_symbol or r.is_function_application() or r.is_ite() or r.is_select():
+       cast = "(" + bits_to_utype(r.bv_width()) + ") "
+   elif l.is_bv_sext() or l.is_bv_zext():
+       extend_step = l.bv_extend_step()
+   elif r.is_bv_sext() or r.is_bv_zext():
+       extend_step = r.bv_extend_step()
+   else:
+       error(1,l)
+       
+   if extend_step in (8,16,24,32,48,56):
+       cast = '(' + bits_to_utype(extend_step+1) + ')'
+   return cast
 
 def type_to_c(type):
     if type.is_bool_type():
@@ -82,23 +85,28 @@ def type_to_c(type):
     elif type.is_function_type():
         return type_to_c(type.return_type)
     elif type.is_array_type():
-        return 'int' # otherwise store might be unsound, we can always cast afterwards
+        return 'unsigned long' # otherwise store might be unsound, we can always cast afterwards
     elif type.is_string_type():
         return 'string'
     else:
-        error(1)
+        error(0, type)
 
-def convert_helper(symbs,node, cons, op, cast = '', cut_overflow = False):
+def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
     (l, r) = node.args()
-    if cast != '':
-        cast = cast_to_signed(l,r) if cast == 's' else cast_to_unsigned(l,r)
-    if cut_overflow:
-        cons.write('(' + bits_to_utype(node.bv_width()) + ')(')
-    cons.write(cast)
-    convert(symbs,l, cons)
-    cons.write(op + cast)
-    convert(symbs,r, cons)
-    if cut_overflow:
+    cast = ''
+    if cast_sign != '':
+        cast = cast_to_unsigned(l,r) if cast_sign == 'u' else cast_to_signed(l,r)
+
+    if cast == '' or cast_args:
+        cons.write(cast)
+        convert(symbs,l, cons)
+        cons.write(op + cast)
+        convert(symbs,r, cons)
+    else:
+        cons.write(cast  + '(')
+        convert(symbs,l, cons)
+        cons.write(op)
+        convert(symbs,r, cons)
         cons.write(')')
 
 def convert(symbs,node, cons):
@@ -130,11 +138,11 @@ def convert(symbs,node, cons):
     elif node.is_bv_ashr():
         convert_helper(symbs,node, cons, " >> ", 's')
     elif node.is_bv_add():
-        convert_helper(symbs,node, cons, " + ", cut_overflow=True) # Recast on all operations that can exceed value ranges
+        convert_helper(symbs,node, cons, " + ", 'u', False) # Recast result on all operations that can exceed value ranges
     elif node.is_bv_sub():
         convert_helper(symbs,node, cons, " - ")
     elif node.is_bv_mul():
-        convert_helper(symbs,node, cons, " * ", cut_overflow=True)# Recast on all operations that can exceed value ranges
+        convert_helper(symbs,node, cons, " * ", 'u', False)# Recast result on all operations that can exceed value ranges
     elif node.is_bv_udiv() or node.is_bv_sdiv():
         convert_helper(symbs,node, cons, " / ", "s")
     elif node.is_bv_urem() or node.is_bv_srem():
@@ -208,9 +216,11 @@ def convert(symbs,node, cons):
         convert(symbs,n, cons)
     elif node.is_bv_neg():
         (s,) = node.args()
-        base = binary_to_decimal("1" + "0" * (node.bv_width()-1))
-        cons.write(base + ' - ')
+        cast = cast_to_unsigned(s,s)
+        base = binary_to_decimal("1" + "0" * (node.bv_width()))
+        cons.write(cast + base + ' - ' + cast + '(')
         convert(symbs,s,cons)
+        cons.write(')')
     elif node.is_bv_rol():
         rotate_helper(symbs, node, cons, "<<")
     elif node.is_bv_ror():
@@ -292,9 +302,8 @@ def rename_arrays(formula):
     subs = dict()
 
     for sub in formula.args():
-        new_constraints, new_subs = rename_arrays(sub)
-        subs.update(new_subs)
-        subs.update({sub: sub.substitute(subs)}) # Propagate replacements upwards
+        new_formula, new_constraints = rename_arrays(sub)
+        subs.update({sub: new_formula})
         constraints = constraints.union(new_constraints)
 
     if formula.is_store():
@@ -304,7 +313,8 @@ def rename_arrays(formula):
             constraints.add(Equals(old,new))
             subs.update({old : new})
 
-    return constraints, subs
+    formula = formula.substitute(subs)
+    return formula, constraints
 
 def write_to_file(formula, file):
     if type(formula) == list:
@@ -315,14 +325,13 @@ def parse(file_path, check_neg):
     decl_arr, variables, parsed_cons, formula = read_file(file_path)
     clauses = conjunction_to_clauses(formula)
     for clause in clauses:
-        constraints, subs = rename_arrays(clause)
-        #print(subs)
-        clause = clause.substitute(subs)
+        clause, constraints = rename_arrays(clause)
         if len(constraints) > 0:
             print("Added %d new arrays" % len(constraints))
         ldecl_arr = decl_arr
         ldecl_arr.extend(map(lambda c: c.args()[1],constraints))
         clause = And(*constraints, clause) # Make sure to render constraints first
+
         symbs = set()
         tempfile = open('temp.txt', 'w+')
         #try:
@@ -517,16 +526,23 @@ def check_files(file_path, resfile):
         env = reset_env()
         env.enable_infix_notation = True
         #Check number of atoms
-        #print("[*] Check atoms:")
-        #formula = read_file(file_path)[3]
-        #if len(formula.get_atoms()) < 5:
-        #    raise ValueError("Not enough atoms") 
-        #print("[*] Done")
+        print("[*] Check atoms:")
+        formula = read_file(file_path)[3]
+        if len(formula.get_atoms()) < 5:
+            raise ValueError("Not enough atoms") 
+        print("[*] Done")
 
         # Check that everything is understood by the parser
         # and file doesn't get too large
         print("[*] Check parser:")
-        parse(file_path, False)
+        _, _, _, formula = read_file(file_path)
+        clauses = conjunction_to_clauses(formula)
+        for clause in clauses:
+            symbs = set()
+            tempfile = open('temp.txt', 'w+')
+            convert(symbs,clause, tempfile) 
+            print(".",end ="")
+        print("")
         print("[*] Done.")
 
         # Check that satisfiability is easily found
@@ -545,7 +561,6 @@ def check_files(file_path, resfile):
 
     except Exception as e:
         print("Error in " + file_path + ': ' + str(e))
-        #traceback.print_exc()
         return
         
     f = open(resfile, 'a')
@@ -554,7 +569,6 @@ def check_files(file_path, resfile):
 
 if __name__ == '__main__':
     from storm.smt.smt_object import smtObject
-    from storm.runner.z3_python_api import check_satisfiability as cs
     resfile = sys.argv[1]
     for i in range(2, len(sys.argv)):
         main(sys.argv[i], resfile)

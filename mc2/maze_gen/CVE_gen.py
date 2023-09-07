@@ -37,17 +37,17 @@ class Generator:
         logic_def = ""
         if self.array_size != 0:
             logic_def += "#define ARRAY_SIZE %d\n" % self.array_size
-            logic_def += """int* array_store(int* a,int p,int v){
+            logic_def += """unsigned long* array_store(unsigned long a[],int p,int v){
     a[p] = v;
     return a;\n}\n"""
-            logic_def += ("""int array_comp(int* a1, int* a2){
+            logic_def += ("""int array_comp(unsigned long a1[], unsigned long a2[]){
     for(int i = 0; i < ARRAY_SIZE; i++){
     \tif(a1[i] != a2[i]) return 0;
     }
     return 1;\n}\n""")
-            logic_def += ("""void init(int array[]){
+            logic_def += ("""void init(unsigned long array[]){
     for(int i = 0; i < ARRAY_SIZE; i++){
-    \tarray[i] = __VERIFIER_nondet_int();
+    \tarray[i] = __VERIFIER_nondet_ulong();
     }\n}""")
 
         return logic_def

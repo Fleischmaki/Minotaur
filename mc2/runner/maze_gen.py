@@ -5,13 +5,14 @@ GENERATE_CMD = '%s/scripts/generate.sh -o %s %s'
 
 def get_params_from_maze(maze,smt_path = ''):
     params = dict()
-    params['a'], size, params['r'], _, params['t'], params['m'], params['c'], *params['g'],_, params['b'] = maze.split('_')
+    params['a'], size, params['r'], _, *params['t'], params['m'], params['c']= maze.split('percent')[0].split('_')
+    *params['g'],_, params['b'] = maze.split('percent')[1][1:].split('_')
 
     params['w'], params['h'] = map(lambda x:  int(x), size.split('x'))
-    params['c'] = int(params['c'][:-7]) # cut 'percent'
     params['m'] = int(params['m'][1:]) # cut 't'    
     params['r'] = int(params['r'])
     params['g'] = '_'.join(params['g'])
+    params['t'] = '_'.join(params['t'])
     if size == '1x1':
         params['u'] = ''
     if smt_path != '':
@@ -33,7 +34,7 @@ def get_maze_names(params):
               for i in range(min,params['m'] + 1)]
 
 def generate_maze_in_docker(params, index = 0):
-    docker.spawn_docker(1, index, 'gen', cpu=index).wait()
+    docker.spawn_docker(1, index, 'gen').wait()
 
     if params['s'] is not None:
         docker.set_docker_seed(params['s'], index, 'gen').wait()
@@ -78,7 +79,7 @@ def generate_mazes(paramss, outdir):
     commands.wait_for_procs(pipes)
     pipes = []
     for i in range(len(paramss)):
-        docker.copy_docker_output('gen', i, outdir, 'maze')
+        docker.copy_docker_results('gen', i, outdir)
         pipes.append(docker.kill_docker('gen', i))
     commands.wait_for_procs(pipes)
 

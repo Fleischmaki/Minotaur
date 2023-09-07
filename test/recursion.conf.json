@@ -7,7 +7,7 @@
 	"transforms" : 17,
 	"maze_gen" : "container",
 	"tool" : {
-		"cpa" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution", "bddAnalysis", "intervalAnalysis", "smg2.properties"],
+		"cpa" : ["predicateAnalysis-bam-rec", "valueAnalysis-bam-rec", "intervalAnalysis-bam-rec"],
 		"seahorn" : ["pf", "spf", "bpf", "fpcf", "fpf"], 
 		"ultimate" : ["ua","ut","uk","ugc"],
 		"cbmc": [""],
@@ -16,7 +16,6 @@
 		"esbmc": ["", "--incremental-bmc", "--k-induction", "--interval-analysis"]
 	},
 	"parameters" : {
-		"u" : [0,1],
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
 		"w" : {
 			"min" : 4,

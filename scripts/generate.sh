@@ -22,7 +22,7 @@ do
 done
 
 if [ -z ${ALGORITHM+x} ]; then
-    echo "No algorithm selected. Backtracking will be used."
+    echo "NOTE: No algorithm selected. Backtracking will be used."
     ALGORITHM="Backtracking"
 fi
 
