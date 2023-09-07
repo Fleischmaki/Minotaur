@@ -216,9 +216,11 @@ def convert(symbs,node, cons):
         convert(symbs,n, cons)
     elif node.is_bv_neg():
         (s,) = node.args()
-        base = binary_to_decimal("1" + "0" * (node.bv_width()-1))
-        cons.write(base + ' - ')
+        cast = cast_to_unsigned(s,s)
+        base = binary_to_decimal("1" + "0" * (node.bv_width()))
+        cons.write(cast + base + ' - ' + cast + '(')
         convert(symbs,s,cons)
+        cons.write(')')
     elif node.is_bv_rol():
         rotate_helper(symbs, node, cons, "<<")
     elif node.is_bv_ror():
