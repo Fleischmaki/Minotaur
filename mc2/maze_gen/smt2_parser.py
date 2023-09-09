@@ -109,6 +109,11 @@ def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
         convert(symbs,r, cons)
         cons.write(')')
 
+def check_shift_size(node):
+    (_,r) = node.args()
+    if not r.is_bv_constant() or r.constant_value() > node.bv_width():
+        error(1, node)
+
 def convert(symbs,node, cons):
     if cons.tell() > 2**20:
         raise ValueError("Parse result too large") # Avoid file sizes > 1 MB
@@ -134,7 +139,9 @@ def convert(symbs,node, cons):
     elif node.is_bv_ult():
         convert_helper(symbs,node, cons, " < ", 'u')
     elif node.is_bv_lshr():
+        check_shift_size(node)
         convert_helper(symbs,node, cons, " >> ", 'u') # C >> is logical for unsigned, arithmetic for signed
+        check_shift_size(node)
     elif node.is_bv_ashr():
         convert_helper(symbs,node, cons, " >> ", 's')
     elif node.is_bv_add():
@@ -154,6 +161,7 @@ def convert(symbs,node, cons):
     elif node.is_bv_and():
         convert_helper(symbs,node, cons, " & ")
     elif node.is_bv_lshl():
+        check_shift_size(node)
         convert_helper(symbs,node, cons, " << ")
     elif node.is_bv_not():
         (b,) = node.args()
