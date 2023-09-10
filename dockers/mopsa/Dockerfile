@@ -1,0 +1,43 @@
+FROM maze-base
+
+RUN apt-get update && apt-get install -y \
+    opam \
+    llvm \
+    clang \
+    llvm-dev \
+    libclang-dev \
+    libclang-cpp10-dev \
+    libgmp-dev \
+    libmpfr-dev \
+    autoconf \
+    pkg-config \
+&& rm -rf /var/lib/apt/lists/*
+
+USER maze
+WORKDIR /home/maze/tools/
+RUN git clone https://gitlab.com/mopsa/mopsa-analyzer.git
+WORKDIR /home/maze/tools/mopsa-analyzer
+RUN opam init --yes --disable-sandboxing
+RUN eval $(opam env)
+
+RUN sudo apt-get update && sudo apt-get install -y \
+    zlib1g-dev \
+    libc6-i386 \
+&& sudo rm -rf /var/lib/apt/lists/*
+
+RUN opam install --deps-only --with-doc --with-test --yes .
+RUN sudo dpkg --add-architecture i386 
+
+RUN opam config exec ./configure
+RUN make
+RUN make install
+
+ADD svcomp.c /home/maze/tools/mopsa-analyzer/share/mopsa/stubs/c/mopsa/svcomp.c
+
+WORKDIR /home/maze/tools
+ADD run_mopsa.sh /home/maze/tools/run_mopsa.sh
+RUN sudo chmod +x run_mopsa.sh 
+
+ADD get_tcs.py /home/maze/tools/get_tcs.py
+
+WORKDIR /home/maze/workspace/
