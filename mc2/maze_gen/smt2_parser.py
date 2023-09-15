@@ -2,8 +2,7 @@ import re
 import sys, random, os
 from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict
-from pysmt.shortcuts import is_sat, Not, BV, Or, And, FreshSymbol, Equals, write_smtlib, reset_env
-import traceback
+from pysmt.shortcuts import is_sat, Not, BV, Or, And, FreshSymbol, Equals, write_smtlib, get_env, reset_env
 
 def deflatten(args, op):
     x = args[0]
@@ -85,7 +84,7 @@ def type_to_c(type):
     elif type.is_function_type():
         return type_to_c(type.return_type)
     elif type.is_array_type():
-        return 'unsigned long' # otherwise store might be unsound, we can always cast afterwards
+        return 'long' # otherwise store might be unsound, we can always cast afterwards
     elif type.is_string_type():
         return 'string'
     else:
@@ -108,6 +107,32 @@ def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
         cons.write(op)
         convert(symbs,r, cons)
         cons.write(')')
+
+def div_helper(symbs,node,cons):
+    (l,r) = node.args()
+
+    cast = 's'
+    if node.is_bv_udiv() or node.is_bv_urem():
+        cast = 'u'
+
+    convert(symbs, r , cons)
+    cons.write(' == 0 ? ')
+    if node.is_bv_srem() or node.is_bv_urem():
+        convert(symbs, l , cons)
+        operator = '%'
+    else:
+        cons.write('1')
+        operator = '/'
+    cons.write(' : ')
+    convert_helper(symbs, node, cons, operator,cast)
+
+
+def check_shift_size(node):
+    (_,r) = node.args()
+    if not r.is_bv_constant() or r.constant_value() > node.bv_width():
+        error(1, node)
+
+    
 
 def convert(symbs,node, cons):
     if cons.tell() > 2**20:
@@ -134,7 +159,9 @@ def convert(symbs,node, cons):
     elif node.is_bv_ult():
         convert_helper(symbs,node, cons, " < ", 'u')
     elif node.is_bv_lshr():
+        check_shift_size(node)
         convert_helper(symbs,node, cons, " >> ", 'u') # C >> is logical for unsigned, arithmetic for signed
+        check_shift_size(node)
     elif node.is_bv_ashr():
         convert_helper(symbs,node, cons, " >> ", 's')
     elif node.is_bv_add():
@@ -143,10 +170,8 @@ def convert(symbs,node, cons):
         convert_helper(symbs,node, cons, " - ")
     elif node.is_bv_mul():
         convert_helper(symbs,node, cons, " * ", 'u', False)# Recast result on all operations that can exceed value ranges
-    elif node.is_bv_udiv() or node.is_bv_sdiv():
-        convert_helper(symbs,node, cons, " / ", "s")
-    elif node.is_bv_urem() or node.is_bv_srem():
-        convert_helper(symbs,node, cons, " % ", "s")
+    elif node.is_bv_udiv() or node.is_bv_sdiv() or node.is_bv_urem() or node.is_bv_srem():
+        div_helper(symbs,node, cons)
     elif node.is_bv_xor():
         convert_helper(symbs,node, cons, " ^ ")
     elif node.is_bv_or():
@@ -154,6 +179,7 @@ def convert(symbs,node, cons):
     elif node.is_bv_and():
         convert_helper(symbs,node, cons, " & ")
     elif node.is_bv_lshl():
+        check_shift_size(node)
         convert_helper(symbs,node, cons, " << ")
     elif node.is_bv_not():
         (b,) = node.args()
@@ -234,6 +260,8 @@ def convert(symbs,node, cons):
         constant =  "1" if node.is_bool_constant(True) else "0"
         cons.write(constant)
     elif node.is_symbol():
+        if str(node) == 'c':
+            node = FreshSymbol(typename=node.get_type())
         node = clean_string(str(node))
         cons.write(node)
         symbs.add(node)
@@ -526,11 +554,11 @@ def check_files(file_path, resfile):
         env = reset_env()
         env.enable_infix_notation = True
         #Check number of atoms
-        print("[*] Check atoms:")
-        formula = read_file(file_path)[3]
-        if len(formula.get_atoms()) < 5:
-            raise ValueError("Not enough atoms") 
-        print("[*] Done")
+        #print("[*] Check atoms:")
+        #formula = read_file(file_path)[3]
+        #if len(formula.get_atoms()) < 5:
+        #    raise ValueError("Not enough atoms") 
+        #print("[*] Done")
 
         # Check that everything is understood by the parser
         # and file doesn't get too large

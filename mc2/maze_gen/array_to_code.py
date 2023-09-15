@@ -168,7 +168,7 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     for k in range(size):
         function_declarations += function_format_declaration.format(k)
     f.write(function_declarations)
-    f.write("""\nvoid func_start(){{ func_0(); }}\n""")
+    f.write("""\nvoid func_start(){ func_0(); }\n""")
     f.write("""void func_bug(){{ {} }}\n""".format(bug))
     f.write(logic_def)
 
