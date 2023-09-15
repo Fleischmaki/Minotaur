@@ -2,13 +2,13 @@ import os
 from ..runner import *
 from ..maze_gen import smt2_parser as sp
 
-def main(maze_path,tool,variant,seeddir, outdir,timeout):
+def main(maze_path,tool,variant,seeddir, outdir,timeout,gen):
     params = get_params(maze_path,seeddir)
     commands.run_cmd('mkdir -p %s' % outdir)
     commands.run_cmd("mkdir -p %s" % os.path.join(outdir,'seeds'))
     commands.run_cmd("mkdir -p %s" % os.path.join(outdir,'runs'))
 
-    if not check_if_tp(tool, variant, params, outdir, timeout):
+    if not check_if_tp(tool, variant, params, outdir, timeout,gen):
         print('ERROR: Original not maze not a fn')
         return
     mutant = os.path.join(outdir,'smt', 'mutant_%d.smt2' % (params['m'] - 1))
@@ -23,7 +23,7 @@ def main(maze_path,tool,variant,seeddir, outdir,timeout):
 
         seed = os.path.join(outdir, 'seeds', str(half) + ('-first' if keep_first_half else '-second'))
         set_seed(params,seed,new_clauses)
-        misses_bug = check_if_tp(tool, variant, params, outdir,timeout)
+        misses_bug = check_if_tp(tool, variant, params, outdir,timeout,gen)
 
         commands.run_cmd('rm -r %s' % os.path.join(outdir, 'src'))
         if misses_bug:
@@ -42,7 +42,7 @@ def main(maze_path,tool,variant,seeddir, outdir,timeout):
         clause = clauses.pop(pos)
     
         set_seed(params,seed,clauses)
-        misses_bug = check_if_tp(tool,variant,params, outdir,timeout)
+        misses_bug = check_if_tp(tool,variant,params, outdir,timeout,gen)
         commands.run_cmd('rm -r %s' % os.path.join(outdir, 'src'))
         
         if misses_bug:
@@ -52,11 +52,13 @@ def main(maze_path,tool,variant,seeddir, outdir,timeout):
         
         
     set_seed(params,seed,clauses)
-    maze_gen.generate_mazes([params],outdir)
-        
+    if gen == 'container':
+        maze_gen.generate_mazes([params],outdir)
+    else:
+        maze_gen.generate_maze(params, outdir)    
 
-def check_if_tp(tool,variant,params, outdir, timeout):
-    docker.run_mc(tool,variant, 'min', params, outdir,timeout=timeout)
+def check_if_tp(tool,variant,params, outdir, timeout,gen):
+    docker.run_mc(tool,variant, 'min', params, outdir,timeout=timeout, gen=gen)
     sat = is_fn(outdir)
     return sat
 
@@ -100,14 +102,16 @@ def set_fake_params(params):
 def load(argv):
     maze = argv[0]
     tool = argv[1]
-    if len(argv) == 6:
+    if len(argv) == 7:
         variant = argv[2]
         seeddir = argv[3]
         outdir = argv[4]
         timeout = argv[5]
+        gen = argv[6]
     else:
         variant = ''
         seeddir = argv[2]
         outdir = argv[3]
         timeout = argv[4]
-    main(maze, tool, variant,seeddir,outdir,timeout)
+        gen = argv[5]
+    main(maze, tool, variant,seeddir,outdir,timeout,gen)
