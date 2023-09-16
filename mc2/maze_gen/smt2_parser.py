@@ -2,7 +2,7 @@ import re
 import sys, random, os
 from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict
-from pysmt.shortcuts import is_sat, Not, BV, Or, And, FreshSymbol, Equals, write_smtlib, get_env, reset_env
+from pysmt.shortcuts import *
 
 def deflatten(args, op):
     x = args[0]
@@ -38,43 +38,27 @@ def bits_to_utype(n):
     return "unsigned " + bits_to_type(n)
 
 def cast_to_signed(l, r):
-   cast = ""
-   extend_step = 0
-   if l.is_bv_constant() or l.is_symbol or l.is_function_application() or l.is_ite() or l.is_select():
-       cast = "(" + bits_to_type(l.bv_width()) + ") "
-   elif r.is_bv_constant() or r.is_symbol or r.is_function_application() or r.is_ite() or r.is_select():
-       cast = "(" + bits_to_type(r.bv_width()) + ") "
-   elif l.is_bv_sext() or l.is_bv_zext():
-       extend_step = l.bv_extend_step()
-   elif r.is_bv_sext() or r.is_bv_zext():
-        extend_step = r.bv_extend_step()
-   else:
-       error(1,l,r)
-       
-   if extend_step in (8,16,24,32,48,56):
-       cast = '(' + bits_to_type(extend_step+1) + ')'
-   return cast
+   return '(' + bits_to_type(get_bv_width(l,r)) + ') '
 
-#def get_cast(node,sign):
-#    return '(' + ('unsigned ' if sign == 'u' else '') + str(bits_to_type(node.bv_width())) +')'
-    
 def cast_to_unsigned(l, r):
-   cast = ""
-   extend_step = 0
-   if l.is_bv_constant() or l.is_symbol or l.is_function_application() or l.is_ite() or l.is_select():
-       cast = "(" + bits_to_utype(l.bv_width()) + ") "
-   elif r.is_bv_constant() or r.is_symbol or r.is_function_application() or r.is_ite() or r.is_select():
-       cast = "(" + bits_to_utype(r.bv_width()) + ") "
-   elif l.is_bv_sext() or l.is_bv_zext():
-       extend_step = l.bv_extend_step()
-   elif r.is_bv_sext() or r.is_bv_zext():
-       extend_step = r.bv_extend_step()
-   else:
-       error(1,l)
+   return '(' + bits_to_utype(get_bv_width(l,r)) + ') '
+
+def get_bv_width(l, r):
+    extend_step = 0
+    if l.is_bv_constant() or l.is_symbol or l.is_function_application() or l.is_ite() or l.is_select():
+        return l.bv_width()
+    elif r.is_bv_constant() or r.is_symbol or r.is_function_application() or r.is_ite() or r.is_select():
+        return r.bv_width()
+    elif l.is_bv_sext() or l.is_bv_zext():
+        extend_step = l.bv_extend_step()
+    elif r.is_bv_sext() or r.is_bv_zext():
+        extend_step = r.bv_extend_step()
+    else:
+        error(1,l)
        
-   if extend_step in (8,16,24,32,48,56):
-       cast = '(' + bits_to_utype(extend_step+1) + ')'
-   return cast
+    if extend_step in (8,16,24,32,48,56):
+        return extend_step + 1
+    return extend_step
 
 def type_to_c(type):
     if type.is_bool_type():
@@ -110,26 +94,32 @@ def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
 
 def div_helper(symbs,node,cons):
     (l,r) = node.args()
-
+    width = get_bv_width(l,r)
     cast = 's'
     if node.is_bv_udiv() or node.is_bv_urem():
         cast = 'u'
 
     convert(symbs, r , cons)
-    cons.write(' == 0 ? ')
+    cons.write(' == 0 ? (')
+    
+    operator = '/'
     if node.is_bv_srem() or node.is_bv_urem():
         convert(symbs, l , cons)
         operator = '%'
+    elif node.is_bv_udiv():      
+        cons.write(str(binary_to_decimal("1" * width)))
     else:
-        cons.write('1')
-        operator = '/'
-    cons.write(' : ')
+        cons.write('(')
+        convert(symbs,l,cons)
+        cons.write("*(-1) &" + str(binary_to_decimal("1" + "0" * (width-1))) + ') <= 0 ? 1 : ')
+        convert(symbs,l,cons)
+    cons.write(') : ')
     convert_helper(symbs, node, cons, operator,cast)
 
 
 def check_shift_size(node):
-    (_,r) = node.args()
-    if not r.is_bv_constant() or r.constant_value() > node.bv_width():
+    (l,r) = node.args()
+    if not r.is_bv_constant() or r.constant_value() > get_bv_width(l,r):
         error(1, node)
 
     
@@ -243,7 +233,7 @@ def convert(symbs,node, cons):
     elif node.is_bv_neg():
         (s,) = node.args()
         cast = cast_to_unsigned(s,s)
-        base = binary_to_decimal("1" + "0" * (node.bv_width()))
+        base = binary_to_decimal("1" + "0" * (s.bv_width()))
         cons.write(cast + base + ' - ' + cast + '(')
         convert(symbs,s,cons)
         cons.write(')')
@@ -450,6 +440,7 @@ class Graph:
 def independent_formulas(conds, variables):
     formula = Graph()
     for cond in conds:
+        formula.add_edge(cond,cond)
         vars = extract_vars(cond, variables)
         for other in conds:
             if len(vars.keys() & extract_vars(other, variables).keys()) > 0:
