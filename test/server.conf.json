@@ -1,19 +1,20 @@
 {
 	"verbosity": "bug",
-	"repeats" : 500,
+	"repeats" : 100,
 	"duration" : 1,
-	"workers" : 119,
+	"workers" : 120,
 	"memory" : 4,
-	"transforms" : 17,
+	"transforms" : 15,
 	"maze_gen" : "container",
 	"tool" : {
-		"cpa" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution", "bddAnalysis", "intervalAnalysis", "smg2.properties"],
+		"cpa" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution", "bddAnalysis", "invariantGeneration", "smg2","bmc"],
 		"seahorn" : ["pf", "spf", "bpf", "fpcf", "fpf"], 
 		"ultimate" : ["ua","ut","uk","ugc"],
 		"cbmc": [""],
 		"symbiotic": [""],
 		"2ls": ["", "--context-sensitive", "--inline", "--incremental-bmc", "--k-induction"],
-		"esbmc": ["", "--incremental-bmc", "--k-induction", "--interval-analysis"]
+		"esbmc": ["", "--incremental-bmc", "--k-induction", "--interval-analysis"],
+		"mopsa": ["default", "cell-itv", "cell-itv-congr", "cell-pack-rel-itv.json", "cell-itv-powerset", "cell-itv-zero", "cell-itv-congr"]
 	},
 	"parameters" : {
 		"u" : [0,1],
