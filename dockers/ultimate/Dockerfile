@@ -25,4 +25,9 @@ ADD run_ultimate.sh /home/maze/tools/run_ultimate.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD unreach.prp /home/maze/workspace/unreach.prp
 
+RUN sudo apt-get update && sudo apt-get install -y \
+    g++ \
+&& sudo rm -rf /var/lib/apt/lists/*
+
+
 WORKDIR /home/maze/workspace

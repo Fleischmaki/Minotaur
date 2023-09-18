@@ -22,7 +22,7 @@ export PATH=$PATH:$UDIR
 
 # Create dummy file to indicate running start
 touch $WORKDIR/.start
-timeout $2m $UDIR/Ultimate -tc $UDIR/config/${3}Reach.xml -s $UDIR/config/svcomp-Reach-64bit-${3}_$4.epf -i /host/bug.c -i $1 &> $OUTFILE
+timeout $2m $UDIR/Ultimate -tc $UDIR/config/${3}Reach.xml -s $UDIR/config/svcomp-Reach-64bit-${3}_$4.epf -i $1 &> $OUTFILE
 touch $WORKDIR/.end
 
 # Cleanup outputs
