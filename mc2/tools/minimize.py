@@ -11,6 +11,12 @@ def main(maze_path,tool,variant,seeddir, outdir,timeout,gen):
     if not check_if_tp(tool, variant, params, outdir, timeout,gen):
         print('ERROR: Original not maze not a fn')
         return
+
+    if not 'u' in params.keys():
+        params.update({'u':''})
+        if not check_if_tp(tool, variant ,params, outdir, timeout, gen):
+            params.pop('u', None) 
+
     mutant = os.path.join(outdir,'smt', 'mutant_%d.smt2' % (params['m'] - 1))
     clauses = get_clauses(mutant)
 
