@@ -3,9 +3,9 @@
 # Arg1: Target Source code
 # Arg2: Timeout (in minutes)
 # Arg3: Variant 
+# Arg4: Config
 
 sudo chown -R maze:maze $1
-sudo chown -R maze:maze /home/maze/tools/$3
 
 WORKDIR=/home/maze/workspace
 
@@ -14,12 +14,15 @@ OUTDIR=$WORKDIR/outputs
 OUTFILE=$OUTDIR/res
 
 mkdir -p $OUTDIR
+UDIR="/home/maze/tools/U${3}-linux"
+sudo chown -R maze:maze $UDIR
 
-export PATH=$PATH:/home/maze/tools/$3
+
+export PATH=$PATH:$UDIR 
 
 # Create dummy file to indicate running start
 touch $WORKDIR/.start
-timeout $2m /home/maze/tools/$3/Ultimate.py --spec unreach.prp --witness-dir $OUTDIR --architecture 64bit --file $1 &> $OUTFILE
+timeout $2m $UDIR/Ultimate -tc $UDIR/config/${3}Reach.xml -s $UDIR/config/svcomp-Reach-64bit-${3}_$4.epf -i /host/bug.c -i $1 &> $OUTFILE
 touch $WORKDIR/.end
 
 # Cleanup outputs
