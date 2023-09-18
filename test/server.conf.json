@@ -6,15 +6,35 @@
 	"memory" : 4,
 	"transforms" : 15,
 	"maze_gen" : "container",
-	"tool" : {
-		"cpa" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution", "bddAnalysis", "invariantGeneration", "smg2","bmc"],
-		"seahorn" : ["pf", "spf", "bpf", "fpcf", "fpf"], 
-		"ultimate" : ["ua","ut","uk","ugc"],
-		"cbmc": [""],
-		"symbiotic": [""],
-		"2ls": ["", "--context-sensitive", "--inline", "--incremental-bmc", "--k-induction"],
-		"esbmc": ["", "--incremental-bmc", "--k-induction", "--interval-analysis"],
-		"mopsa": ["default", "cell-itv", "cell-itv-congr", "cell-pack-rel-itv.json", "cell-itv-powerset", "cell-itv-zero", "cell-itv-congr"]
+	"tool" : { 
+		"cpa" : {
+			"variant" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution", "bddAnalysis", "invariantGeneration", "smg2","bmc"]
+		},
+		"seahorn" : {
+			"variant" : ["pf", "spf", "bpf", "fpcf", "fpf"],
+			"toggle" : ["--crab --crab-track=mem", "--bv-chc"],
+			"choose" : {
+				"--bmc" : ["-none","-mono","-path","-opsem"]
+			}
+		},
+		"ultimate" : {
+			"variant" : ["Automizer Default","Taipan Default","Kojak Default","GemCutter Default", "Automizer Bitvector","Taipan Bitvector","Kojak Bitvector","GemCutter Bitvector"]
+		},
+		"cbmc": {
+			"variant" : [""]
+		},
+		"symbiotic": {
+			"variant" : [""]
+		},
+		"2ls": {
+			"variant" : ["", "--context-sensitive", "--inline", "--incremental-bmc", "--k-induction"]
+		},
+		"esbmc": {
+			"variant" : ["", "--incremental-bmc", "--k-induction", "--interval-analysis"]
+		},
+		"mopsa": {
+			"variant" : ["default", "cell-itv", "cell-itv-congr", "cell-pack-rel-itv.json", "cell-itv-powerset", "cell-itv-zero", "cell-itv-congr"]
+		}
 	},
 	"parameters" : {
 		"u" : [0,1],
