@@ -43,7 +43,7 @@ def generate_maze_in_docker(params, index = 0):
     
     cmd = './Minotaur/scripts/generate.sh ' + param_string
 
-    return docker.spawn_cmd_in_docker(docker.get_container('gen','', index),  cmd)
+    return docker.spawn_cmd_in_docker(docker.get_container('gen','','', index),  cmd)
 
 def get_string_from_params(params):
     param_string = '-o ' + 'outputs '
