@@ -98,9 +98,18 @@ def get_targets(conf):
         params = get_random_params(conf)
         mazes = maze_gen.get_maze_names(params)
         for tool in conf['tool'].keys():
-            variant = random.choice(conf['tool'][tool])
+            variant  = random.choice(conf['tool'][tool]['variant'])
+            flags = ""
+            if 'toggle' in conf['tool'][tool].keys():
+                for opt in conf['tool'][tool]['toggle']:
+                    if random.randint(0,1) == 1:
+                        flags += opt + ' '
+            if 'choose' in conf['tool'][tool].keys():
+                for flag, options in conf['tool'][tool]['choose'].items():
+                    chosen = random.choice(options)
+                    flags += flag + chosen + ' '
             for j in range(len(mazes)):
-                targets.append((mazes[j], tool,i*params['m'] + j,params, variant))
+                targets.append((mazes[j], tool,i*params['m'] + j,params, variant, flags ))
     return targets # Or just set greater values for transforms 
 
 def fetch_works(conf,targets):
@@ -109,7 +118,7 @@ def fetch_works(conf,targets):
     for i in range(conf['workers']):
         if len(targets) <= 0:
             break
-        _, tool, id, params, _ = t = targets.pop(0)
+        _, tool, id, params, _, _ = t = targets.pop(0)
         works.append(t)
         if id % (int(conf['transforms'])) == 0 and tool == list(conf['tool'].keys())[0]:
             if conf['maze_gen'] == 'container':
@@ -129,35 +138,35 @@ def get_maze_dir(maze=''):
 def spawn_containers(conf, works):
     procs = []
     for i in range(len(works)):
-        maze, tool, id, _, variant = works[i]
-        docker.spawn_docker(conf['memory'], id, tool,i, variant).wait()
+        maze, tool, id, _, variant, flags  = works[i]
+        docker.spawn_docker(conf['memory'], id, tool,i, variant, flags ).wait()
 
     procs = []
     for i in range(len(works)):
-        maze, tool, id, _, variant = works[i]
+        maze, tool, id, _, variant, flags  = works[i]
         # Copy maze in the container
-        procs.append(docker.set_docker_maze(get_maze_dir(maze), id,tool, variant))
+        procs.append(docker.set_docker_maze(get_maze_dir(maze), id,tool, variant, flags ))
     commands.wait_for_procs(procs)
     time.sleep(10)
 
 def run_tools(conf,works):
     duration = conf['duration']
     for i in range(len(works)):
-        _, tool, id, _, variant = works[i]
-        docker.run_docker(duration, tool, id, variant)
+        _, tool, id, _, variant, flags  = works[i]
+        docker.run_docker(duration, tool, id, variant, flags )
     time.sleep(duration*60 + 15) 
 
 def store_outputs(conf, out_dir, works):
     for i in range(len(works)):
-        maze, tool, id, params, variant = works[i]
-        docker.collect_docker_results(tool, id, variant)
+        maze, tool, id, params, variant, flags  = works[i]
+        docker.collect_docker_results(tool, id, variant, flags)
     time.sleep(10)
 
     for i in range(len(works)):
-        maze, tool, id, params, variant = w = works[i]
+        maze, tool, id, params, variant, flags = w = works[i]
         out_path = os.path.join(out_dir, tool, maze)
         os.system('mkdir -p %s' % out_path)
-        docker.copy_docker_results(tool, id, out_path, variant)
+        docker.copy_docker_results(tool, id, out_path, variant, flags)
 
         # Write file details into summary
         runtime = 'notFound'
@@ -172,7 +181,7 @@ def store_outputs(conf, out_dir, works):
     time.sleep(5)
 
 def write_summary(conf,out_dir, target,tag,runtime):
-    maze, tool, id, params, variant = target
+    maze, tool, id, params, variant, flags = target
     out_path = os.path.join(out_dir, tool, maze)
     if (conf['verbosity'] == 'bug' or conf['verbosity'] == 'bug_only') and tag not in ('fp', 'fn'):
         commands.run_cmd(REMOVE_CMD % out_path)
@@ -180,7 +189,7 @@ def write_summary(conf,out_dir, target,tag,runtime):
             return
     offset = 0 if 'keepId' in params['t'] else 1
     with open(out_dir + '/summary.csv', 'a') as f:
-        f.write(tool + ',' + variant + ',' + str(id % conf['transforms'] + offset) + ',')
+        f.write(tool + ',' + variant + ',' + flags + ',' + str(id % conf['transforms'] + offset) + ',')
         for key, value in params.items():
             if key == 'g':
                 f.write(str(params['s'].split('/')[-1])[:-5] + ',')
@@ -196,7 +205,7 @@ def write_summary(conf,out_dir, target,tag,runtime):
 
 def write_summary_header(conf, out_dir):
     with open(out_dir + '/summary.csv', 'w') as f:
-        f.write('tool,variant,id,')
+        f.write('tool,variant, flags ,id,')
         for key in conf['parameters'].keys():
             f.write(str(key)+',')
         f.write('runtime,status\n')
@@ -205,8 +214,8 @@ def write_summary_header(conf, out_dir):
 def kill_containers(works):
     procs = []
     for i in range(len(works)):
-        _, tool, id, _, variant = works[i]
-        procs.append(docker.kill_docker(tool,id, variant))
+        _, tool, id, _, variant, flags  = works[i]
+        procs.append(docker.kill_docker(tool,id, variant, flags ))
     commands.wait_for_procs(procs)
     time.sleep(10)
 
