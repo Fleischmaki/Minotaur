@@ -29,7 +29,7 @@ def main(dest_dir):
     elif ('Ultimate proved your program to be correct' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'fn')
 
-    elif ('Killed by' in resfile): 
+    elif (len(resfile) == 0): 
         save_tc(dest_dir, respath, start_time, end_time, 'to')
 
     # Crashes/Errors
