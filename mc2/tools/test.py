@@ -107,7 +107,8 @@ def get_targets(conf):
             if 'choose' in conf['tool'][tool].keys():
                 for flag, options in conf['tool'][tool]['choose'].items():
                     chosen = random.choice(options)
-                    flags += flag + chosen + ' '
+                    if chosen != 0:
+                        flags += flag + chosen + ' '
             for j in range(len(mazes)):
                 targets.append((mazes[j], tool,i*params['m'] + j,params, variant, flags ))
     return targets # Or just set greater values for transforms 

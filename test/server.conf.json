@@ -27,10 +27,20 @@
 			"variant" : [""]
 		},
 		"2ls": {
-			"variant" : ["", "--context-sensitive", "--inline", "--incremental-bmc", "--k-induction"]
+			"variant" : ["", "--inline", "--incremental-bmc", "--k-induction", "--preconditions", "--preconditions --suficient"],
+			"toggle" : ["--context-sensitive"],
+			"choose" : {
+				"" : ["--intervals", "--octagons", "--equalities", "--havoc", "--heap", "--heap-intervals", "--heap-zones", "--arrays"]	
+			}
 		},
 		"esbmc": {
-			"variant" : ["", "--incremental-bmc", "--k-induction", "--interval-analysis"]
+			"variant" : [""],
+			"toggle" : ["--initialize-nondet-variables", "--incremental-bmc", "--interval-analysis", "--smt-during-symex","--array-flattener"],
+			"choose" : {
+				"" : ["--z3", "--boolector", "--cvc4", "--mathsat", "--yices", "--bitwuzla", "--bv"],
+				"--tuple" : [0,"-node-flattener", "-sym-flattener"],
+				"--k-induction": [0,""," --bidirectional"]
+			}
 		},
 		"mopsa": {
 			"variant" : ["default", "cell-itv", "cell-itv-congr", "cell-pack-rel-itv.json", "cell-itv-powerset", "cell-itv-zero", "cell-itv-congr"]
