@@ -31,7 +31,7 @@ Symbiotic | [open](https://github.com/staticafi/symbiotic/issues/246)
 CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1130)
 CPA - Intervallanalysis | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1132#note_1544904422)
 Symbiotic | [open](https://github.com/staticafi/symbiotic/issues/247)
-Ultimate | [open](https://github.com/ultimate-pa/ultimate/issues/646)
+Ultimate | [fixed](https://github.com/ultimate-pa/ultimate/issues/646)
 ## About
 ```mermaid
 flowchart BT
