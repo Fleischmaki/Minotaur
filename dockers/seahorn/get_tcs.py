@@ -30,9 +30,9 @@ def main(dest_dir):
 
     
     ## Crashes/Errors
-    #if ('UNKNOWN' in resfile):
-    #    save_tc(dest_dir, respath, start_time, end_time, i, 'uk')
-    #    counter_uk = counter_uk + 1
+    if ('ERROR' in resfile):
+        save_tc(dest_dir, respath, start_time, end_time, 'er')
+        counter_uk = counter_uk + 1
 
     # Timeout
     else: 
