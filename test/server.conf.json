@@ -12,9 +12,10 @@
 		},
 		"seahorn" : {
 			"variant" : ["pf", "spf", "bpf", "fpcf", "fpf"],
-			"toggle" : ["--crab --crab-track=mem", "--bv-chc"],
+			"toggle" : ["--bv-chc"],
 			"choose" : {
-				"--bmc" : ["-none","-mono","-path","-opsem"]
+				"--bmc" : ["-none","-mono","-path","-opsem"],
+				"--crab --crab-track=mem --crab-dom=" : [0, "int", "ric","term-int", "dis-int", "term-dis-int","zones","soct","rtz","w-int"]
 			}
 		},
 		"ultimate" : {
