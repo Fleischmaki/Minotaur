@@ -27,10 +27,9 @@ def main(dest_dir):
     elif ('VERIFICATION SUCCESSFUL' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'fn')
 
-    #elif ('UNKNOWN' in resfile):
-    #    save_tc(dest_dir, respath, start_time, end_time, 'uk')
-    # Timeout
-    elif ('ERROR' in resfile):  # Killed by 15
+    elif ('VERIFICATION INCONCLUSIVE' in resfile):
+        save_tc(dest_dir, respath, start_time, end_time, 'uk')
+    elif ('ERROR' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'er')
     else:
         save_tc(dest_dir, respath, start_time, end_time, 'to')
