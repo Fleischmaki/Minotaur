@@ -20,7 +20,10 @@ def error(flag, *nodes):
 def binary_to_decimal(binary):
     if len(binary) > 64:
         error(1, binary)
-    return str(BV(binary).constant_value())
+    res = str(BV(binary).constant_value())
+    if len(binary) > 64:
+        res += 'ULL'
+    return res
 
 def bits_to_type(n):
     if n <= 8:
@@ -111,28 +114,6 @@ def div_helper(symbs,node,cons):
     cons.write(',')
     convert(symbs,r,cons)
     cons.write(')')
-    # width = get_bv_width(l,r)
-    # cast = 's'
-    # if node.is_bv_udiv() or node.is_bv_urem():
-    #     cast = 'u'
-
-    # convert(symbs, r , cons)
-    # cons.write(' == 0 ? (')
-    
-    # operator = '/'
-    # if node.is_bv_srem() or node.is_bv_urem():
-    #     convert(symbs, l , cons)
-    #     operator = '%'
-    # elif node.is_bv_udiv():      
-    #     cons.write(str(binary_to_decimal("1" * width)))
-    # else:
-    #     cons.write('(')
-    #     convert(symbs,l,cons)
-    #     cons.write("*(-1) &" + str(binary_to_decimal("1" + "0" * (width-1))) + ') <= 0 ? 1 : ')
-    #     convert(symbs,l,cons)
-    # cons.write(') : ')
-    # convert_helper(symbs, node, cons, operator,cast)
-
 
 def check_shift_size(node):
     (l,r) = node.args()
@@ -260,7 +241,7 @@ def convert(symbs,node, cons):
     elif node.is_bv_constant():
         constant =  "(" + bits_to_utype(node.bv_width()) + ") " + str(node.constant_value())
         if node.bv_width() > 32:
-            constant += "UL"
+            constant += "ULL"
         cons.write(constant)
     elif node.is_bool_constant():
         constant =  "1" if node.is_bool_constant(True) else "0"
