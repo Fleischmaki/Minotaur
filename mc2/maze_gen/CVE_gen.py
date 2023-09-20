@@ -34,7 +34,34 @@ class Generator:
             random.shuffle(self.insert)
             
     def get_logic_def(self):
-        logic_def = ""
+        logic_def = """long sdiv(int bv_width, long a,long b){
+    if (b != 0) {
+    return a/b;
+    }
+    if (a == 0 || a & (1 << (bv_width-1)) > 0) {
+    \treturn 1;
+    }
+    return a;
+}\n"""
+        logic_def += """unsigned long udiv(int bv_width, unsigned long a,unsigned long b){
+    if (b != 0) {
+    return a/b;
+    }
+    return (1 << bv_width) - 1;
+}\n""" 
+        logic_def += """long srem(long a,long b){
+    if (b != 0) {
+    return a % b;
+    }
+    return a;
+}\n"""
+        logic_def += """unsigned long urem(unsigned long a,unsigned long b){
+    if (b != 0) {
+    return a % b;
+    }
+    return a;
+}\n"""
+
         if self.array_size != 0:
             logic_def += "#define ARRAY_SIZE %d\n" % self.array_size
             logic_def += """long* array_store(long a[],int p,long v){

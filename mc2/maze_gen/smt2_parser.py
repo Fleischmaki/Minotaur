@@ -94,27 +94,44 @@ def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
 
 def div_helper(symbs,node,cons):
     (l,r) = node.args()
-    width = get_bv_width(l,r)
-    cast = 's'
-    if node.is_bv_udiv() or node.is_bv_urem():
-        cast = 'u'
+    if node.is_bv_udiv():
+        cons.write('udiv(%d,' % get_bv_width(l,r))
+        cast = cast_to_unsigned(l,r)
+    elif node.is_bv_sdiv():
+        cons.write('sdiv(%d,' % get_bv_width(l,r))
+        cast = cast_to_signed(l,r)
+    elif node.is_bv_urem():
+        cons.write('urem(')
+        cast = cast_to_unsigned(l,r)
+    elif node.is_bv_srem():
+        cons.write('srem(')
+        cast = cast_to_signed(l,r)
+    cons.write('')
+    convert(symbs,l,cons)
+    cons.write(',')
+    convert(symbs,r,cons)
+    cons.write(')')
+    # width = get_bv_width(l,r)
+    # cast = 's'
+    # if node.is_bv_udiv() or node.is_bv_urem():
+    #     cast = 'u'
 
-    convert(symbs, r , cons)
-    cons.write(' == 0 ? (')
+    # convert(symbs, r , cons)
+    # cons.write(' == 0 ? (')
     
-    operator = '/'
-    if node.is_bv_srem() or node.is_bv_urem():
-        convert(symbs, l , cons)
-        operator = '%'
-    elif node.is_bv_udiv():      
-        cons.write(str(binary_to_decimal("1" * width)))
-    else:
-        cons.write('(')
-        convert(symbs,l,cons)
-        cons.write("*(-1) &" + str(binary_to_decimal("1" + "0" * (width-1))) + ') <= 0 ? 1 : ')
-        convert(symbs,l,cons)
-    cons.write(') : ')
-    convert_helper(symbs, node, cons, operator,cast)
+    # operator = '/'
+    # if node.is_bv_srem() or node.is_bv_urem():
+    #     convert(symbs, l , cons)
+    #     operator = '%'
+    # elif node.is_bv_udiv():      
+    #     cons.write(str(binary_to_decimal("1" * width)))
+    # else:
+    #     cons.write('(')
+    #     convert(symbs,l,cons)
+    #     cons.write("*(-1) &" + str(binary_to_decimal("1" + "0" * (width-1))) + ') <= 0 ? 1 : ')
+    #     convert(symbs,l,cons)
+    # cons.write(') : ')
+    # convert_helper(symbs, node, cons, operator,cast)
 
 
 def check_shift_size(node):
