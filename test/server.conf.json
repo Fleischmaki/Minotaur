@@ -1,5 +1,5 @@
 {
-	"verbosity": "bug",
+	"verbosity": "all",
 	"repeats" : 100,
 	"duration" : 1,
 	"workers" : 120,
@@ -28,23 +28,23 @@
 			"variant" : [""]
 		},
 		"2ls": {
-			"variant" : ["", "--inline", "--incremental-bmc", "--k-induction", "--preconditions", "--preconditions --suficient"],
+			"variant" : ["", "--inline", "--incremental-bmc", "--k-induction", "--preconditions", "--preconditions --sufficient"],
 			"toggle" : ["--context-sensitive"],
 			"choose" : {
-				"" : ["--intervals", "--octagons", "--equalities", "--havoc", "--heap", "--heap-intervals", "--heap-zones", "--arrays"]	
+				"" : ["--intervals", "--octagons", "--equalities", "--havoc", "--heap", "--heap --intervals", "--heap --zones", "--arrays"]	
 			}
 		},
 		"esbmc": {
 			"variant" : [""],
 			"toggle" : ["--initialize-nondet-variables", "--incremental-bmc", "--interval-analysis", "--smt-during-symex","--array-flattener"],
 			"choose" : {
-				"" : ["--z3", "--boolector", "--cvc4", "--mathsat", "--yices", "--bitwuzla", "--bv"],
+				"" : ["--z3", "--boolector", "--cvc", "--mathsat", "--yices", "--bitwuzla", "--bv"],
 				"--tuple" : [0,"-node-flattener", "-sym-flattener"],
 				"--k-induction": [0,""," --bidirectional"]
 			}
 		},
 		"mopsa": {
-			"variant" : ["default", "cell-itv", "cell-itv-congr", "cell-pack-rel-itv.json", "cell-itv-powerset", "cell-itv-zero", "cell-itv-congr"]
+			"variant" : ["default", "cell-itv", "cell-itv-congr", "cell-pack-rel-itv", "cell-itv-powerset", "cell-itv-zero", "cell-itv-congr"]
 		}
 	},
 	"parameters" : {
