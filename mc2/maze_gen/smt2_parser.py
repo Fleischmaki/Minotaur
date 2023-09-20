@@ -195,13 +195,12 @@ def convert(symbs,node, cons):
     elif node.is_bv_sext():
         extend_step = node.bv_extend_step()
         (l,) = node.args()
-        cons.write('(' + bits_to_type(extend_step) + ')')
+        cons.write('(' + bits_to_type(extend_step + l.bv_width()) + ')')
         convert(symbs,l, cons)
     elif node.is_bv_zext():
         extend_step = node.bv_extend_step()
         (l,) = node.args()
-        if extend_step in (8,16,24,32,48,56):
-            cons.write('(' + bits_to_utype(extend_step) + ')')
+        cons.write('(' + bits_to_utype(extend_step + l.bv_width()) + ')')
         convert(symbs,l, cons)
     elif node.is_bv_concat():
         (l,r) = node.args()
