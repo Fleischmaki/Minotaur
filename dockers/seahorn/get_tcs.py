@@ -23,7 +23,7 @@ def main(dest_dir):
 
     # False negatives
     if ('unsat' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time, 'uk') # For seahorn, unknown = unsat...
+        save_tc(dest_dir, respath, start_time, end_time, 'fn') # For seahorn, unknown = unsat...
     # True positives
     elif ('sat' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'tp')
