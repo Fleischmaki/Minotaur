@@ -72,8 +72,8 @@ def type_to_c(type):
         return type_to_c(type.return_type)
     elif type.is_array_type():
         return 'long' # otherwise store might be unsound, we can always cast afterwards
-    elif type.is_string_type():
-        return 'string'
+    # elif type.is_string_type():
+    #     return 'string'
     else:
         error(0, type)
 
@@ -372,7 +372,6 @@ def parse(file_path, check_neg):
                 type_in_c = type_to_c(vartype)
                 if vartype.is_array_type():
                     symb += "[ARRAY_SIZE]" # Will be defined by generator
-                symb = symb.replace('-','_')
                 variables[symb] = type_in_c
     return parsed_cons, variables
 
@@ -402,7 +401,7 @@ def check_indices(symbol,maxArity,maxId, cons_in_c):
 def extract_vars(cond, variables):    
     vars = dict()
     for var, type in variables.items():
-        if var + " " in cond or var + ")" in cond or cond.split('[')[0] in cond:
+        if var + " " in cond or var + ")" in cond or var.split('[')[0] in cond:
             vars[var] = type
     return vars
 
@@ -429,8 +428,8 @@ class Graph:
         visited = set()
         groups = list()
         for node in self.graph:
-            group = self.separate_helper(node, visited, set())
-            if len(group) > 0:
+            if node not in visited:
+                group = self.separate_helper(node, visited, set())
                 groups.append(group)
         return groups
 
