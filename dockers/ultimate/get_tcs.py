@@ -20,20 +20,27 @@ def main(dest_dir):
     end_time = os.path.getmtime(end_file)       
 
     respath = '%s/res' %(OUTDIR)
-    resfile = open(respath,'r').read()
-    if ('FALSE' in resfile):
+    resfile = open(respath, 'r').read()
+    # True positives
+    if ('Ultimate proved your program to be incorrect' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'tp')
 
-    elif ('TRUE' in resfile):
+    # False negatives
+    elif ('Ultimate proved your program to be correct' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'fn')
 
-    elif ('UNKNOWN' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time, 'uk')
-    # Timeout
-    elif ('Killed' in resfile):  # Killed by 15
+    elif (len(resfile) == 0 or 'RESULT: Ultimate could not prove your program: Timeout' in resfile): 
         save_tc(dest_dir, respath, start_time, end_time, 'to')
-    else:
+
+    # Crashes/Errors
+    elif ("ShortDescription: Unsupported Syntax" in resfile or "ShortDescription: Incorrect Syntax" in resfile \
+          or "Type Error" in resfile or "InvalidWitnessErrorResult" in resfile or "ExceptionOrErrorResult" in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'er')
+
+    else:
+        save_tc(dest_dir, respath, start_time, end_time, 'uk')
+
+    # Timeout
 
 if __name__ == '__main__':
     dest_dir = sys.argv[1]

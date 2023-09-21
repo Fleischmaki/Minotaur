@@ -1,19 +1,51 @@
 {
-	"verbosity": "bug",
-	"repeats" : 500,
+	"verbosity": "all",
+	"repeats" : 100,
 	"duration" : 1,
-	"workers" : 119,
+	"workers" : 120,
 	"memory" : 4,
-	"transforms" : 17,
+	"transforms" : 15,
 	"maze_gen" : "container",
-	"tool" : {
-		"cpa" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution", "bddAnalysis", "intervalAnalysis", "smg2.properties"],
-		"seahorn" : ["pf", "spf", "bpf", "fpcf", "fpf"], 
-		"ultimate" : ["ua","ut","uk","ugc"],
-		"cbmc": [""],
-		"symbiotic": [""],
-		"2ls": ["", "--context-sensitive", "--inline", "--incremental-bmc", "--k-induction"],
-		"esbmc": ["", "--incremental-bmc", "--k-induction", "--interval-analysis"]
+	"tool" : { 
+		"cpa" : {
+			"variant" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution", "invariantGeneration", "smg2","bmc"]
+		},
+		"seahorn" : {
+			"variant" : ["pf", "spf", "bpf", "fpcf", "fpf"],
+			"toggle" : ["--bv-chc"],
+			"choose" : {
+				"--bmc" : ["-none","-mono","-path","-opsem"],
+				"--crab --crab-track=mem --crab-dom=" : [0, "int", "ric","term-int", "zones","soct","rtz","w-int"]
+			}
+		},
+		"ultimate" : {
+			"variant" : ["Automizer Default","Taipan Default","Kojak Default","GemCutter Default", "Automizer Bitvector","Taipan Bitvector","Kojak Bitvector","GemCutter Bitvector"]
+		},
+		"cbmc": {
+			"variant" : [""]
+		},
+		"symbiotic": {
+			"variant" : [""]
+		},
+		"2ls": {
+			"variant" : ["", "--inline", "--incremental-bmc", "--k-induction", "--preconditions", "--preconditions --sufficient"],
+			"toggle" : ["--context-sensitive"],
+			"choose" : {
+				"" : ["--intervals", "--octagons", "--equalities", "--havoc", "--heap", "--heap --intervals", "--heap --zones", "--arrays"]	
+			}
+		},
+		"esbmc": {
+			"variant" : [""],
+			"toggle" : ["--initialize-nondet-variables", "--incremental-bmc", "--interval-analysis", "--smt-during-symex","--array-flattener"],
+			"choose" : {
+				"" : ["--z3", "--boolector", "--cvc", "--mathsat", "--yices", "--bitwuzla", "--bv"],
+				"--tuple" : [0,"-node-flattener", "-sym-flattener"],
+				"--k-induction": [0,""," --bidirectional"]
+			}
+		},
+		"mopsa": {
+			"variant" : ["default", "cell-itv", "cell-itv-congr", "cell-pack-rel-itv", "cell-itv-powerset", "cell-itv-zero", "cell-itv-congr"]
+		}
 	},
 	"parameters" : {
 		"u" : [0,1],

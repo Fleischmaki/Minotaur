@@ -2,7 +2,7 @@ import re
 import sys, random, os
 from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict
-from pysmt.shortcuts import is_sat, Not, BV, Or, And, FreshSymbol, Equals, write_smtlib, get_env, reset_env
+from pysmt.shortcuts import *
 
 def deflatten(args, op):
     x = args[0]
@@ -20,7 +20,10 @@ def error(flag, *nodes):
 def binary_to_decimal(binary):
     if len(binary) > 64:
         error(1, binary)
-    return str(BV(binary).constant_value())
+    res = str(BV(binary).constant_value())
+    if len(binary) > 64:
+        res += 'ULL'
+    return res
 
 def bits_to_type(n):
     if n <= 8:
@@ -38,43 +41,27 @@ def bits_to_utype(n):
     return "unsigned " + bits_to_type(n)
 
 def cast_to_signed(l, r):
-   cast = ""
-   extend_step = 0
-   if l.is_bv_constant() or l.is_symbol or l.is_function_application() or l.is_ite() or l.is_select():
-       cast = "(" + bits_to_type(l.bv_width()) + ") "
-   elif r.is_bv_constant() or r.is_symbol or r.is_function_application() or r.is_ite() or r.is_select():
-       cast = "(" + bits_to_type(r.bv_width()) + ") "
-   elif l.is_bv_sext() or l.is_bv_zext():
-       extend_step = l.bv_extend_step()
-   elif r.is_bv_sext() or r.is_bv_zext():
-        extend_step = r.bv_extend_step()
-   else:
-       error(1,l,r)
-       
-   if extend_step in (8,16,24,32,48,56):
-       cast = '(' + bits_to_type(extend_step+1) + ')'
-   return cast
+   return '(' + bits_to_type(get_bv_width(l,r)) + ') '
 
-#def get_cast(node,sign):
-#    return '(' + ('unsigned ' if sign == 'u' else '') + str(bits_to_type(node.bv_width())) +')'
-    
 def cast_to_unsigned(l, r):
-   cast = ""
-   extend_step = 0
-   if l.is_bv_constant() or l.is_symbol or l.is_function_application() or l.is_ite() or l.is_select():
-       cast = "(" + bits_to_utype(l.bv_width()) + ") "
-   elif r.is_bv_constant() or r.is_symbol or r.is_function_application() or r.is_ite() or r.is_select():
-       cast = "(" + bits_to_utype(r.bv_width()) + ") "
-   elif l.is_bv_sext() or l.is_bv_zext():
-       extend_step = l.bv_extend_step()
-   elif r.is_bv_sext() or r.is_bv_zext():
-       extend_step = r.bv_extend_step()
-   else:
-       error(1,l)
+   return '(' + bits_to_utype(get_bv_width(l,r)) + ') '
+
+def get_bv_width(l, r):
+    extend_step = 0
+    if l.is_bv_constant() or l.is_symbol or l.is_function_application() or l.is_ite() or l.is_select():
+        return l.bv_width()
+    elif r.is_bv_constant() or r.is_symbol or r.is_function_application() or r.is_ite() or r.is_select():
+        return r.bv_width()
+    elif l.is_bv_sext() or l.is_bv_zext():
+        extend_step = l.bv_extend_step()
+    elif r.is_bv_sext() or r.is_bv_zext():
+        extend_step = r.bv_extend_step()
+    else:
+        error(1,l)
        
-   if extend_step in (8,16,24,32,48,56):
-       cast = '(' + bits_to_utype(extend_step+1) + ')'
-   return cast
+    if extend_step in (8,16,24,32,48,56):
+        return extend_step + 1
+    return extend_step
 
 def type_to_c(type):
     if type.is_bool_type():
@@ -85,8 +72,8 @@ def type_to_c(type):
         return type_to_c(type.return_type)
     elif type.is_array_type():
         return 'long' # otherwise store might be unsound, we can always cast afterwards
-    elif type.is_string_type():
-        return 'string'
+    # elif type.is_string_type():
+    #     return 'string'
     else:
         error(0, type)
 
@@ -110,26 +97,27 @@ def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
 
 def div_helper(symbs,node,cons):
     (l,r) = node.args()
-
-    cast = 's'
-    if node.is_bv_udiv() or node.is_bv_urem():
-        cast = 'u'
-
-    convert(symbs, r , cons)
-    cons.write(' == 0 ? ')
-    if node.is_bv_srem() or node.is_bv_urem():
-        convert(symbs, l , cons)
-        operator = '%'
-    else:
-        cons.write('1')
-        operator = '/'
-    cons.write(' : ')
-    convert_helper(symbs, node, cons, operator,cast)
-
+    if node.is_bv_udiv():
+        cons.write('udiv(%d,' % get_bv_width(l,r))
+        cast = cast_to_unsigned(l,r)
+    elif node.is_bv_sdiv():
+        cons.write('sdiv(%d,' % get_bv_width(l,r))
+        cast = cast_to_signed(l,r)
+    elif node.is_bv_urem():
+        cons.write('urem(')
+        cast = cast_to_unsigned(l,r)
+    elif node.is_bv_srem():
+        cons.write('srem(')
+        cast = cast_to_signed(l,r)
+    cons.write('')
+    convert(symbs,l,cons)
+    cons.write(',')
+    convert(symbs,r,cons)
+    cons.write(')')
 
 def check_shift_size(node):
-    (_,r) = node.args()
-    if not r.is_bv_constant() or r.constant_value() > node.bv_width():
+    (l,r) = node.args()
+    if not r.is_bv_constant() or r.constant_value() > get_bv_width(l,r):
         error(1, node)
 
     
@@ -188,13 +176,12 @@ def convert(symbs,node, cons):
     elif node.is_bv_sext():
         extend_step = node.bv_extend_step()
         (l,) = node.args()
-        cons.write('(' + bits_to_type(extend_step) + ')')
+        cons.write('(' + bits_to_type(extend_step + l.bv_width()) + ')')
         convert(symbs,l, cons)
     elif node.is_bv_zext():
         extend_step = node.bv_extend_step()
         (l,) = node.args()
-        if extend_step in (8,16,24,32,48,56):
-            cons.write('(' + bits_to_utype(extend_step) + ')')
+        cons.write('(' + bits_to_utype(extend_step + l.bv_width()) + ')')
         convert(symbs,l, cons)
     elif node.is_bv_concat():
         (l,r) = node.args()
@@ -243,7 +230,7 @@ def convert(symbs,node, cons):
     elif node.is_bv_neg():
         (s,) = node.args()
         cast = cast_to_unsigned(s,s)
-        base = binary_to_decimal("1" + "0" * (node.bv_width()))
+        base = binary_to_decimal("1" + "0" * (s.bv_width()))
         cons.write(cast + base + ' - ' + cast + '(')
         convert(symbs,s,cons)
         cons.write(')')
@@ -254,7 +241,7 @@ def convert(symbs,node, cons):
     elif node.is_bv_constant():
         constant =  "(" + bits_to_utype(node.bv_width()) + ") " + str(node.constant_value())
         if node.bv_width() > 32:
-            constant += "UL"
+            constant += "ULL"
         cons.write(constant)
     elif node.is_bool_constant():
         constant =  "1" if node.is_bool_constant(True) else "0"
@@ -385,7 +372,6 @@ def parse(file_path, check_neg):
                 type_in_c = type_to_c(vartype)
                 if vartype.is_array_type():
                     symb += "[ARRAY_SIZE]" # Will be defined by generator
-                symb = symb.replace('-','_')
                 variables[symb] = type_in_c
     return parsed_cons, variables
 
@@ -415,7 +401,7 @@ def check_indices(symbol,maxArity,maxId, cons_in_c):
 def extract_vars(cond, variables):    
     vars = dict()
     for var, type in variables.items():
-        if var + " " in cond or var + ")" in cond or cond.split('[')[0] in cond:
+        if var + " " in cond or var + ")" in cond or var.split('[')[0] in cond:
             vars[var] = type
     return vars
 
@@ -442,14 +428,15 @@ class Graph:
         visited = set()
         groups = list()
         for node in self.graph:
-            group = self.separate_helper(node, visited, set())
-            if len(group) > 0:
+            if node not in visited:
+                group = self.separate_helper(node, visited, set())
                 groups.append(group)
         return groups
 
 def independent_formulas(conds, variables):
     formula = Graph()
     for cond in conds:
+        formula.add_edge(cond,cond)
         vars = extract_vars(cond, variables)
         for other in conds:
             if len(vars.keys() & extract_vars(other, variables).keys()) > 0:

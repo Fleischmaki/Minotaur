@@ -30,8 +30,8 @@ def main(dest_dir):
         save_tc(dest_dir, respath, start_time, end_time, 'fn')
 
     # Crashes/Errors
-    #elif ('UNKNOWN' in resfile):
-    #    save_tc(dest_dir, respath, start_time, end_time, 'uk')
+    elif ('VERIFICATION UNKNOWN' in resfile):
+        save_tc(dest_dir, respath, start_time, end_time, 'uk')
 
     elif ('ERROR: ' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'er')

@@ -238,11 +238,12 @@ def generate_maze_chain(mazes, cycle, t_index, unit):
 def main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, unit, smt_file, CVE_name):
     random.seed(seed)
     transformations = transforms.parse_transformations(t_type)
+    min = 0 if transformations['keepId'] == 1 else 1
     if transformations["storm"]:
         smt_files = [smt_file] + transforms.run_storm(smt_file, os.path.join(output_dir,'smt'), seed, t_numb)
     else:
         smt_files = [smt_file]*(t_numb+1)
-    for t_index in range(t_numb+1):
+    for t_index in range(min, t_numb+1):
         size, graph, solution = generate_maze_chain(mazes, cycle, t_index, unit)
         c_file = mazes[0]["sol_file"] + "_t" + str(t_index) + "_" + str(cycle) + "percent_" + CVE_name + "_" + bugtype + ".c"
         if t_index != 0:

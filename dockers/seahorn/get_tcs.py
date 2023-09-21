@@ -23,16 +23,16 @@ def main(dest_dir):
 
     # False negatives
     if ('unsat' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time, 'uk') # For seahorn, unknown = unsat...
+        save_tc(dest_dir, respath, start_time, end_time, 'fn') # For seahorn, unknown = unsat...
     # True positives
     elif ('sat' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'tp')
 
     
     ## Crashes/Errors
-    #if ('UNKNOWN' in resfile):
-    #    save_tc(dest_dir, respath, start_time, end_time, i, 'uk')
-    #    counter_uk = counter_uk + 1
+    if ('ERROR' in resfile):
+        save_tc(dest_dir, respath, start_time, end_time, 'er')
+        counter_uk = counter_uk + 1
 
     # Timeout
     else: 

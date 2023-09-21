@@ -13,5 +13,5 @@ mkdir -p $OUTDIR
 
 # Create dummy file to indicate running start
 touch $WORKDIR/.start
-timeout $2m sea $3 $1 > $OUTFILE
+timeout $2m sea ${@:3} $1 &> $OUTFILE
 touch $WORKDIR/.end

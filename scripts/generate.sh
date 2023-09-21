@@ -78,7 +78,7 @@ if [ -z ${SEED+x} ]; then
 fi
 
 if [ -z ${CYCLE+x} ]; then
-    echo "NOTE: The percentage of cycles was not specified. Default value of ß will be used."
+    echo "NOTE: The percentage of cycles was not specified. Default value of 0 will be used."
     CYCLE="0"
 fi
 

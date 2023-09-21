@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     openjdk-8-jre \
     lld \
+    pkg-config \
 && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/maze/tools
@@ -71,17 +72,17 @@ WORKDIR /home/maze/tools
 RUN wget https://github.com/Z3Prover/z3/releases/download/z3-4.8.9/z3-4.8.9-x64-ubuntu-16.04.zip && unzip z3-4.8.9-x64-ubuntu-16.04.zip && mv z3-4.8.9-x64-ubuntu-16.04 z3
 
 # Bitwuzla
-RUN git clone --depth=1 --branch=smtcomp-2021 https://github.com/bitwuzla/bitwuzla.git
+RUN git clone https://github.com/bitwuzla/bitwuzla.git
 WORKDIR /home/maze/tools/bitwuzla
-RUN ./contrib/setup-lingeling.sh && ./contrib/setup-btor2tools.sh && ./contrib/setup-symfpu.sh && ./configure.sh --prefix $PWD/../bitwuzla-release
+RUN sudo pip install meson
+RUN ./configure.py --prefix $PWD/../bitwuzla-release
 WORKDIR /home/maze/tools/bitwuzla/build
-RUN cmake -DGMP_INCLUDE_DIR=$PWD/../../gmp/include -DGMP_LIBRARIES=$PWD/../../gmp/lib/libgmp.a -DONLY_LINGELING=ON ../ && make -j8 && make install
-
+RUN ninja install
 ### Build esbmc
 WORKDIR /home/maze/tools/esbmc
 RUN mkdir build 
 WORKDIR /home/maze/tools/esbmc/build
-RUN cmake .. -GNinja -DDOWNLOAD_DEPENDENCIES=On -DBUILD_STATIC=On -DBoolector_DIR=$PWD/../../boolector-release -DZ3_DIR=$PWD/../../z3 -DENABLE_MATHSAT=ON -DMathsat_DIR=$PWD/../../mathsat -DENABLE_YICES=On -DYices_DIR=$PWD/../../yices -DCVC4_DIR=$PWD/../../cvc4 -DBitwuzla_DIR=$PWD/../../bitwuzla-release -DCMAKE_INSTALL_PREFIX:PATH=$PWD/../../release
+RUN cmake .. -GNinja -DDOWNLOAD_DEPENDENCIES=On -DBUILD_STATIC=On -DBoolector_DIR=$PWD/../../boolector-release -DZ3_DIR=$PWD/../../z3 -DENABLE_MATHSAT=ON -DMathsat_DIR=$PWD/../../mathsat -DENABLE_YICES=On -DYices_DIR=$PWD/../../yices -DCVC4_DIR=$PWD/../../cvc4 -DGMP_DIR=$PWD/../../gmp -DBitwuzla_DIR=$PWD/../../bitwuzla-release -DCMAKE_INSTALL_PREFIX:PATH=$PWD/../../release
 RUN cmake --build . -j1
 RUN ninja install
 
@@ -92,3 +93,5 @@ ADD run_esbmc.sh /home/maze/tools/run_esbmc.sh
 RUN sudo chmod +x /home/maze/tools/run_esbmc.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 
+### Cleanup
+WORKDIR /home/maze/workspace

@@ -117,7 +117,8 @@ def main(algorithm, width, height, seed, maze_exit, numb, t_type, t_numb):
         label = algorithm + "_" + str(width) + "x" + str(height) + "_" + str(seed) + "_" + str(index) + "_" + t_type
         store_solution(maze, label, width, height)
         random.seed(seed)
-        for t_index in range(t_numb+1):
+        min = 0 if 'keepId' in t_type else 1
+        for t_index in range(min,t_numb+1):
             grid = maze.grid.copy()
             if t_index != 0:
                 grid = apply_transforms(t_type, width, height, grid)
