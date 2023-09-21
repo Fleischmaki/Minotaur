@@ -38,7 +38,7 @@ class Generator:
     if (b != 0) {
     return a/b;
     }
-    if (a == 0 || a & (1 << (bv_width-1)) > 0) {
+    if (a == 0 || (a & (1 << (bv_width-1))) > 0) {
     \treturn 1;
     }
     return a;
