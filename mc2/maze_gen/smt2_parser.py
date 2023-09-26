@@ -3,6 +3,7 @@ import sys, random, os
 from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict
 from pysmt.shortcuts import *
+from io import StringIO
 
 def deflatten(args, op):
     x = args[0]
@@ -17,13 +18,14 @@ def error(flag, *nodes):
     elif flag == 1:
         raise ValueError("ERROR: nodes not supported", nodes)
 
-def binary_to_decimal(binary):
+def binary_to_decimal(binary, unsigned = True):
     if len(binary) > 64:
         error(1, binary)
-    res = str(BV(binary).constant_value())
-    if len(binary) > 64:
-        res += 'ULL'
-    return res
+    val = str(BV(binary).constant_value() if unsigned else BV(binary).bv_signed_value())
+    post = ''
+    if len(binary) > 32:
+        post = 'ULL' if unsigned else 'LL'
+    return val + post
 
 def bits_to_type(n):
     if n <= 8:
@@ -95,32 +97,50 @@ def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
         convert(symbs,r, cons)
         cons.write(')')
 
-def div_helper(symbs,node,cons):
-    (l,r) = node.args()
-    if node.is_bv_udiv():
-        cons.write('udiv(%d,' % get_bv_width(l,r))
-        cast = cast_to_unsigned(l,r)
-    elif node.is_bv_sdiv():
-        cons.write('sdiv(%d,' % get_bv_width(l,r))
-        cast = cast_to_signed(l,r)
-    elif node.is_bv_urem():
-        cons.write('urem(')
-        cast = cast_to_unsigned(l,r)
-    elif node.is_bv_srem():
-        cons.write('srem(')
-        cast = cast_to_signed(l,r)
-    cons.write('')
-    convert(symbs,l,cons)
-    cons.write(',')
-    convert(symbs,r,cons)
-    cons.write(')')
-
 def check_shift_size(node):
     (l,r) = node.args()
     if not r.is_bv_constant() or r.constant_value() > get_bv_width(l,r):
         error(1, node)
 
+def div_helper(symbs,node,cons):
+    (l,r) = node.args()
+    width = get_bv_width(l,r) -1
+
+    lString = convert_to_string(symbs, l)
+    rString = convert_to_string(symbs, r)
     
+    cons.write(rString)
+    cons.write(' == 0 ? ')
+
+    if node.is_bv_urem() or node.is_bv_srem():
+        cons.write(lString)
+        op = '%'
+    elif node.is_bv_udiv():
+        cons.write(binary_to_decimal('1' * width))
+        op = '/'
+    else:
+        cons.write('((')
+        cons.write(lString)
+        cons.write(' & ')
+        cons.write(binary_to_decimal('1' + '0' * (width-1), True))
+        cons.write(') > 0 ? 1 : ')
+        cons.write(binary_to_decimal('1' * width, True))
+        cons.write(')')
+        op = '/'
+    cons.write(' : ')
+    cons.write(lString)
+    cons.write(op)
+    cons.write(rString)
+    
+
+
+
+def convert_to_string(symbs, l):
+    buff = StringIO()
+    convert(symbs, l, buff)
+    lString = buff.getvalue()
+    buff.close()
+    return lString
 
 def convert(symbs,node, cons):
     if cons.tell() > 2**20:
@@ -171,8 +191,11 @@ def convert(symbs,node, cons):
         convert_helper(symbs,node, cons, " << ")
     elif node.is_bv_not():
         (b,) = node.args()
-        cons.write("~")
+        cast = cast_to_unsigned(b,b)
+        cons.write(cast)
+        cons.write("(~")
         convert(symbs,b, cons)
+        cons.write(")")
     elif node.is_bv_sext():
         extend_step = node.bv_extend_step()
         (l,) = node.args()
@@ -348,13 +371,12 @@ def parse(file_path, check_neg):
         clause = And(*constraints, clause) # Make sure to render constraints first
 
         symbs = set()
-        tempfile = open('temp.txt', 'w+')
+        buffer = StringIO()
         #try:
-        convert(symbs,clause, tempfile) # This should always succeed on prefiltered files
+        convert(symbs,clause, buffer) # This should always succeed on prefiltered files
         #except Exception as e:
         #    print("Could not convert clause: ", e)
-        tempfile.seek(0)
-        cons_in_c =  tempfile.read()
+        cons_in_c =  buffer.getvalue()
         if "model_version" not in cons_in_c:
             if check_neg == True:
                 neg_sat = is_neg_sat(clause, clauses)
@@ -553,9 +575,9 @@ def check_files(file_path, resfile):
         _, _, _, formula = read_file(file_path)
         clauses = conjunction_to_clauses(formula)
         for clause in clauses:
-            symbs = set()
-            tempfile = open('temp.txt', 'w+')
-            convert(symbs,clause, tempfile) 
+            symbols = set()
+            buffer = StringIO()
+            convert(symbols,clause, buffer) 
             print(".",end ="")
         print("")
         print("[*] Done.")
