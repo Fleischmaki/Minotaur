@@ -104,7 +104,7 @@ def check_shift_size(node):
 
 def div_helper(symbs,node,cons):
     (l,r) = node.args()
-    width = get_bv_width(l,r) -1
+    width = get_bv_width(l,r)
 
     lString = convert_to_string(symbs, l)
     rString = convert_to_string(symbs, r)
@@ -119,13 +119,15 @@ def div_helper(symbs,node,cons):
         cons.write(binary_to_decimal('1' * width))
         op = '/'
     else:
-        cons.write('((')
+        cons.write('(((')
+        cons.write(lString)
+        cons.write(' == 0) || ')
         cons.write(lString)
         cons.write(' & ')
-        cons.write(binary_to_decimal('1' + '0' * (width-1), True))
-        cons.write(') > 0 ? 1 : ')
-        cons.write(binary_to_decimal('1' * width, True))
-        cons.write(')')
+        cons.write(binary_to_decimal('1' + '0' * (width-1), False))
+        cons.write(') < 0 ? 1 : ')
+        cons.write(binary_to_decimal('1' * width, False))
+        cons.write('))')
         op = '/'
     cons.write(' : ')
     cons.write(lString)
