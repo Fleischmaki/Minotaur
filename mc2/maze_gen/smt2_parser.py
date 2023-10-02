@@ -145,8 +145,8 @@ def convert_to_string(symbs, l):
     return lString
 
 def convert(symbs,node, cons):
-    if cons.tell() > 2**20:
-        raise ValueError("Parse result too large") # Avoid file sizes > 1 MB
+    #if cons.tell() > 2**20:
+    #    raise ValueError("Parse result too large") # Avoid file sizes > 1 MB
     cons.write('(')
     if node.is_iff() or node.is_equals() or node.is_bv_comp():
         (l, r) = node.args()
@@ -374,10 +374,10 @@ def parse(file_path, check_neg):
 
         symbs = set()
         buffer = StringIO()
-        #try:
-        convert(symbs,clause, buffer) # This should always succeed on prefiltered files
-        #except Exception as e:
-        #    print("Could not convert clause: ", e)
+        try:
+            convert(symbs,clause, buffer) # This should always succeed on prefiltered files
+        except Exception as e:
+            print("Could not convert clause: ", e)
         cons_in_c =  buffer.getvalue()
         if "model_version" not in cons_in_c:
             if check_neg == True:
