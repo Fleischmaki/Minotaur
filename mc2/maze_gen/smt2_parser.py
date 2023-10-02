@@ -365,9 +365,9 @@ def parse(file_path, check_neg):
     print("Converting %s: " % file_path)
     decl_arr, variables, parsed_cons, formula = read_file(file_path)
     clauses = conjunction_to_clauses(formula)
-    i = 0
+    c = 0
     for clause in clauses:
-        i += 1
+        c += 1
         print("%d/%d" % (i,len(clauses)))
         clause, constraints = rename_arrays(clause)
         if len(constraints) > 0:
