@@ -368,7 +368,7 @@ def parse(file_path, check_neg):
     c = 0
     for clause in clauses:
         c += 1
-        print("%d/%d" % (i,len(clauses)))
+        print("%d/%d" % (c,len(clauses)))
         clause, constraints = rename_arrays(clause)
         if len(constraints) > 0:
             print("Added %d new arrays" % len(constraints))
