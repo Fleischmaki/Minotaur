@@ -273,8 +273,8 @@ def convert(symbs,node, cons):
         cons.write(constant)
     elif node.is_symbol():
         if str(node) == 'c':
-            node = FreshSymbol(typename=node.get_type())
-        node = clean_string(str(node))
+            node = '__original_smt_name_was_c__'
+        node = clean_string(node)
         cons.write(node)
         symbs.add(node)
     elif node.is_select():
@@ -297,7 +297,7 @@ def convert(symbs,node, cons):
             if not n.is_bv_constant():
                 error(1, node)
         index = "".join(["_" + str(n.constant_value()) for n in node.args()])
-        fn = clean_string(str(node.function_name()))
+        fn = clean_string(node.function_name())
         cons.write(fn + index)
         symbs.add(fn + index)
     else:
@@ -335,6 +335,7 @@ def conjunction_to_clauses(formula):
     return clauses
 
 def clean_string(s):
+    s = str(s)
     return re.sub('[^A-Za-z0-9_]+','',s)
 
 def rename_arrays(formula):
@@ -390,8 +391,12 @@ def parse(file_path, check_neg):
             else:
                 parsed_cons[cons_in_c] = ""
             for symb in symbs:
-                decls = list(map(lambda x: clean_string(str(x)), ldecl_arr))
+                decls = list(map(lambda x: clean_string(x), ldecl_arr))
                 if symb in decls:
+                    decl = symb
+                elif 'c' in decls and symb == '__original_smt_name_was_c__':
+                    decls.remove('c')
+                    decls.append(symb)
                     decl = symb
                 else:
                     decl = symb.split("_")[0]
