@@ -132,7 +132,7 @@ def fetch_works(conf,targets,mazes):
             transforms = conf['transforms']
             if conf['maze_gen'] == 'container':
                 paramss = fetch_maze_params(conf,targets)
-                #maze_gen.generate_mazes(paramss, get_temp_dir())
+                maze_gen.generate_mazes(paramss, get_temp_dir())
                 mazes += len(paramss)
             else:
                 maze_gen.generate_maze(params, get_temp_dir(), get_minotaur_root())
