@@ -240,7 +240,7 @@ def cleanup(completed):
     procs = []
     while(len(completed) > 0):
         maze = completed.pop()
-        procs.append(commands.spawn_cmd(REMOVE_CMD % os.path.join(get_temp_dir(),maze)))
+        procs.append(commands.spawn_cmd(REMOVE_CMD % os.path.join(get_temp_dir(),'src',maze)))
     commands.wait_for_procs(procs)
 
 def get_minotaur_root():
