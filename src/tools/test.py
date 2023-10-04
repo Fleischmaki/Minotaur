@@ -116,7 +116,7 @@ def get_targets(conf):
     return targets # Or just set greater values for transforms 
 
 def fetch_maze_params(conf, targets):
-    step = len(conf['tool'].keys())
+    step = len(conf['tool'].keys()) * conf['transforms']
     size = min(ceil(len(targets)/step), conf['workers'])
     return [targets[i*step].params for i in range(size)]
 
@@ -139,7 +139,7 @@ def fetch_works(conf,targets,mazes):
                 mazes = 1
 
         offset = 0 if 'keepId' in params['t'] else 1
-        if tool == list(conf['tool'].keys())[0]:
+        if tool == list(conf['tool'].keys())[0] and id % (conf['transforms'] + 1 - offset) == 0:
             mazes -= 1
         if tool == list(conf['tool'].keys())[-1] and id % (conf['transforms'] + 1 - offset) == conf['transforms'] - offset:
             completed.append(maze.replace('t%d' % (conf['transforms']), 't*'))
