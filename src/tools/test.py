@@ -116,27 +116,34 @@ def get_targets(conf):
     return targets # Or just set greater values for transforms 
 
 def fetch_maze_params(conf, targets):
-    step = int(conf['transforms']) * len(conf['tool'].keys())
+    step = len(conf['tool'].keys())
     size = min(ceil(len(targets)/step), conf['workers'])
     return [targets[i*step].params for i in range(size)]
 
 def fetch_works(conf,targets,mazes):
     works = []
+    completed = []
     for i in range(conf['workers']):
         if len(targets) <= 0:
             break
-        _, tool, id, params, _, _ = t = targets.pop(0)
+        maze, tool, id, params, _, _ = t = targets.pop(0)
         works.append(t)
-        if id % (int(conf['transforms'])) == 0 and tool == list(conf['tool'].keys())[0]:
-            if mazes == 0 and conf['maze_gen'] == 'container':
+        if mazes == 0:
+            transforms = conf['transforms']
+            if conf['maze_gen'] == 'container':
                 paramss = fetch_maze_params(conf,targets)
-                print(paramss)
                 maze_gen.generate_mazes(paramss, get_temp_dir())
+                mazes += len(paramss)*transforms
             else:
                 maze_gen.generate_maze(params, get_temp_dir(), get_minotaur_root())
-                mazes = 1
+                mazes += transforms
+
+        if tool == list(conf['tool'].keys())[0]:
             mazes -= 1
-    return mazes, works
+        elif tool == list(conf['tool'].keys())[-1]:
+            completed.append(maze)
+
+    return mazes, works, completed
 
 def get_temp_dir():
     return os.path.join(get_minotaur_root(), 'temp')
@@ -228,9 +235,9 @@ def kill_containers(works):
     commands.wait_for_procs(procs)
     time.sleep(10)
 
-def cleanup(conf, targets):
-    if len(targets) == 0 or (targets[0][2] % int(conf['transforms']) == 0 and targets[0][1] == list(conf['tool'].keys())[0]):
-        commands.run_cmd(REMOVE_CMD % get_temp_dir())
+def cleanup(completed):
+    for maze in completed:
+        commands.spawn_cmd(REMOVE_CMD % os.path.join(get_temp_dir(),maze))
 
 def get_minotaur_root():
     return os.path.dirname(os.path.realpath(sys.modules['__main__'].__file__))
@@ -245,12 +252,12 @@ def main(conf_path, out_dir):
     num_mazes = 0
         
     while len(targets) > 0:
-        num_mazes, works = fetch_works(conf, targets, num_mazes)
+        num_mazes, works, to_remove = fetch_works(conf, targets, num_mazes)
         spawn_containers(conf, works)
         run_tools(conf, works)
         store_outputs(conf, out_dir, works)
         kill_containers(works)
-        cleanup(conf, targets) 
+        cleanup(to_remove) 
     
     cleanup(conf, targets)
 
