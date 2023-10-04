@@ -132,16 +132,17 @@ def fetch_works(conf,targets,mazes):
             transforms = conf['transforms']
             if conf['maze_gen'] == 'container':
                 paramss = fetch_maze_params(conf,targets)
-                maze_gen.generate_mazes(paramss, get_temp_dir())
-                mazes += len(paramss)*transforms
+                #maze_gen.generate_mazes(paramss, get_temp_dir())
+                mazes += len(paramss)
             else:
                 maze_gen.generate_maze(params, get_temp_dir(), get_minotaur_root())
-                mazes += transforms
+                mazes = 1
 
+        offset = 0 if 'keepId' in params['t'] else 1
         if tool == list(conf['tool'].keys())[0]:
             mazes -= 1
-        elif tool == list(conf['tool'].keys())[-1]:
-            completed.append(maze)
+        if tool == list(conf['tool'].keys())[-1] and id % (conf['transforms'] + 1 - offset) == conf['transforms'] - offset:
+            completed.append(maze.replace('t%d' % (conf['transforms']), 't*'))
 
     return mazes, works, completed
 
@@ -236,8 +237,11 @@ def kill_containers(works):
     time.sleep(10)
 
 def cleanup(completed):
-    for maze in completed:
-        commands.spawn_cmd(REMOVE_CMD % os.path.join(get_temp_dir(),maze))
+    procs = []
+    while(len(completed) > 0):
+        maze = completed.pop()
+        procs.append(commands.spawn_cmd(REMOVE_CMD % os.path.join(get_temp_dir(),maze)))
+    commands.wait_for_procs(procs)
 
 def get_minotaur_root():
     return os.path.dirname(os.path.realpath(sys.modules['__main__'].__file__))
@@ -259,7 +263,7 @@ def main(conf_path, out_dir):
         kill_containers(works)
         cleanup(to_remove) 
     
-    cleanup(conf, targets)
+    commands.run_cmd(REMOVE_CMD % get_temp_dir())
 
 def load(argv):
     conf_path = os.path.join(get_minotaur_root(),'test',argv[0] + '.conf.json')
