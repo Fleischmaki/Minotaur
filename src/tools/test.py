@@ -129,7 +129,6 @@ def fetch_works(conf,targets,mazes):
         maze, tool, id, params, _, _ = t = targets.pop(0)
         works.append(t)
         if mazes == 0:
-            transforms = conf['transforms']
             if conf['maze_gen'] == 'container':
                 paramss = fetch_maze_params(conf,targets)
                 maze_gen.generate_mazes(paramss, get_temp_dir())
