@@ -33,7 +33,7 @@ CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/
 CPA - Intervallanalysis | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1132#note_1544904422)
 Symbiotic | [open](https://github.com/staticafi/symbiotic/issues/247)
 Ultimate | [fixed](https://github.com/ultimate-pa/ultimate/issues/646)
-ESBMC | [fixed](https://github.com/esbmc/esbmc/issues/1363)
+ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1363)
 ### Other bugs
 Tool | Status 
  -- | -- 
