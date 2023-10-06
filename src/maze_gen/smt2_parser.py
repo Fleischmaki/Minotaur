@@ -201,8 +201,10 @@ def convert(symbs,node, cons):
     elif node.is_bv_sext():
         extend_step = node.bv_extend_step()
         (l,) = node.args()
-        cons.write('(' + bits_to_type(extend_step + l.bv_width()) + ')')
-        convert(symbs,l, cons)
+        width = l.bv_width()
+        newtype=bits_to_type(extend_step+width)
+        res = convert_to_string(symbs,l)
+        cons.write('((%s & %s) > 0 ? ((%s)%s - %s) : (%s)%s)' % (binary_to_decimal("1" + "0"*(width-1)),res,newtype,res,binary_to_decimal("1"+"0"*width),newtype,res))
     elif node.is_bv_zext():
         extend_step = node.bv_extend_step()
         (l,) = node.args()
