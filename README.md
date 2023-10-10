@@ -34,6 +34,7 @@ CPA - Intervallanalysis | [confirmed](https://gitlab.com/sosy-lab/software/cpach
 Symbiotic | [open](https://github.com/staticafi/symbiotic/issues/247)
 Ultimate | [fixed](https://github.com/ultimate-pa/ultimate/issues/646)
 ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1363)
+ESBMC --interval-analysis | [confirmed](https://github.com/esbmc/esbmc/issues/1392)
 ### Other bugs
 Tool | Status 
  -- | -- 
