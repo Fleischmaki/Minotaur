@@ -55,14 +55,16 @@ def cast_to_signed(symbs,node):
     n_string = convert_to_string(symbs,node)
     return ('(%s & %s) > 0 ? (%s)(%s - %s) : (%s)' % (binary_to_decimal("1" + "0"*(width-1)),n_string,type,n_string,binary_to_decimal("1"+"0"*width),type))
 
-def cast_to_unsigned(n):
+def cast_to_unsigned(node):
     if len(node.args()) == 0:
         width = node.bv_width()
-    elif len(n.args()) == 1:
-        l = r = n.args()[0]
+    elif len(node.args()) == 1:
+        (r,) = node.args()
+        width = get_bv_width(r,r)  
     else:
-        l, r = n.args()
-    return '(' + bits_to_utype(get_bv_width(l,r)) + ') '
+        (l, r) = node.args()
+        width = get_bv_width(l,r)  
+    return '(' + bits_to_utype(width) + ') '
 
 def get_bv_width(l, r):
     extend_step = 0
@@ -404,10 +406,10 @@ def parse(file_path, check_neg):
 
         symbs = set()
         buffer = StringIO()
-        #try:
-        convert(symbs,clause, buffer) # This should always succeed on prefiltered files
-        #except Exception as e:
-        #    print("Could not convert clause: ", e)
+        try:
+            convert(symbs,clause, buffer) # This should always succeed on prefiltered files
+        except Exception as e:
+           print("Could not convert clause: ", e)
         cons_in_c =  buffer.getvalue()
         if "model_version" not in cons_in_c:
             if check_neg == True:
