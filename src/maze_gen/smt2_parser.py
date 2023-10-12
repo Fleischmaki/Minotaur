@@ -42,11 +42,25 @@ def bits_to_type(n):
 def bits_to_utype(n):
     return "unsigned " + bits_to_type(n)
 
-def cast_to_signed(l, r):
-   return '(' + bits_to_type(get_bv_width(l,r)) + ') '
+def cast_to_signed(symbs,node):
+    if len(node.args()) == 0:
+        width = node.bv_width()
+    elif len(node.args()) == 1:
+        (r,) = node.args()
+        width = get_bv_width(r,r)  
+    else:
+        (l, r) = node.args()
+        width = get_bv_width(l,r)  
+    type = bits_to_type(width)  
+    n_string = convert_to_string(symbs,node)
+    return ('(%s & %s) > 0 ? (%s)(%s - %s) : (%s)' % (binary_to_decimal("1" + "0"*(width-1)),n_string,type,n_string,binary_to_decimal("1"+"0"*width),type))
 
-def cast_to_unsigned(l, r):
-   return '(' + bits_to_utype(get_bv_width(l,r)) + ') '
+def cast_to_unsigned(n):
+    if len(n.args()) == 1:
+        l = r = n.args()[0]
+    else:
+        l, r = n.args()
+    return '(' + bits_to_utype(get_bv_width(l,r)) + ') '
 
 def get_bv_width(l, r):
     extend_step = 0
@@ -81,14 +95,21 @@ def type_to_c(type):
 
 def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
     (l, r) = node.args()
-    cast = ''
     if cast_sign != '':
-        cast = cast_to_unsigned(l,r) if cast_sign == 'u' else cast_to_signed(l,r)
+        if cast_args:
+            l_cast = cast_to_unsigned(l) if cast_sign == 'u' else cast_to_signed(symbs,l)
+            r_cast = cast_to_unsigned(r) if cast_sign == 'u' else cast_to_signed(symbs,r)
+        else:
+            cast = cast_to_unsigned(node) if cast_sign == 'u' else cast_to_signed(node)
 
-    if cast == '' or cast_args:
-        cons.write(cast)
+    if cast_sign == '':
         convert(symbs,l, cons)
-        cons.write(op + cast)
+        cons.write(op)
+        convert(symbs,r, cons)
+    elif cast_args:
+        cons.write(l_cast)
+        convert(symbs,l, cons)
+        cons.write(op + r_cast)
         convert(symbs,r, cons)
     else:
         cons.write(cast  + '(')
@@ -193,7 +214,7 @@ def convert(symbs,node, cons):
         convert_helper(symbs,node, cons, " << ")
     elif node.is_bv_not():
         (b,) = node.args()
-        cast = cast_to_unsigned(b,b)
+        cast = cast_to_unsigned(node)
         cons.write(cast)
         cons.write("(~")
         convert(symbs,b, cons)
@@ -256,7 +277,7 @@ def convert(symbs,node, cons):
         convert(symbs,n, cons)
     elif node.is_bv_neg():
         (s,) = node.args()
-        cast = cast_to_unsigned(s,s)
+        cast = cast_to_unsigned(node)
         base = binary_to_decimal("1" + "0" * (s.bv_width()))
         cons.write(cast + base + ' - ' + cast + '(')
         convert(symbs,s,cons)
@@ -381,10 +402,10 @@ def parse(file_path, check_neg):
 
         symbs = set()
         buffer = StringIO()
-        try:
-            convert(symbs,clause, buffer) # This should always succeed on prefiltered files
-        except Exception as e:
-            print("Could not convert clause: ", e)
+        #try:
+        convert(symbs,clause, buffer) # This should always succeed on prefiltered files
+        #except Exception as e:
+        #    print("Could not convert clause: ", e)
         cons_in_c =  buffer.getvalue()
         if "model_version" not in cons_in_c:
             if check_neg == True:
