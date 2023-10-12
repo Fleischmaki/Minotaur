@@ -56,7 +56,9 @@ def cast_to_signed(symbs,node):
     return ('(%s & %s) > 0 ? (%s)(%s - %s) : (%s)' % (binary_to_decimal("1" + "0"*(width-1)),n_string,type,n_string,binary_to_decimal("1"+"0"*width),type))
 
 def cast_to_unsigned(n):
-    if len(n.args()) == 1:
+    if len(node.args()) == 0:
+        width = node.bv_width()
+    elif len(n.args()) == 1:
         l = r = n.args()[0]
     else:
         l, r = n.args()
