@@ -13,8 +13,8 @@
 		"seahorn" : {
 			"variant" : ["spf", "bpf", "fpcf", "fpf"],
 			"choose" : {
-				"--bmc=" : [0,"none","mono","path","opsem"],
-				"--crab --horn-use-invs=" : [0, "bg", "always"]
+				"" : ["--step=large", "--step=small", "--bmc=mono","--bmc=path","--bmc=opsem, --bmc=path"],
+				"--crab" : [0, "--horn-use-invs=bg", "--horn-use-invs=always"]
 			}
 		},
 		"ultimate" : {
