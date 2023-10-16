@@ -43,45 +43,38 @@ def bits_to_utype(n):
     return "unsigned " + bits_to_type(n)
 
 def cast_to_signed(symbs,node):
-    if len(node.args()) == 0:
-        width = node.bv_width()
-    elif len(node.args()) == 1:
-        (r,) = node.args()
-        width = get_bv_width(r,r)  
-    else:
-        (l, r) = node.args()
-        width = get_bv_width(l,r)  
+    width = get_bv_width(node)
     type = bits_to_type(width)  
     n_string = convert_to_string(symbs,node)
     return ('(%s & %s) > 0 ? (%s)(%s - %s) : (%s)' % (binary_to_decimal("1" + "0"*(width-1)),n_string,type,n_string,binary_to_decimal("1"+"0"*width),type))
 
 def cast_to_unsigned(node):
-    if len(node.args()) == 0:
-        width = node.bv_width()
-    elif len(node.args()) == 1:
-        (r,) = node.args()
-        width = get_bv_width(r,r)  
-    else:
-        (l, r) = node.args()
-        width = get_bv_width(l,r)  
+    width = get_bv_width(node)
     return '(' + bits_to_utype(width) + ') '
 
-def get_bv_width(l, r):
-    extend_step = 0
+def get_bv_width(node):
+    if len(node.args()) == 1:
+        (r,) = node.args()
+        width = get_bv_width(r)
+        if(node.is_bv_sext() or node.is_bv_zext()):
+            return width + node.bv_extend_step()
+        return r.bv_width()  
+    elif len(node.args()) == 2:
+        (l,r) = node.args() 
+    else:
+        return node.bv_width()
+    
+    if node.is_bv_concat():
+        return get_bv_width(l) + get_bv_width(r)
+    width = 0
     if l.is_bv_constant() or l.is_symbol or l.is_function_application() or l.is_ite() or l.is_select():
         return l.bv_width()
     elif r.is_bv_constant() or r.is_symbol or r.is_function_application() or r.is_ite() or r.is_select():
         return r.bv_width()
-    elif l.is_bv_sext() or l.is_bv_zext():
-        extend_step = l.bv_extend_step()
-    elif r.is_bv_sext() or r.is_bv_zext():
-        extend_step = r.bv_extend_step()
-    else:
-        error(1,l)
-       
-    if extend_step in (8,16,24,32,48,56):
-        return extend_step + 1
-    return extend_step
+
+    if width == 0:
+        error(1,l,r)
+    return width
 
 def type_to_c(type):
     if type.is_bool_type():
@@ -124,12 +117,12 @@ def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
 
 def check_shift_size(node):
     (l,r) = node.args()
-    if not r.is_bv_constant() or r.constant_value() > get_bv_width(l,r):
+    if not r.is_bv_constant() or r.constant_value() > get_bv_width(node):
         error(1, node)
 
 def div_helper(symbs,node,cons):
     (l,r) = node.args()
-    width = get_bv_width(l,r)
+    width = get_bv_width(node)
 
     lString = convert_to_string(symbs, l)
     rString = convert_to_string(symbs, r)
@@ -226,28 +219,28 @@ def convert(symbs,node, cons):
     elif node.is_bv_sext():
         extend_step = node.bv_extend_step()
         (l,) = node.args()
-        width = l.bv_width()
+        width = get_bv_width(l)
         newtype=bits_to_type(extend_step+width)
         res = convert_to_string(symbs,l)
         cons.write('((%s & %s) > 0 ? ((%s)%s - %s) : (%s)%s)' % (binary_to_decimal("1" + "0"*(width-1)),res,newtype,res,binary_to_decimal("1"+"0"*width),newtype,res))
     elif node.is_bv_zext():
         extend_step = node.bv_extend_step()
         (l,) = node.args()
-        cons.write('(' + bits_to_utype(extend_step + l.bv_width()) + ')')
+        width = get_bv_width(l)
+        cons.write('(' + bits_to_utype(extend_step + width) + ')')
         convert(symbs,l, cons)
     elif node.is_bv_concat():
         (l,r) = node.args()
-        if (l.bv_width() + r.bv_width() > 64):
-            error(1,node)   
+        cast_to_unsigned(node)
         convert(symbs,l, cons)
-        cons.write(' << %d | ' % r.bv_width())
+        cons.write(' << %d | ' % get_bv_width(r))
         convert(symbs,r,cons)
     elif node.is_bv_extract():
         ext_start = node.bv_extract_start()
         ext_end = node.bv_extract_end()
         dif = ext_end - ext_start + 1
         (l,) = node.args()
-        m = l.bv_width()
+        m = get_bv_width(l)
         mask = binary_to_decimal("1" * (dif))
         newtype = bits_to_utype(dif) 
         cons.write("(" + newtype +") (")
@@ -282,7 +275,7 @@ def convert(symbs,node, cons):
     elif node.is_bv_neg():
         (s,) = node.args()
         cast = cast_to_unsigned(node)
-        base = binary_to_decimal("1" + "0" * (s.bv_width()))
+        base = binary_to_decimal("1" + "0" * (get_bv_width(s)))
         cons.write(cast + base + ' - ' + cast + '(')
         convert(symbs,s,cons)
         cons.write(')')
@@ -335,7 +328,7 @@ def convert(symbs,node, cons):
 
 def rotate_helper(symbs, node, cons, op):
     (l,) = node.args()
-    m = node.bv_width()
+    m = get_bv_width(node)
     i = node.bv_rotation_step()
     convert(symbs,l,cons)
     cons.write('((')
@@ -406,10 +399,10 @@ def parse(file_path, check_neg):
 
         symbs = set()
         buffer = StringIO()
-        try:
-            convert(symbs,clause, buffer) # This should always succeed on prefiltered files
-        except Exception as e:
-           print("Could not convert clause: ", e)
+        # try:
+        convert(symbs,clause, buffer) # This should always succeed on prefiltered files
+        # except Exception as e:
+        #    print("Could not convert clause: ", e)
         cons_in_c =  buffer.getvalue()
         if "model_version" not in cons_in_c:
             if check_neg == True:
