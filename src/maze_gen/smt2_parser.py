@@ -48,6 +48,8 @@ def cast_to_signed(symbs,node):
     width = get_bv_width(node)
     type = bits_to_type(width)  
     n_string = convert_to_string(symbs,node)
+    if width == 64:
+        return "(long) "
     return ('(%s & %s) > 0 ? (%s)(%s - %s) : (%s)' % (binary_to_decimal("1" + "0"*(width-1)),n_string,type,n_string,binary_to_decimal("1"+"0"*width),type))
 
 def cast_to_unsigned(node):
