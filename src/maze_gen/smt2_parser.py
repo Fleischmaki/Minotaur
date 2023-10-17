@@ -17,6 +17,8 @@ def error(flag, *nodes):
         raise ValueError("ERROR: node type not recognized: ", nodes, map(lambda n: n.get_type()))
     elif flag == 1:
         raise ValueError("ERROR: nodes not supported", nodes)
+    else:
+        raise ValueError("ERROR: an unknown error occurred")
 
 def binary_to_decimal(binary, unsigned = True):
     if len(binary) > 64:
@@ -53,28 +55,30 @@ def cast_to_unsigned(node):
     return '(' + bits_to_utype(width) + ') '
 
 def get_bv_width(node):
-    if len(node.args()) == 1:
+    res = 0
+    if node.is_bv_constant() or node.is_symbol or node.is_function_application() or node.is_ite() or node.is_select():
+        res = node.bv_width()
+    elif len(node.args()) == 1:
         (r,) = node.args()
         width = get_bv_width(r)
         if(node.is_bv_sext() or node.is_bv_zext()):
-            return width + node.bv_extend_step()
-        return r.bv_width()  
+            res = width + node.bv_extend_step()
+        else:
+            res = r.bv_width()  
     elif len(node.args()) == 2:
         (l,r) = node.args() 
+        if node.is_bv_concat():
+            res = get_bv_width(l) + get_bv_width(r)
+        if l.is_bv_constant() or l.is_symbol or l.is_function_application() or l.is_ite() or l.is_select():
+            res =  l.bv_width()
+        elif r.is_bv_constant() or r.is_symbol or r.is_function_application() or r.is_ite() or r.is_select():
+            res = r.bv_width()
     else:
-        return node.bv_width()
+        error(1,node)
     
-    if node.is_bv_concat():
-        return get_bv_width(l) + get_bv_width(r)
-    width = 0
-    if l.is_bv_constant() or l.is_symbol or l.is_function_application() or l.is_ite() or l.is_select():
-        return l.bv_width()
-    elif r.is_bv_constant() or r.is_symbol or r.is_function_application() or r.is_ite() or r.is_select():
-        return r.bv_width()
-
-    if width == 0:
-        error(1,l,r)
-    return width
+    if res == 0 or res > 64:
+        error(1,node)
+    return res
 
 def type_to_c(type):
     if type.is_bool_type():
@@ -160,9 +164,9 @@ def div_helper(symbs,node,cons):
 
 
 
-def convert_to_string(symbs, l):
+def convert_to_string(symbs, node):
     buff = StringIO()
-    convert(symbs, l, buff)
+    convert(symbs, node, buff)
     lString = buff.getvalue()
     buff.close()
     return lString
@@ -183,6 +187,7 @@ def convert(symbs,node, cons):
                 return
             error(1, node)
         convert_helper(symbs,node, cons, " == ")
+
     elif node.is_bv_sle():
         convert_helper(symbs,node, cons, " <= ", 's')
     elif node.is_bv_ule():
@@ -404,10 +409,12 @@ def parse(file_path, check_neg):
 
         symbs = set()
         buffer = StringIO()
-        try:
-            convert(symbs,clause, buffer)
-        except Exception as e:
-           print("Could not convert clause: ", e)
+        # try:
+        convert(symbs,clause, buffer)
+        # except Exception as e:
+        #    print("Could not convert clause: ", e)
+        #    print(buffer.getvalue())
+        #    continue
         cons_in_c =  buffer.getvalue()
         if "model_version" not in cons_in_c:
             if check_neg == True:
