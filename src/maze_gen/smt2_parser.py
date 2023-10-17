@@ -399,10 +399,10 @@ def parse(file_path, check_neg):
 
         symbs = set()
         buffer = StringIO()
-        # try:
-        convert(symbs,clause, buffer) # This should always succeed on prefiltered files
-        # except Exception as e:
-        #    print("Could not convert clause: ", e)
+        try:
+            convert(symbs,clause, buffer)
+        except Exception as e:
+           print("Could not convert clause: ", e)
         cons_in_c =  buffer.getvalue()
         if "model_version" not in cons_in_c:
             if check_neg == True:
