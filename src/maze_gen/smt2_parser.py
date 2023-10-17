@@ -104,10 +104,15 @@ def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
         cons.write(op)
         convert(symbs,r, cons)
     elif cast_args:
+        cons.write('(')
         cons.write(l_cast)
         convert(symbs,l, cons)
-        cons.write(op + r_cast)
+        cons.write(')')        
+        cons.write(op)
+        cons.write('(')
+        cons.write(r_cast)
         convert(symbs,r, cons)
+        cons.write(')')
     else:
         cons.write(cast  + '(')
         convert(symbs,l, cons)
