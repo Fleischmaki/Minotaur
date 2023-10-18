@@ -411,12 +411,12 @@ def parse(file_path, check_neg):
 
         symbs = set()
         buffer = StringIO()
-        # try:
-        convert(symbs,clause, buffer)
-        # except Exception as e:
-        #    print("Could not convert clause: ", e)
-        #    print(buffer.getvalue())
-        #    continue
+        try:
+            convert(symbs,clause, buffer)
+        except Exception as e:
+           print("Could not convert clause: ", e)
+           print(buffer.getvalue())
+           continue
         cons_in_c =  buffer.getvalue()
         if "model_version" not in cons_in_c:
             if check_neg == True:
