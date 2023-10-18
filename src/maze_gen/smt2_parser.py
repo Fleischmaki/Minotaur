@@ -415,7 +415,6 @@ def parse(file_path, check_neg):
             convert(symbs,clause, buffer)
         except Exception as e:
            print("Could not convert clause: ", e)
-           print(buffer.getvalue())
            continue
         cons_in_c =  buffer.getvalue()
         if "model_version" not in cons_in_c:
@@ -482,21 +481,28 @@ class Graph:
     def get_edges(self, node):
         return self.graph[node]
 
-    def separate_helper(self, node, visited, group):
-        if node not in visited:
-            group.add(node)
-            visited.add(node)
-        for neighbour in self.graph[node]:
-            if neighbour not in visited:
-                self.separate_helper(neighbour, visited, group)
+    def separate_helper(self, node, visited):
+        group = {node}
+        current = {node}
+        while len(current) != 0:
+            new = set()
+            for node in current:
+                for neighbour in self.graph[node]:
+                    if neighbour not in visited:
+                        new.add(neighbour)
+            visited.update(new)
+            group.update(new)
+            current = new
         return group
+
 
     def separate(self):
         visited = set()
         groups = list()
         for node in self.graph:
             if node not in visited:
-                group = self.separate_helper(node, visited, set())
+                group = self.separate_helper(node, visited)
+                print(len(group))
                 groups.append(group)
         return groups
 
