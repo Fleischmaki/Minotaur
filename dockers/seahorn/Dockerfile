@@ -1,4 +1,4 @@
-FROM seahorn/seahorn-llvm10:nightly
+FROM seahorn/seahorn-llvm14:nightly
 
 USER usea
 RUN mkdir -p /home/usea/tools

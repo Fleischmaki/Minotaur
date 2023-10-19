@@ -30,7 +30,7 @@ def main(dest_dir):
 
     
     ## Crashes/Errors
-    if ('ERROR' in resfile):
+    elif ('ERROR' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'er')
         counter_uk = counter_uk + 1
 
