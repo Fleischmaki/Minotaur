@@ -220,7 +220,7 @@ def convert(symbs,node, cons):
         convert_helper(symbs,node, cons, " & ")
     elif node.is_bv_lshl():
         check_shift_size(node)
-        convert_helper(symbs,node, cons, " << ")
+        convert_helper(symbs,node, cons, " << ", 'u', False)
     elif node.is_bv_not():
         (b,) = node.args()
         cast = cast_to_unsigned(node)
@@ -243,10 +243,16 @@ def convert(symbs,node, cons):
         convert(symbs,l, cons)
     elif node.is_bv_concat():
         (l,r) = node.args()
-        cast_to_unsigned(node)
+        cast = cast_to_unsigned(node)
+        cons.write('(')
+        cons.write(cast)
         convert(symbs,l, cons)
+        cons.write(')')
         cons.write(' << %d | ' % get_bv_width(r))
+        cons.write('(')
+        cons.write(cast)
         convert(symbs,r,cons)
+        cons.write(')')
     elif node.is_bv_extract():
         ext_start = node.bv_extract_start()
         ext_end = node.bv_extract_end()
@@ -502,7 +508,6 @@ class Graph:
         for node in self.graph:
             if node not in visited:
                 group = self.separate_helper(node, visited)
-                print(len(group))
                 groups.append(group)
         return groups
 
