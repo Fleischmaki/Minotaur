@@ -17,5 +17,5 @@ mkdir -p $OUTDIR
 
 # Create dummy file to indicate running start
 touch $WORKDIR/.start
-timeout $2m sea $3 --bv-chc --crab-dom=w-int --crab-lower-unsigned-icmp  ${@:4} $1 &> $OUTFILE
+timeout $2m sea $3 -m=64 --bv-chc --crab-dom=w-int --crab-lower-unsigned-icmp  ${@:4} $1 &> $OUTFILE
 touch $WORKDIR/.end
