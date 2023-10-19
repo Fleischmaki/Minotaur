@@ -3,6 +3,7 @@ import sys, random, os
 from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict
 from pysmt.shortcuts import *
+from io import StringIO
 
 def deflatten(args, op):
     x = args[0]
@@ -16,14 +17,17 @@ def error(flag, *nodes):
         raise ValueError("ERROR: node type not recognized: ", nodes, map(lambda n: n.get_type()))
     elif flag == 1:
         raise ValueError("ERROR: nodes not supported", nodes)
+    else:
+        raise ValueError("ERROR: an unknown error occurred")
 
-def binary_to_decimal(binary):
+def binary_to_decimal(binary, unsigned = True):
     if len(binary) > 64:
         error(1, binary)
-    res = str(BV(binary).constant_value())
-    if len(binary) > 64:
-        res += 'ULL'
-    return res
+    val = str(BV(binary).constant_value() if unsigned else BV(binary).bv_signed_value())
+    post = ''
+    if len(binary) > 32:
+        post = 'ULL' if unsigned else 'LL'
+    return val + post
 
 def bits_to_type(n):
     if n <= 8:
@@ -40,28 +44,43 @@ def bits_to_type(n):
 def bits_to_utype(n):
     return "unsigned " + bits_to_type(n)
 
-def cast_to_signed(l, r):
-   return '(' + bits_to_type(get_bv_width(l,r)) + ') '
+def cast_to_signed(symbs,node):
+    width = get_bv_width(node)
+    type = bits_to_type(width)  
+    n_string = convert_to_string(symbs,node)
+    if width == 64:
+        return "(long) "
+    return ('(%s & %s) > 0 ? (%s)(%s - %s) : (%s)' % (binary_to_decimal("1" + "0"*(width-1)),n_string,type,n_string,binary_to_decimal("1"+"0"*width),type))
 
-def cast_to_unsigned(l, r):
-   return '(' + bits_to_utype(get_bv_width(l,r)) + ') '
+def cast_to_unsigned(node):
+    width = get_bv_width(node)
+    return '(' + bits_to_utype(width) + ') '
 
-def get_bv_width(l, r):
-    extend_step = 0
-    if l.is_bv_constant() or l.is_symbol or l.is_function_application() or l.is_ite() or l.is_select():
-        return l.bv_width()
-    elif r.is_bv_constant() or r.is_symbol or r.is_function_application() or r.is_ite() or r.is_select():
-        return r.bv_width()
-    elif l.is_bv_sext() or l.is_bv_zext():
-        extend_step = l.bv_extend_step()
-    elif r.is_bv_sext() or r.is_bv_zext():
-        extend_step = r.bv_extend_step()
+def get_bv_width(node):
+    res = 0
+    if node.is_bv_constant() or node.is_symbol or node.is_function_application() or node.is_ite() or node.is_select():
+        res = node.bv_width()
+    elif len(node.args()) == 1:
+        (r,) = node.args()
+        width = get_bv_width(r)
+        if(node.is_bv_sext() or node.is_bv_zext()):
+            res = width + node.bv_extend_step()
+        else:
+            res = r.bv_width()  
+    elif len(node.args()) == 2:
+        (l,r) = node.args() 
+        if node.is_bv_concat():
+            res = get_bv_width(l) + get_bv_width(r)
+        if l.is_bv_constant() or l.is_symbol or l.is_function_application() or l.is_ite() or l.is_select():
+            res =  l.bv_width()
+        elif r.is_bv_constant() or r.is_symbol or r.is_function_application() or r.is_ite() or r.is_select():
+            res = r.bv_width()
     else:
-        error(1,l)
-       
-    if extend_step in (8,16,24,32,48,56):
-        return extend_step + 1
-    return extend_step
+        error(1,node)
+    
+    if res == 0 or res > 64:
+        error(1,node)
+    return res
 
 def type_to_c(type):
     if type.is_bool_type():
@@ -79,15 +98,27 @@ def type_to_c(type):
 
 def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
     (l, r) = node.args()
-    cast = ''
     if cast_sign != '':
-        cast = cast_to_unsigned(l,r) if cast_sign == 'u' else cast_to_signed(l,r)
+        if cast_args:
+            l_cast = cast_to_unsigned(l) if cast_sign == 'u' else cast_to_signed(symbs,l)
+            r_cast = cast_to_unsigned(r) if cast_sign == 'u' else cast_to_signed(symbs,r)
+        else:
+            cast = cast_to_unsigned(node) if cast_sign == 'u' else cast_to_signed(node)
 
-    if cast == '' or cast_args:
-        cons.write(cast)
+    if cast_sign == '':
         convert(symbs,l, cons)
-        cons.write(op + cast)
+        cons.write(op)
         convert(symbs,r, cons)
+    elif cast_args:
+        cons.write('(')
+        cons.write(l_cast)
+        convert(symbs,l, cons)
+        cons.write(')')        
+        cons.write(op)
+        cons.write('(')
+        cons.write(r_cast)
+        convert(symbs,r, cons)
+        cons.write(')')
     else:
         cons.write(cast  + '(')
         convert(symbs,l, cons)
@@ -95,36 +126,56 @@ def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
         convert(symbs,r, cons)
         cons.write(')')
 
-def div_helper(symbs,node,cons):
-    (l,r) = node.args()
-    if node.is_bv_udiv():
-        cons.write('udiv(%d,' % get_bv_width(l,r))
-        cast = cast_to_unsigned(l,r)
-    elif node.is_bv_sdiv():
-        cons.write('sdiv(%d,' % get_bv_width(l,r))
-        cast = cast_to_signed(l,r)
-    elif node.is_bv_urem():
-        cons.write('urem(')
-        cast = cast_to_unsigned(l,r)
-    elif node.is_bv_srem():
-        cons.write('srem(')
-        cast = cast_to_signed(l,r)
-    cons.write('')
-    convert(symbs,l,cons)
-    cons.write(',')
-    convert(symbs,r,cons)
-    cons.write(')')
-
 def check_shift_size(node):
     (l,r) = node.args()
-    if not r.is_bv_constant() or r.constant_value() > get_bv_width(l,r):
+    if not r.is_bv_constant() or r.constant_value() > get_bv_width(node):
         error(1, node)
 
+def div_helper(symbs,node,cons):
+    (l,r) = node.args()
+    width = get_bv_width(node)
+
+    lString = convert_to_string(symbs, l)
+    rString = convert_to_string(symbs, r)
+    
+    cons.write(rString)
+    cons.write(' == 0 ? ')
+
+    if node.is_bv_urem() or node.is_bv_srem():
+        cons.write(lString)
+        op = '%'
+    elif node.is_bv_udiv():
+        cons.write(binary_to_decimal('1' * width))
+        op = '/'
+    else:
+        cons.write('(((')
+        cons.write(lString)
+        cons.write(' == 0) || ')
+        cons.write(lString)
+        cons.write(' & ')
+        cons.write(binary_to_decimal('1' + '0' * (width-1), False))
+        cons.write(') < 0 ? 1 : ')
+        cons.write(binary_to_decimal('1' * width, False))
+        cons.write('))')
+        op = '/'
+    cons.write(' : ')
+    cons.write(lString)
+    cons.write(op)
+    cons.write(rString)
     
 
+
+
+def convert_to_string(symbs, node):
+    buff = StringIO()
+    convert(symbs, node, buff)
+    lString = buff.getvalue()
+    buff.close()
+    return lString
+
 def convert(symbs,node, cons):
-    if cons.tell() > 2**20:
-        raise ValueError("Parse result too large") # Avoid file sizes > 1 MB
+    #if cons.tell() > 2**20:
+    #    raise ValueError("Parse result too large") # Avoid file sizes > 1 MB
     cons.write('(')
     if node.is_iff() or node.is_equals() or node.is_bv_comp():
         (l, r) = node.args()
@@ -138,6 +189,7 @@ def convert(symbs,node, cons):
                 return
             error(1, node)
         convert_helper(symbs,node, cons, " == ")
+
     elif node.is_bv_sle():
         convert_helper(symbs,node, cons, " <= ", 's')
     elif node.is_bv_ule():
@@ -168,34 +220,45 @@ def convert(symbs,node, cons):
         convert_helper(symbs,node, cons, " & ")
     elif node.is_bv_lshl():
         check_shift_size(node)
-        convert_helper(symbs,node, cons, " << ")
+        convert_helper(symbs,node, cons, " << ", 'u', False)
     elif node.is_bv_not():
         (b,) = node.args()
-        cons.write("~")
+        cast = cast_to_unsigned(node)
+        cons.write(cast)
+        cons.write("(~")
         convert(symbs,b, cons)
+        cons.write(")")
     elif node.is_bv_sext():
         extend_step = node.bv_extend_step()
         (l,) = node.args()
-        cons.write('(' + bits_to_type(extend_step + l.bv_width()) + ')')
-        convert(symbs,l, cons)
+        width = get_bv_width(l)
+        newtype=bits_to_type(extend_step+width)
+        res = convert_to_string(symbs,l)
+        cons.write('((%s & %s) > 0 ? ((%s)%s - %s) : (%s)%s)' % (binary_to_decimal("1" + "0"*(width-1)),res,newtype,res,binary_to_decimal("1"+"0"*width),newtype,res))
     elif node.is_bv_zext():
         extend_step = node.bv_extend_step()
         (l,) = node.args()
-        cons.write('(' + bits_to_utype(extend_step + l.bv_width()) + ')')
+        width = get_bv_width(l)
+        cons.write('(' + bits_to_utype(extend_step + width) + ')')
         convert(symbs,l, cons)
     elif node.is_bv_concat():
         (l,r) = node.args()
-        if (l.bv_width() + r.bv_width() > 64):
-            error(1,node)   
+        cast = cast_to_unsigned(node)
+        cons.write('(')
+        cons.write(cast)
         convert(symbs,l, cons)
-        cons.write(' << %d | ' % r.bv_width())
+        cons.write(')')
+        cons.write(' << %d | ' % get_bv_width(r))
+        cons.write('(')
+        cons.write(cast)
         convert(symbs,r,cons)
+        cons.write(')')
     elif node.is_bv_extract():
         ext_start = node.bv_extract_start()
         ext_end = node.bv_extract_end()
         dif = ext_end - ext_start + 1
         (l,) = node.args()
-        m = l.bv_width()
+        m = get_bv_width(l)
         mask = binary_to_decimal("1" * (dif))
         newtype = bits_to_utype(dif) 
         cons.write("(" + newtype +") (")
@@ -229,8 +292,8 @@ def convert(symbs,node, cons):
         convert(symbs,n, cons)
     elif node.is_bv_neg():
         (s,) = node.args()
-        cast = cast_to_unsigned(s,s)
-        base = binary_to_decimal("1" + "0" * (s.bv_width()))
+        cast = cast_to_unsigned(node)
+        base = binary_to_decimal("1" + "0" * (get_bv_width(s)))
         cons.write(cast + base + ' - ' + cast + '(')
         convert(symbs,s,cons)
         cons.write(')')
@@ -248,8 +311,8 @@ def convert(symbs,node, cons):
         cons.write(constant)
     elif node.is_symbol():
         if str(node) == 'c':
-            node = FreshSymbol(typename=node.get_type())
-        node = clean_string(str(node))
+            node = '__original_smt_name_was_c__'
+        node = clean_string(node)
         cons.write(node)
         symbs.add(node)
     elif node.is_select():
@@ -272,7 +335,7 @@ def convert(symbs,node, cons):
             if not n.is_bv_constant():
                 error(1, node)
         index = "".join(["_" + str(n.constant_value()) for n in node.args()])
-        fn = clean_string(str(node.function_name()))
+        fn = clean_string(node.function_name())
         cons.write(fn + index)
         symbs.add(fn + index)
     else:
@@ -283,7 +346,7 @@ def convert(symbs,node, cons):
 
 def rotate_helper(symbs, node, cons, op):
     (l,) = node.args()
-    m = node.bv_width()
+    m = get_bv_width(node)
     i = node.bv_rotation_step()
     convert(symbs,l,cons)
     cons.write('((')
@@ -310,6 +373,7 @@ def conjunction_to_clauses(formula):
     return clauses
 
 def clean_string(s):
+    s = str(s)
     return re.sub('[^A-Za-z0-9_]+','',s)
 
 def rename_arrays(formula):
@@ -337,9 +401,13 @@ def write_to_file(formula, file):
     return write_smtlib(formula, file)
 
 def parse(file_path, check_neg):
+    print("Converting %s: " % file_path)
     decl_arr, variables, parsed_cons, formula = read_file(file_path)
     clauses = conjunction_to_clauses(formula)
+    c = 0
     for clause in clauses:
+        c += 1
+        print("%d/%d" % (c,len(clauses)))
         clause, constraints = rename_arrays(clause)
         if len(constraints) > 0:
             print("Added %d new arrays" % len(constraints))
@@ -348,13 +416,13 @@ def parse(file_path, check_neg):
         clause = And(*constraints, clause) # Make sure to render constraints first
 
         symbs = set()
-        tempfile = open('temp.txt', 'w+')
-        #try:
-        convert(symbs,clause, tempfile) # This should always succeed on prefiltered files
-        #except Exception as e:
-        #    print("Could not convert clause: ", e)
-        tempfile.seek(0)
-        cons_in_c =  tempfile.read()
+        buffer = StringIO()
+        try:
+            convert(symbs,clause, buffer)
+        except Exception as e:
+           print("Could not convert clause: ", e)
+           continue
+        cons_in_c =  buffer.getvalue()
         if "model_version" not in cons_in_c:
             if check_neg == True:
                 neg_sat = is_neg_sat(clause, clauses)
@@ -362,8 +430,12 @@ def parse(file_path, check_neg):
             else:
                 parsed_cons[cons_in_c] = ""
             for symb in symbs:
-                decls = list(map(lambda x: clean_string(str(x)), ldecl_arr))
+                decls = list(map(lambda x: clean_string(x), ldecl_arr))
                 if symb in decls:
+                    decl = symb
+                elif 'c' in decls and symb == '__original_smt_name_was_c__':
+                    decls.remove('c')
+                    decls.append(symb)
                     decl = symb
                 else:
                     decl = symb.split("_")[0]
@@ -415,21 +487,27 @@ class Graph:
     def get_edges(self, node):
         return self.graph[node]
 
-    def separate_helper(self, node, visited, group):
-        if node not in visited:
-            group.add(node)
-            visited.add(node)
-        for neighbour in self.graph[node]:
-            if neighbour not in visited:
-                self.separate_helper(neighbour, visited, group)
+    def separate_helper(self, node, visited):
+        group = {node}
+        current = {node}
+        while len(current) != 0:
+            new = set()
+            for node in current:
+                for neighbour in self.graph[node]:
+                    if neighbour not in visited:
+                        new.add(neighbour)
+            visited.update(new)
+            group.update(new)
+            current = new
         return group
+
 
     def separate(self):
         visited = set()
         groups = list()
         for node in self.graph:
             if node not in visited:
-                group = self.separate_helper(node, visited, set())
+                group = self.separate_helper(node, visited)
                 groups.append(group)
         return groups
 
@@ -517,7 +595,7 @@ def get_minimum_array_size(smt_file):
     if not is_sat(formula):
         formula = Not(formula)
     while not sat:
-        if array_size > 2**16:  
+        if array_size > 2**10:  
             raise ValueError("Minimum array size too large")
         assertions = [i <= array_size for i in map(lambda x: x.args()[1], array_ops)]
         new_formula = And(*assertions, formula)
@@ -553,9 +631,9 @@ def check_files(file_path, resfile):
         _, _, _, formula = read_file(file_path)
         clauses = conjunction_to_clauses(formula)
         for clause in clauses:
-            symbs = set()
-            tempfile = open('temp.txt', 'w+')
-            convert(symbs,clause, tempfile) 
+            symbols = set()
+            buffer = StringIO()
+            convert(symbols,clause, buffer) 
             print(".",end ="")
         print("")
         print("[*] Done.")

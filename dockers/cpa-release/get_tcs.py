@@ -7,12 +7,13 @@ def save_tc(dest_dir, tc_path, start_time, end_time, sig):
     os.system('cp %s %s' % (tc_path, file_path))
 
 
-WORKDIR = '/home/usea/workspace'
-OUTDIR = '/home/usea/workspace/outputs'
+WORKDIR = '/home/maze/workspace'
+OUTDIR = '/home/maze/workspace/outputs'
 
 def main(dest_dir):           
     # Create destination directory
     os.system('mkdir -p %s' % dest_dir)
+
     start_file = os.path.join(WORKDIR, '.start')
     start_time = os.path.getmtime(start_file)
     end_file = os.path.join(WORKDIR, '.end')
@@ -20,19 +21,20 @@ def main(dest_dir):
 
     respath = '%s/res' %(OUTDIR)
     resfile = open(respath, 'r').read()
-
-    # False negatives
-    if ('unsat' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time, 'fn') 
     # True positives
-    elif ('sat' in resfile):
+    if ('FALSE' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'tp')
 
-    
-    ## Crashes/Errors
-    elif ('ERROR' in resfile):
+    # False negatives
+    elif ('TRUE' in resfile):
+        save_tc(dest_dir, respath, start_time, end_time, 'fn')
+
+    # Crashes/Errors
+    elif ('UNKNOWN' in resfile):
+        save_tc(dest_dir, respath, start_time, end_time, 'uk')
+
+    elif ('Error' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'er')
-        counter_uk = counter_uk + 1
 
     # Timeout
     else: 

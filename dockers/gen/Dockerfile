@@ -4,8 +4,10 @@ USER maze
 WORKDIR /home/maze/workspace
 
 # Get additional dependencies 
-RUN sudo apt-get update
-RUN sudo apt-get -y install pip
+RUN sudo apt-get update && sudo apt-get -y install \
+    pip \
+&& sudo rm -rf /var/lib/apt/lists/*
+
 
 # Install requirements
 ADD requirements.txt /home/maze/workspace/requirements.txt

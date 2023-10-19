@@ -3,6 +3,8 @@ import sys, os
 import json
 import time
 from ..runner import *
+from collections import namedtuple
+from math import ceil
 
 REMOVE_CMD = 'rm -r %s'
 CP_CMD = 'cp %s %s'
@@ -91,8 +93,8 @@ def get_random_params(conf):
 
 
 def get_targets(conf):
+    Target = namedtuple('Target',['maze','tool','index','params','variant','flags'])
     targets = []
-
     repeats = conf['repeats']
     for i in range(repeats):
         params = get_random_params(conf)
@@ -110,25 +112,38 @@ def get_targets(conf):
                     if chosen != 0:
                         flags += flag + chosen + ' '
             for j in range(len(mazes)):
-                targets.append((mazes[j], tool,i*params['m'] + j,params, variant, flags ))
+                targets.append(Target(mazes[j], tool,i*params['m'] + j,params, variant, flags))
     return targets # Or just set greater values for transforms 
 
-def fetch_works(conf,targets):
+def fetch_maze_params(conf, targets):
+    step = len(conf['tool'].keys()) * conf['transforms']
+    size = min(ceil(len(targets)/step), conf['workers'])
+    return [targets[i*step].params for i in range(size)]
+
+def fetch_works(conf,targets,mazes):
     works = []
-    mazes = []
+    completed = []
     for i in range(conf['workers']):
         if len(targets) <= 0:
             break
-        _, tool, id, params, _, _ = t = targets.pop(0)
+        maze, tool, id, params, _, _ = t = targets.pop(0)
         works.append(t)
-        if id % (int(conf['transforms'])) == 0 and tool == list(conf['tool'].keys())[0]:
+        if mazes == 0:
             if conf['maze_gen'] == 'container':
-                mazes.append(params)
+                paramss = fetch_maze_params(conf,targets)
+                maze_gen.generate_mazes(paramss, get_temp_dir())
+                mazes += len(paramss)
             else:
                 maze_gen.generate_maze(params, get_temp_dir(), get_minotaur_root())
-    if conf['maze_gen'] == 'container':
-        maze_gen.generate_mazes(mazes, get_temp_dir())
-    return works
+                mazes = 1
+
+        offset = 0 if 'keepId' in params['t'] else 1
+        if tool == list(conf['tool'].keys())[0] and id % (conf['transforms'] + 1 - offset) == 0:
+            mazes -= 1
+        if tool == list(conf['tool'].keys())[-1] and id % (conf['transforms'] + 1 - offset) == conf['transforms'] - offset:
+            completed.append(maze.replace('t%d' % (conf['transforms']), 't*'))
+
+    return mazes, works, completed
 
 def get_temp_dir():
     return os.path.join(get_minotaur_root(), 'temp')
@@ -139,28 +154,28 @@ def get_maze_dir(maze=''):
 def spawn_containers(conf, works):
     procs = []
     for i in range(len(works)):
-        maze, tool, id, _, variant, flags  = works[i]
-        docker.spawn_docker(conf['memory'], id, tool,i, variant, flags ).wait()
+        target = works[i]
+        docker.spawn_docker(conf['memory'], target.index, target.tool,i, target.variant, target.flags ).wait()
 
     procs = []
     for i in range(len(works)):
-        maze, tool, id, _, variant, flags  = works[i]
+        target = works[i]
         # Copy maze in the container
-        procs.append(docker.set_docker_maze(get_maze_dir(maze), id,tool, variant, flags ))
+        procs.append(docker.set_docker_maze(get_maze_dir(target.maze), target.index,target.tool, target.variant, target.flags ))
     commands.wait_for_procs(procs)
     time.sleep(10)
 
 def run_tools(conf,works):
     duration = conf['duration']
     for i in range(len(works)):
-        _, tool, id, _, variant, flags  = works[i]
-        docker.run_docker(duration, tool, id, variant, flags )
+        target  = works[i]
+        docker.run_docker(duration, target.tool, target.index, target.variant, target.flags )
     time.sleep(duration*60 + 15) 
 
 def store_outputs(conf, out_dir, works):
     for i in range(len(works)):
-        maze, tool, id, params, variant, flags  = works[i]
-        docker.collect_docker_results(tool, id, variant, flags)
+        target = works[i]
+        docker.collect_docker_results(target.tool, target.index, target.variant, target.flags)
     time.sleep(10)
 
     for i in range(len(works)):
@@ -220,9 +235,12 @@ def kill_containers(works):
     commands.wait_for_procs(procs)
     time.sleep(10)
 
-def cleanup(conf, targets):
-    if len(targets) == 0 or (targets[0][2] % int(conf['transforms']) == 0 and targets[0][1] == list(conf['tool'].keys())[0]):
-        commands.run_cmd(REMOVE_CMD % get_temp_dir())
+def cleanup(completed):
+    procs = []
+    while(len(completed) > 0):
+        maze = completed.pop()
+        procs.append(commands.spawn_cmd(REMOVE_CMD % os.path.join(get_temp_dir(),'src',maze)))
+    commands.wait_for_procs(procs)
 
 def get_minotaur_root():
     return os.path.dirname(os.path.realpath(sys.modules['__main__'].__file__))
@@ -234,16 +252,17 @@ def main(conf_path, out_dir):
 
     targets = get_targets(conf)
     write_summary_header(conf, out_dir)
+    num_mazes = 0
         
     while len(targets) > 0:
-        works = fetch_works(conf, targets)
+        num_mazes, works, to_remove = fetch_works(conf, targets, num_mazes)
         spawn_containers(conf, works)
         run_tools(conf, works)
         store_outputs(conf, out_dir, works)
         kill_containers(works)
-        cleanup(conf, targets) 
+        cleanup(to_remove) 
     
-    cleanup(conf, targets)
+    commands.run_cmd(REMOVE_CMD % get_temp_dir())
 
 def load(argv):
     conf_path = os.path.join(get_minotaur_root(),'test',argv[0] + '.conf.json')

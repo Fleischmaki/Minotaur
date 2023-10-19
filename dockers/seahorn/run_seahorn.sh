@@ -11,7 +11,11 @@ OUTFILE=$OUTDIR/res
 
 mkdir -p $OUTDIR
 
+# Remove explicit initialisations
+# sed -i "s/init(.*);//g" $1 
+# sed -i "s/ = __VERIFIER_nondet_.*()//g" $1
+
 # Create dummy file to indicate running start
 touch $WORKDIR/.start
-timeout $2m sea ${@:3} $1 &> $OUTFILE
+timeout $2m sea $3 -m=64 -unroll-threshold=1024 --bv-chc --crab-dom=w-int --crab-lower-unsigned-icmp  ${@:4} $1 &> $OUTFILE
 touch $WORKDIR/.end

@@ -1,6 +1,6 @@
 import sys, os
 import subprocess
-from mc2.tools import *
+from src.tools import *
 
 if __name__ == '__main__':
     mode = sys.argv[1]

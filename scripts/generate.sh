@@ -124,7 +124,7 @@ echo "Output directory: "$OUTPUT_DIR
 echo "##############################################"
 
 mkdir -p $OUTPUT_DIR/src $OUTPUT_DIR/bin $OUTPUT_DIR/png $OUTPUT_DIR/txt $OUTPUT_DIR/sln $OUTPUT_DIR/smt
-MAZEGEN_DIR=$(readlink -f $(dirname "$0")/..)/mc2/maze_gen
+MAZEGEN_DIR=$(readlink -f $(dirname "$0")/..)/src/maze_gen
 
 NAME=$ALGORITHM"_"$WIDTH"x"$HEIGHT"_"$SEED"_"
 if [ $UNIT -eq 0 ]; then
@@ -172,7 +172,4 @@ do
         mv $NAME$INDEX"_"$T_TYPE"_solution.txt" $OUTPUT_DIR/sln
     fi
 done
-if [[ "$GEN" == *"CVE"* ]]; then
-    rm temp.txt
-fi
 echo "Done!"
