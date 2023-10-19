@@ -13,7 +13,7 @@ def main(maze_path,seeddir, outdir,timeout,gen,tool,variant,flags):
         return
 
     if not 'u' in params.keys():
-        params.update({'u':'','w':1,'h':1})
+        params.update({'u':''})
         if not check_if_tp(tool, variant, flags, params, outdir, timeout, gen):
             params.pop('u', None) 
 
