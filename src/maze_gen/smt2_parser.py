@@ -317,6 +317,8 @@ def convert(symbs,node, cons):
         symbs.add(node)
     elif node.is_select():
         (a, p) = node.args()
+        cast = cast_to_unsigned(node)
+        cons.write(cast)
         convert(symbs, a, cons)
         cons.write("[")
         convert(symbs,p,cons)
@@ -403,7 +405,11 @@ def write_to_file(formula, file):
 def parse(file_path, check_neg):
     print("Converting %s: " % file_path)
     decl_arr, variables, parsed_cons, formula = read_file(file_path)
-    clauses = conjunction_to_clauses(formula)
+    clauses = conjunction_to_clauses(formula) 
+
+    array_size, array_constraints = constrain_array_size(formula)
+    print(array_constraints)
+
     c = 0
     for clause in clauses:
         c += 1
@@ -443,7 +449,7 @@ def parse(file_path, check_neg):
                 vartype = ldecl_arr[i].get_type()
                 type_in_c = type_to_c(vartype)
                 if vartype.is_array_type():
-                    symb += "[ARRAY_SIZE]" # Will be defined by generator
+                    symb += "[%d]" % array_size 
                 variables[symb] = type_in_c
     return parsed_cons, variables
 
@@ -585,8 +591,11 @@ def get_array_calls(formula):
             calls = calls + get_array_calls(subformula)
     return calls
     
-def get_minimum_array_size(smt_file):
+def get_minimum_array_size_from_file(smt_file):
     formula = read_file(smt_file)[3]
+    return constrain_array_size(formula)[0]
+
+def constrain_array_size(formula):
     array_ops = get_array_calls(formula)
     if len(array_ops) == 0:
         return 0
@@ -594,14 +603,16 @@ def get_minimum_array_size(smt_file):
     array_size = 2
     if not is_sat(formula):
         formula = Not(formula)
+    assertions = set()
     while not sat:
-        if array_size > 2**10:  
+        if array_size > 2**12:  
             raise ValueError("Minimum array size too large")
-        assertions = [i <= array_size for i in map(lambda x: x.args()[1], array_ops)]
+        assertions = {i < array_size for i in map(lambda x: x.args()[1], array_ops)}
         new_formula = And(*assertions, formula)
         sat = is_sat(new_formula)
         array_size *= 2 
-    return array_size // 2
+    return array_size // 2, assertions
+
 
 def main(file_path, resfile):    
     return check_files(file_path, resfile)
@@ -649,7 +660,7 @@ def check_files(file_path, resfile):
 
         # Check that it is satisfiable on bounded arrays
         print("[*] Check array size:")
-        get_minimum_array_size(file_path)
+        get_minimum_array_size_from_file(file_path)
         print("[*] Done.")
 
     except Exception as e:
