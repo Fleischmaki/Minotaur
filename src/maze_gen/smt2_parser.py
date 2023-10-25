@@ -598,7 +598,7 @@ def get_minimum_array_size_from_file(smt_file):
 def constrain_array_size(formula):
     array_ops = get_array_calls(formula)
     if len(array_ops) == 0:
-        return 0
+        return 0, set()
     sat = False
     array_size = 2
     if not is_sat(formula):
