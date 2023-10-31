@@ -408,7 +408,6 @@ def parse(file_path, check_neg):
     clauses = conjunction_to_clauses(formula) 
 
     array_size, array_constraints = constrain_array_size(formula)
-    print(array_constraints)
 
     c = 0
     for clause in clauses:
