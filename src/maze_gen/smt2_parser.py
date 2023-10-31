@@ -156,7 +156,7 @@ def div_helper(symbs,node,cons):
         cons.write(binary_to_decimal('1' + '0' * (width-1), False))
         cons.write(') < 0 ? 1 : ')
         cons.write(binary_to_decimal('1' * width, False))
-        cons.write('))')
+        cons.write(')')
         op = '/'
     cons.write(' : ')
     cons.write(lString)
