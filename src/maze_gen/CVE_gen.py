@@ -35,6 +35,32 @@ class Generator:
             
     def get_logic_def(self):
         logic_def = ""
+        logic_def += ("""long scast_helper(unsigned long i, unsigned char width){
+    if((i & (1 << width-1)) > 0){
+        return i - (((unsigned long) 1)<< width);
+    }
+    return i;
+}\n""")
+        logic_def += ("""long sdiv_helper(long l, long r, int width){
+    if(r == 0){
+        if(l >= 0)
+            return -1;
+        return 1;
+    }
+    return l / r;
+}
+
+unsigned long div_helper(unsigned long l, unsigned long r, int width){
+    if(r == 0)
+        return ((1 << (width-1)) - 1) + (1 << (width-1));
+    return l / r;
+}
+
+unsigned long rem_helper(unsigned long l, unsigned long r, int width){
+    if(r == 0)
+        return l;
+    return l % r;
+}\n""")
         if self.array_size != 0:
             logic_def += """long* array_store(long a[],int p,long v){
     a[p] = v;
