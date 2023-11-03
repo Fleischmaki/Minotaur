@@ -37,14 +37,14 @@ class Generator:
         logic_def = ""
         logic_def += ("""long scast_helper(unsigned long i, unsigned char width){
     if((i & (1 << width-1)) > 0){
-        return i - (((unsigned long) 1)<< width);
+        return i - (1ULL<< width);
     }
     return i;
 }\n""")
         logic_def += ("""long sdiv_helper(long l, long r, int width){
     if(r == 0){
         if(l >= 0)
-            return -1;
+            return -1ULL >> (64-width); // Make sure we shift with 0s
         return 1;
     }
     return l / r;
@@ -52,7 +52,7 @@ class Generator:
 
 unsigned long div_helper(unsigned long l, unsigned long r, int width){
     if(r == 0)
-        return ((1 << (width-1)) - 1) + (1 << (width-1));
+        return -1ULL >> (64-width);
     return l / r;
 }
 
