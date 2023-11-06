@@ -271,7 +271,7 @@ def convert(symbs,node, cons):
     elif node.is_bv_ror():
         rotate_helper(symbs, node, cons, ">>")
     elif node.is_bv_constant():
-        value = str(node.constant_value())
+        value =  "(" + bits_to_utype(node.bv_width()) + ") " + str(node.constant_value())
         if node.bv_width() > 32:
             value += "ULL"
         cons.write(value)
