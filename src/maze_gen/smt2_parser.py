@@ -113,7 +113,7 @@ def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
         cons.write(op)
         cons.write(r_cast)
     else:
-        n_string = l_string + op + r_string
+        n_string = '(' + l_string + op + r_string + ')'
         cons.write(unsigned(node,n_string) if cast_sign == 'u' else signed(node,n_string))
 
 
