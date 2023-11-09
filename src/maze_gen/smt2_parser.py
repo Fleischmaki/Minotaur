@@ -136,7 +136,7 @@ def div_helper(symbs,node,cons):
     elif node.is_bv_udiv():
         cons.write("div_helper(%s,%s,%s)" % (lString,rString,width))
     else:
-        cons.write("sdiv_helper(%s,%s,%s)" % (lString,rString,width))
+        cons.write("sdiv_helper(%s,%s,%s)" % (signed(l,lString),signed(r,rString),width))
         
 def convert_to_string(symbs, node):
     buff = StringIO()
@@ -179,7 +179,7 @@ def convert(symbs,node, cons):
     elif node.is_bv_add():
         convert_helper(symbs,node, cons, " + ", 'u', False) # Recast result on all operations that can exceed value ranges
     elif node.is_bv_sub():
-        convert_helper(symbs,node, cons, " - ")
+        convert_helper(symbs,node, cons, " - ", 'u', False)
     elif node.is_bv_mul():
         convert_helper(symbs,node, cons, " * ", 'u', False)# Recast result on all operations that can exceed value ranges
     elif node.is_bv_udiv() or node.is_bv_sdiv() or node.is_bv_urem() or node.is_bv_srem():
