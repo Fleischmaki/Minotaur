@@ -160,7 +160,7 @@ def convert(symbs,node, cons):
                 cons.write("))")
                 return
             error(1, node)
-        convert_helper(symbs,node, cons, " == ")
+        convert_helper(symbs,node, cons, " == ", 'u', True)
 
     elif node.is_bv_sle():
         convert_helper(symbs,node, cons, " <= ", 's')
