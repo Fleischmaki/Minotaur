@@ -131,12 +131,13 @@ def div_helper(symbs,node,cons):
     
     if node.is_bv_urem() or node.is_bv_srem():
         if node.is_bv_srem():
-            cons.write(signed(node))
-        cons.write("rem_helper(%s,%s,%s)" % (lString,rString,width))
+            lString = signed(l,lString)
+            rString = signed(r,rString)
+        cons.write(unsigned(node,"rem_helper(%s,%s,%s)" % (lString,rString,width)))
     elif node.is_bv_udiv():
-        cons.write("div_helper(%s,%s,%s)" % (lString,rString,width))
+        cons.write(unsigned(node,"div_helper(%s,%s,%s)" % (lString,rString,width)))
     else:
-        cons.write("sdiv_helper(%s,%s,%s)" % (signed(l,lString),signed(r,rString),width))
+        cons.write(unsigned(node,"sdiv_helper(%s,%s,%s)" % (signed(l,lString),signed(r,rString),width)))
         
 def convert_to_string(symbs, node):
     buff = StringIO()
@@ -160,7 +161,7 @@ def convert(symbs,node, cons):
                 cons.write("))")
                 return
             error(1, node)
-        convert_helper(symbs,node, cons, " == ", 'u', True)
+        convert_helper(symbs,node, cons, " == ")
 
     elif node.is_bv_sle():
         convert_helper(symbs,node, cons, " <= ", 's')
