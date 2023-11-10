@@ -18,16 +18,16 @@ WORKDIR /home/maze/tools/
 RUN git clone https://gitlab.com/mopsa/mopsa-analyzer.git
 WORKDIR /home/maze/tools/mopsa-analyzer
 RUN opam init --yes --disable-sandboxing
+RUN opam switch create 4.14.1
 RUN eval $(opam env)
 
+RUN sudo dpkg --add-architecture i386 
 RUN sudo apt-get update && sudo apt-get install -y \
     zlib1g-dev \
     libc6-i386 \
 && sudo rm -rf /var/lib/apt/lists/*
 
 RUN opam install --deps-only --with-doc --with-test --yes .
-RUN sudo dpkg --add-architecture i386 
-
 RUN opam config exec ./configure
 RUN make
 RUN make install

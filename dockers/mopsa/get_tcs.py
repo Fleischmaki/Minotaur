@@ -21,17 +21,20 @@ def main(dest_dir):
 
     respath = '%s/res' %(OUTDIR)
     resfile = open(respath, 'r').read()
+    flag = ''
+    if ('⚠' in resfile):
+        flag = 'wa-'
     # True positives
     if ('Assertion failure' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time, 'tp')
+        save_tc(dest_dir, respath, start_time, end_time,flag + 'tp')
     # False negatives
     elif ('No alarm' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time, 'fn')
+        save_tc(dest_dir, respath, start_time, end_time, flag +'fn')
     elif ('panic: ' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time, 'er')
+        save_tc(dest_dir, respath, start_time, end_time, flag + 'er')
     # Timeout
     else: 
-        save_tc(dest_dir, respath, start_time, end_time, 'to')
+        save_tc(dest_dir, respath, start_time, end_time, flag + 'to')
 
 if __name__ == '__main__':
     dest_dir = sys.argv[1]

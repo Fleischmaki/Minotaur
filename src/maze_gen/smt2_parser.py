@@ -24,10 +24,9 @@ def binary_to_decimal(binary, unsigned = True):
     if len(binary) > 64:
         error(1, binary)
     val = str(BV(binary).constant_value() if unsigned else BV(binary).bv_signed_value())
-    post = ''
     if len(binary) > 32:
-        post = 'ULL' if unsigned else 'LL'
-    return val + post
+        val += 'ULL' if unsigned else 'LL'
+    return val 
 
 def bits_to_type(n):
     if n <= 8:
@@ -44,15 +43,17 @@ def bits_to_type(n):
 def bits_to_utype(n):
     return "unsigned " + bits_to_type(n)
 
-def cast_to_signed(symbs,node):
+def signed(node,n_string):
     width = get_bv_width(node)
-    type = bits_to_type(width)  
-    n_string = convert_to_string(symbs,node)
+    cast = bits_to_type(width)  
     if width == 64:
-        return "(long) "
-    return ('(%s & %s) > 0 ? (%s)(%s - %s) : (%s)' % (binary_to_decimal("1" + "0"*(width-1)),n_string,type,n_string,binary_to_decimal("1"+"0"*width),type))
+        return '(%s) %s' % (cast, n_string)  
+    return ('(%s) scast_helper(%s,%s)' % (cast,n_string,width))
 
-def cast_to_unsigned(node):
+def unsigned(node,n_string):
+    return ('%s %s' % (get_unsigned_cast(node), n_string))
+
+def get_unsigned_cast(node):
     width = get_bv_width(node)
     return '(' + bits_to_utype(width) + ') '
 
@@ -98,33 +99,23 @@ def type_to_c(type):
 
 def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
     (l, r) = node.args()
-    if cast_sign != '':
-        if cast_args:
-            l_cast = cast_to_unsigned(l) if cast_sign == 'u' else cast_to_signed(symbs,l)
-            r_cast = cast_to_unsigned(r) if cast_sign == 'u' else cast_to_signed(symbs,r)
-        else:
-            cast = cast_to_unsigned(node) if cast_sign == 'u' else cast_to_signed(node)
+    l_string = convert_to_string(symbs,l)
+    r_string = convert_to_string(symbs,r)
 
     if cast_sign == '':
-        convert(symbs,l, cons)
+        cons.write(l_string)
         cons.write(op)
-        convert(symbs,r, cons)
+        cons.write(r_string)
     elif cast_args:
-        cons.write('(')
+        l_cast = unsigned(l,l_string) if cast_sign == 'u' else signed(l,l_string)
+        r_cast = unsigned(r,r_string) if cast_sign == 'u' else signed(r,r_string)
         cons.write(l_cast)
-        convert(symbs,l, cons)
-        cons.write(')')        
         cons.write(op)
-        cons.write('(')
         cons.write(r_cast)
-        convert(symbs,r, cons)
-        cons.write(')')
     else:
-        cons.write(cast  + '(')
-        convert(symbs,l, cons)
-        cons.write(op)
-        convert(symbs,r, cons)
-        cons.write(')')
+        n_string = '(' + l_string + op + r_string + ')'
+        cons.write(unsigned(node,n_string) if cast_sign == 'u' else signed(node,n_string))
+
 
 def check_shift_size(node):
     (l,r) = node.args()
@@ -138,34 +129,16 @@ def div_helper(symbs,node,cons):
     lString = convert_to_string(symbs, l)
     rString = convert_to_string(symbs, r)
     
-    cons.write(rString)
-    cons.write(' == 0 ? ')
-
     if node.is_bv_urem() or node.is_bv_srem():
-        cons.write(lString)
-        op = '%'
+        if node.is_bv_srem():
+            lString = signed(l,lString)
+            rString = signed(r,rString)
+        cons.write(unsigned(node,"rem_helper(%s,%s,%s)" % (lString,rString,width)))
     elif node.is_bv_udiv():
-        cons.write(binary_to_decimal('1' * width))
-        op = '/'
+        cons.write(unsigned(node,"div_helper(%s,%s,%s)" % (lString,rString,width)))
     else:
-        cons.write('(((')
-        cons.write(lString)
-        cons.write(' == 0) || ')
-        cons.write(lString)
-        cons.write(' & ')
-        cons.write(binary_to_decimal('1' + '0' * (width-1), False))
-        cons.write(') < 0 ? 1 : ')
-        cons.write(binary_to_decimal('1' * width, False))
-        cons.write('))')
-        op = '/'
-    cons.write(' : ')
-    cons.write(lString)
-    cons.write(op)
-    cons.write(rString)
-    
-
-
-
+        cons.write(unsigned(node,"sdiv_helper(%s,%s,%s)" % (signed(l,lString),signed(r,rString),width)))
+        
 def convert_to_string(symbs, node):
     buff = StringIO()
     convert(symbs, node, buff)
@@ -201,13 +174,13 @@ def convert(symbs,node, cons):
     elif node.is_bv_lshr():
         check_shift_size(node)
         convert_helper(symbs,node, cons, " >> ", 'u') # C >> is logical for unsigned, arithmetic for signed
-        check_shift_size(node)
     elif node.is_bv_ashr():
+        check_shift_size(node)
         convert_helper(symbs,node, cons, " >> ", 's')
     elif node.is_bv_add():
         convert_helper(symbs,node, cons, " + ", 'u', False) # Recast result on all operations that can exceed value ranges
     elif node.is_bv_sub():
-        convert_helper(symbs,node, cons, " - ")
+        convert_helper(symbs,node, cons, " - ", 'u', False)
     elif node.is_bv_mul():
         convert_helper(symbs,node, cons, " * ", 'u', False)# Recast result on all operations that can exceed value ranges
     elif node.is_bv_udiv() or node.is_bv_sdiv() or node.is_bv_urem() or node.is_bv_srem():
@@ -223,7 +196,7 @@ def convert(symbs,node, cons):
         convert_helper(symbs,node, cons, " << ", 'u', False)
     elif node.is_bv_not():
         (b,) = node.args()
-        cast = cast_to_unsigned(node)
+        cast = get_unsigned_cast(node)
         cons.write(cast)
         cons.write("(~")
         convert(symbs,b, cons)
@@ -236,14 +209,12 @@ def convert(symbs,node, cons):
         res = convert_to_string(symbs,l)
         cons.write('((%s & %s) > 0 ? ((%s)%s - %s) : (%s)%s)' % (binary_to_decimal("1" + "0"*(width-1)),res,newtype,res,binary_to_decimal("1"+"0"*width),newtype,res))
     elif node.is_bv_zext():
-        extend_step = node.bv_extend_step()
         (l,) = node.args()
-        width = get_bv_width(l)
-        cons.write('(' + bits_to_utype(extend_step + width) + ')')
+        get_unsigned_cast(node)
         convert(symbs,l, cons)
     elif node.is_bv_concat():
         (l,r) = node.args()
-        cast = cast_to_unsigned(node)
+        cast = get_unsigned_cast(node)
         cons.write('(')
         cons.write(cast)
         convert(symbs,l, cons)
@@ -292,23 +263,22 @@ def convert(symbs,node, cons):
         convert(symbs,n, cons)
     elif node.is_bv_neg():
         (s,) = node.args()
-        cast = cast_to_unsigned(node)
+        cast = get_unsigned_cast(node)
         base = binary_to_decimal("1" + "0" * (get_bv_width(s)))
-        cons.write(cast + base + ' - ' + cast + '(')
+        cons.write(cast + base + ' - ' + cast)
         convert(symbs,s,cons)
-        cons.write(')')
     elif node.is_bv_rol():
         rotate_helper(symbs, node, cons, "<<")
     elif node.is_bv_ror():
         rotate_helper(symbs, node, cons, ">>")
     elif node.is_bv_constant():
-        constant =  "(" + bits_to_utype(node.bv_width()) + ") " + str(node.constant_value())
+        value =  "(" + bits_to_utype(node.bv_width()) + ") " + str(node.constant_value())
         if node.bv_width() > 32:
-            constant += "ULL"
-        cons.write(constant)
+            value += "ULL"
+        cons.write(value)
     elif node.is_bool_constant():
-        constant =  "1" if node.is_bool_constant(True) else "0"
-        cons.write(constant)
+        value =  "1" if node.is_bool_constant(True) else "0"
+        cons.write(value)
     elif node.is_symbol():
         if str(node) == 'c':
             node = '__original_smt_name_was_c__'
@@ -317,6 +287,8 @@ def convert(symbs,node, cons):
         symbs.add(node)
     elif node.is_select():
         (a, p) = node.args()
+        cast = get_unsigned_cast(node)
+        cons.write(cast)
         convert(symbs, a, cons)
         cons.write("[")
         convert(symbs,p,cons)
@@ -403,10 +375,10 @@ def write_to_file(formula, file):
 def parse(file_path, check_neg):
     print("Converting %s: " % file_path)
     decl_arr, variables, parsed_cons, formula = read_file(file_path)
-    clauses = conjunction_to_clauses(formula)
-    c = 0
-    for clause in clauses:
-        c += 1
+    formula_clauses = conjunction_to_clauses(formula) 
+    array_size, array_constraints = constrain_array_size(formula)
+    clauses = [*array_constraints, *formula_clauses]
+    for c, clause in enumerate(clauses,start=1):
         print("%d/%d" % (c,len(clauses)))
         clause, constraints = rename_arrays(clause)
         if len(constraints) > 0:
@@ -443,7 +415,7 @@ def parse(file_path, check_neg):
                 vartype = ldecl_arr[i].get_type()
                 type_in_c = type_to_c(vartype)
                 if vartype.is_array_type():
-                    symb += "[ARRAY_SIZE]" # Will be defined by generator
+                    symb += "[%d]" % array_size 
                 variables[symb] = type_in_c
     return parsed_cons, variables
 
@@ -585,23 +557,28 @@ def get_array_calls(formula):
             calls = calls + get_array_calls(subformula)
     return calls
     
-def get_minimum_array_size(smt_file):
+def get_minimum_array_size_from_file(smt_file):
     formula = read_file(smt_file)[3]
+    return constrain_array_size(formula)[0]
+
+def constrain_array_size(formula):
     array_ops = get_array_calls(formula)
     if len(array_ops) == 0:
-        return 0
+        return 0, set()
     sat = False
     array_size = 2
     if not is_sat(formula):
         formula = Not(formula)
+    assertions = set()
     while not sat:
-        if array_size > 2**10:  
+        if array_size > 2**12:  
             raise ValueError("Minimum array size too large")
-        assertions = [i <= array_size for i in map(lambda x: x.args()[1], array_ops)]
+        assertions = {i < array_size for i in map(lambda x: x.args()[1], array_ops)}
         new_formula = And(*assertions, formula)
         sat = is_sat(new_formula)
         array_size *= 2 
-    return array_size // 2
+    return array_size // 2, assertions
+
 
 def main(file_path, resfile):    
     return check_files(file_path, resfile)
@@ -649,7 +626,7 @@ def check_files(file_path, resfile):
 
         # Check that it is satisfiable on bounded arrays
         print("[*] Check array size:")
-        get_minimum_array_size(file_path)
+        get_minimum_array_size_from_file(file_path)
         print("[*] Done.")
 
     except Exception as e:

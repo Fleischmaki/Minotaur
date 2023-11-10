@@ -13,7 +13,7 @@ class Generator:
         self.edges = edges
         self.sln = sln
         try:
-            self.array_size = smt2_parser.get_minimum_array_size(smt_file)
+            self.array_size = smt2_parser.get_minimum_array_size_from_file(smt_file)
         except ValueError as e:
             print(e)
             self.array_size = -1 # This should make model checkers throw an error 
@@ -35,20 +35,45 @@ class Generator:
             
     def get_logic_def(self):
         logic_def = ""
+        logic_def += ("""long scast_helper(unsigned long i, unsigned char width){
+    if((i & (1 << width-1)) > 0){
+        return i - (1ULL<< width);
+    }
+    return i;
+}\n""")
+        logic_def += ("""long sdiv_helper(long l, long r, int width){
+    if(r == 0){
+        if(l >= 0)
+            return -1ULL >> (64-width); // Make sure we shift with 0s
+        return 1;
+    }
+    return l / r;
+}
+
+unsigned long div_helper(unsigned long l, unsigned long r, int width){
+    if(r == 0)
+        return -1ULL >> (64-width);
+    return l / r;
+}
+
+unsigned long rem_helper(unsigned long l, unsigned long r, int width){
+    if(r == 0)
+        return l;
+    return l % r;
+}\n""")
         if self.array_size != 0:
-            logic_def += "#define ARRAY_SIZE %d\n" % self.array_size
             logic_def += """long* array_store(long a[],int p,long v){
     a[p] = v;
     return a;\n}\n"""
             logic_def += ("""int array_comp(long a1[], long a2[]){
-    for(int i = 0; i < ARRAY_SIZE; i++){
+    for(int i = 0; i < %d; i++){
     \tif(a1[i] != a2[i]) return 0;
     }
-    return 1;\n}\n""")
+    return 1;\n}\n""" % self.array_size)
             logic_def += ("""void init(long array[]){
-    for(int i = 0; i < ARRAY_SIZE; i++){
+    for(int i = 0; i < %d; i++){
     \tarray[i] = __VERIFIER_nondet_long();
-    }\n}""")
+    }\n}""" % self.array_size)
 
         return logic_def
 
@@ -67,7 +92,7 @@ class Generator:
                 buggy_constraints = ""  
                 for var in vars:
                     if '[' in var: #Arrays
-                        buggy_constraints += "\t{} {};\n\tinit({});\n".format(self.vars_all[var],var,var[:-12])
+                        buggy_constraints += "\t{} {};\n\tinit({});\n".format(self.vars_all[var],var,var.split('[')[0])
                     elif self.vars_all[var] == 'bool':
                         buggy_constraints += "\t_Bool {} = __VERIFIER_nondet_bool();\n".format(var)
                     else:
