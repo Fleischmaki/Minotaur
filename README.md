@@ -39,6 +39,7 @@ ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1392)
 Tool | Status 
  -- | -- 
  Ultimate Kojak | [closed](https://github.com/ultimate-pa/ultimate/issues/647#event-10423593364)
+ MOPSA | [open](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/150)
 ## About
 ```mermaid
 flowchart BT
