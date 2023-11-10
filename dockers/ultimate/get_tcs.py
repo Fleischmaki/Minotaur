@@ -33,8 +33,11 @@ def main(dest_dir):
         save_tc(dest_dir, respath, start_time, end_time, 'to')
 
     # Crashes/Errors
-    elif ("ShortDescription: Unsupported Syntax" in resfile or "ShortDescription: Incorrect Syntax" in resfile \
-          or "Type Error" in resfile or "InvalidWitnessErrorResult" in resfile or ("ExceptionOrErrorResult" in resfile and not "ExceptionOrErrorResult: UnsupportedOperationException: Solver said unknown") in resfile):
+    elif ("ShortDescription: Unsupported Syntax" in resfile or \
+          "ShortDescription: Incorrect Syntax" in resfile or \
+          "Type Error" in resfile or \
+          "InvalidWitnessErrorResult" in resfile or \
+            ("ExceptionOrErrorResult" in resfile and not "ExceptionOrErrorResult: UnsupportedOperationException: Solver said unknown" in resfile)):
         save_tc(dest_dir, respath, start_time, end_time, 'er')
 
     else:
