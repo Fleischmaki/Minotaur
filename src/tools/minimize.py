@@ -2,19 +2,19 @@ import os
 from ..runner import *
 from ..maze_gen import smt2_parser as sp
 
-def main(maze_path,seeddir, outdir,timeout,gen,tool,variant,flags):
+def main(maze_path,seeddir, outdir,timeout,gen,err,tool,variant,flags):
     params = get_params(maze_path,seeddir)
     commands.run_cmd('mkdir -p %s' % outdir)
     commands.run_cmd("mkdir -p %s" % os.path.join(outdir,'seeds'))
     commands.run_cmd("mkdir -p %s" % os.path.join(outdir,'runs'))
 
-    if not check_if_tp(tool, variant, flags, params, outdir, timeout,gen):
-        print('ERROR: Original not maze not a fn')
+    if not not_err(err,tool, variant, flags, params, outdir, timeout,gen):
+        print('ERROR: Original not maze not a %s' % err)
         return
 
     if not 'u' in params.keys():
         params.update({'u':''})
-        if not check_if_tp(tool, variant, flags, params, outdir, timeout, gen):
+        if not not_err(err,tool, variant, flags, params, outdir, timeout, gen):
             params.pop('u', None) 
 
     mutant = os.path.join(outdir,'smt', 'mutant_%d.smt2' % (params['m'] - 1))
@@ -30,7 +30,7 @@ def main(maze_path,seeddir, outdir,timeout,gen,tool,variant,flags):
 
         seed = os.path.join(outdir, 'seeds', str(half) + ('-first' if keep_first_half else '-second'))
         set_seed(params,seed,new_clauses)
-        misses_bug = check_if_tp(tool, variant, flags, params, outdir,timeout,gen)
+        misses_bug = not_err(err,tool, variant, flags, params, outdir,timeout,gen)
 
         commands.run_cmd('rm -r %s' % os.path.join(outdir, 'src'))
         if misses_bug:
@@ -49,7 +49,7 @@ def main(maze_path,seeddir, outdir,timeout,gen,tool,variant,flags):
         clause = clauses.pop(pos)
     
         set_seed(params,seed,clauses)
-        misses_bug = check_if_tp(tool,variant,flags,params, outdir,timeout,gen)
+        misses_bug = not_err(err,tool,variant,flags,params, outdir,timeout,gen)
         commands.run_cmd('rm -r %s' % os.path.join(outdir, 'src'))
         
         if misses_bug:
@@ -64,9 +64,9 @@ def main(maze_path,seeddir, outdir,timeout,gen,tool,variant,flags):
     else:
         maze_gen.generate_maze(params, outdir)    
 
-def check_if_tp(tool,variant,flags,params, outdir, timeout,gen):
+def not_err(err,tool,variant,flags,params, outdir, timeout,gen):
     docker.run_mc(tool,variant,flags, 'min', params, outdir,timeout=timeout, gen=gen)
-    sat = is_fn(outdir)
+    sat = is_fn(outdir,err)
     return sat
 
 def set_seed(params, seed, clauses):
@@ -80,12 +80,12 @@ def get_clauses(mutant):
     formula = sp.read_file(mutant)[3]
     return list(sp.conjunction_to_clauses(formula))
 
-def is_fn(outdir):
+def is_fn(outdir,err):
     resdir = os.path.join(outdir,'res')
     for file in os.listdir(resdir):
             if '_' in file: # Still false negative
                 commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(outdir,'runs')))
-                if 'fn' in file: 
+                if err in file: 
                     return True
     return False
 
@@ -111,9 +111,10 @@ def load(argv):
     outdir = argv[2]
     timeout = argv[3]
     gen = argv[4]
-    tool = argv[5]
+    err = argv[5]
+    tool = argv[6]
     variant = flags = ''
-    if len(argv) >= 7:
-        variant = argv[6]
-        flags = ' '.join(argv[7:])
-    main(maze,seeddir,outdir,timeout,gen, tool, variant, flags)
+    if len(argv) >= 8:
+        variant = argv[7]
+        flags = ' '.join(argv[8:])
+    main(maze,seeddir,outdir,timeout,gen, err, tool, variant, flags)
