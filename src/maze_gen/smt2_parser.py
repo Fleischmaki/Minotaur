@@ -375,13 +375,10 @@ def write_to_file(formula, file):
 def parse(file_path, check_neg):
     print("Converting %s: " % file_path)
     decl_arr, variables, parsed_cons, formula = read_file(file_path)
-    clauses = conjunction_to_clauses(formula) 
-
+    formula_clauses = conjunction_to_clauses(formula) 
     array_size, array_constraints = constrain_array_size(formula)
-
-    c = 0
-    for clause in clauses:
-        c += 1
+    clauses = [*array_constraints, *formula_clauses]
+    for c, clause in enumerate(clauses,start=1):
         print("%d/%d" % (c,len(clauses)))
         clause, constraints = rename_arrays(clause)
         if len(constraints) > 0:
