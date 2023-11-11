@@ -1,5 +1,5 @@
 # Minotaur
-Minotaur is a metamorphic testing tools for software model checkers, based on [storm](https://github.com/mariachris/storm) and [Fuzzle](https://github.com/SoftSec-KAIST/Fuzzle)
+Minotaur is a metamorphic testing tools for software model checkers, based on [STORM](https://github.com/mariachris/storm) and [Fuzzle](https://github.com/SoftSec-KAIST/Fuzzle)
 
 ## Installation
 ```
@@ -38,8 +38,8 @@ ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1392)
 ### Other bugs
 Tool | Status 
  -- | -- 
- Ultimate Kojak | [closed](https://github.com/ultimate-pa/ultimate/issues/647#event-10423593364)
- MOPSA | [open](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/150)
+ Ultimate Kojak | [fixed](https://github.com/ultimate-pa/ultimate/issues/647#event-10423593364)
+ MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/150)
 ## About
 ```mermaid
 flowchart BT
