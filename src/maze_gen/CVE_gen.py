@@ -36,7 +36,7 @@ class Generator:
     def get_logic_def(self):
         logic_def = ""
         logic_def += ("""long scast_helper(unsigned long i, unsigned char width){
-    if((i & (1 << width-1)) > 0){
+    if((i & (1ULL << (width-1))) > 0){
         return i - (1ULL<< width);
     }
     return i;
