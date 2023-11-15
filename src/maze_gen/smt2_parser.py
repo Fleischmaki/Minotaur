@@ -5,6 +5,10 @@ from collections import defaultdict
 from pysmt.shortcuts import *
 from io import StringIO
 
+
+"""
+Transform a flattened operation (e.g. And (a,b,c,d)) into nested binary operations of that type. 
+"""
 def deflatten(args, op):
     x = args[0]
     for i in range(1,len(args)):
@@ -12,6 +16,10 @@ def deflatten(args, op):
         x = op(x,y)
     return x
 
+
+"""
+Raise and error and print the given nodes
+"""
 def error(flag, *nodes):
     if flag == 0:
         raise ValueError("ERROR: node type not recognized: ", nodes, map(lambda n: n.get_type()))
@@ -20,6 +28,9 @@ def error(flag, *nodes):
     else:
         raise ValueError("ERROR: an unknown error occurred")
 
+"""
+Transform a binary string into a decimal string
+"""
 def binary_to_decimal(binary, unsigned = True):
     if len(binary) > 64:
         error(1, binary)
@@ -45,17 +56,20 @@ def bits_to_utype(n):
 
 def signed(node,n_string):
     width = get_bv_width(node)
-    cast = bits_to_type(width)  
-    if width == 64:
-        return '(%s) %s' % (cast, n_string)  
-    return ('(%s) scast_helper(%s,%s)' % (cast,n_string,width))
+    scast = bits_to_type(width)  
+    ucast = get_unsigned_cast(node)
+    if width in (8,16,32,64):
+        return '%s ((%s) %s)' % (ucast, scast, n_string)  
+    return ('%s scast_helper(%s,%s)' % (ucast,n_string,width))
 
 def unsigned(node,n_string):
-    return ('%s %s' % (get_unsigned_cast(node), n_string))
+    return '%s %s' % (get_unsigned_cast(node), n_string)  
 
 def get_unsigned_cast(node):
     width = get_bv_width(node)
-    return '(' + bits_to_utype(width) + ') '
+    if width in (8,16,32,64):
+        return '(' + bits_to_utype(width) + ') '
+    return '(%s)%s&' % (bits_to_utype(width),binary_to_decimal('1'*width))
 
 def get_bv_width(node):
     res = 0
@@ -79,7 +93,7 @@ def get_bv_width(node):
     else:
         error(1,node)
     
-    if res == 0 or res > 64:
+    if res <= 0 or res > 64:
         error(1,node)
     return res
 
@@ -196,11 +210,7 @@ def convert(symbs,node, cons):
         convert_helper(symbs,node, cons, " << ", 'u', False)
     elif node.is_bv_not():
         (b,) = node.args()
-        cast = get_unsigned_cast(node)
-        cons.write(cast)
-        cons.write("(~")
-        convert(symbs,b, cons)
-        cons.write(")")
+        cons.write(unsigned(node,"(~%s)" % convert_to_string(symbs,b)))
     elif node.is_bv_sext():
         extend_step = node.bv_extend_step()
         (l,) = node.args()
@@ -265,8 +275,9 @@ def convert(symbs,node, cons):
         (s,) = node.args()
         cast = get_unsigned_cast(node)
         base = binary_to_decimal("1" + "0" * (get_bv_width(s)))
-        cons.write(cast + base + ' - ' + cast)
+        cons.write('(' + cast + base + ') - ' + '(' + cast)
         convert(symbs,s,cons)
+        cons.write(')')
     elif node.is_bv_rol():
         rotate_helper(symbs, node, cons, "<<")
     elif node.is_bv_ror():
