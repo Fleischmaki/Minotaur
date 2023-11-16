@@ -388,7 +388,9 @@ def parse(file_path, check_neg):
     decl_arr, variables, parsed_cons, formula = read_file(file_path)
     formula_clauses = conjunction_to_clauses(formula) 
     array_size, array_constraints = constrain_array_size(formula)
-    clauses = [*array_constraints, *formula_clauses]
+    clauses = [*array_constraints]# Make sure to render constraints first
+    clauses.extend(formula_clauses)
+    print(clauses)
     for c, clause in enumerate(clauses,start=1):
         print("%d/%d" % (c,len(clauses)))
         clause, constraints = rename_arrays(clause)
