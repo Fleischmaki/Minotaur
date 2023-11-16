@@ -85,9 +85,9 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
                 logic_c.append("\t\tchar c = __VERIFIER_nondet_char();")
             else:
                 tab_cnt = 0
-                constraints, vars = set(), set()
+                constraints, vars = list(), set()
                 for cnt in range(self.insert[idx]):
-                    constraints = constraints.union(self.groups[group_idx + cnt])
+                    constraints.extend(self.groups[group_idx + cnt])
                     vars = vars.union(self.vars[group_idx + cnt])
                 buggy_constraints = ""  
                 for var in vars:

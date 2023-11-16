@@ -1,7 +1,7 @@
 import re
 import sys, random, os
 from pysmt.smtlib.parser import SmtLibParser
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from pysmt.shortcuts import *
 from io import StringIO
 
@@ -385,12 +385,12 @@ def write_to_file(formula, file):
 
 def parse(file_path, check_neg):
     print("Converting %s: " % file_path)
-    decl_arr, variables, parsed_cons, formula = read_file(file_path)
+    decl_arr, variables, formula = read_file(file_path)
+    parsed_cons = OrderedDict()
     formula_clauses = conjunction_to_clauses(formula) 
     array_size, array_constraints = constrain_array_size(formula)
     clauses = [*array_constraints]# Make sure to render constraints first
     clauses.extend(formula_clauses)
-    print(clauses)
     for c, clause in enumerate(clauses,start=1):
         print("%d/%d" % (c,len(clauses)))
         clause, constraints = rename_arrays(clause)
@@ -442,9 +442,8 @@ def read_file(file_path):
         for arg in d.args:
             if (str)(arg) != "model_version":
                 decl_arr.append(arg)
-    parsed_cons = dict()
     formula = script.get_strict_formula()
-    return decl_arr,variables,parsed_cons,formula
+    return decl_arr,variables,formula
 
 def check_indices(symbol,maxArity,maxId, cons_in_c):
     if maxArity == 0:
@@ -504,7 +503,7 @@ def independent_formulas(conds, variables):
         for other in conds:
             if len(vars.keys() & extract_vars(other, variables).keys()) > 0:
                 formula.add_edge(cond, other)
-    groups = formula.separate()
+    groups = [sorted(g, key=lambda cond: list(conds.keys()).index(cond)) for g in formula.separate()]
     vars_by_groups = list()
     for group in groups:
         used_vars = dict()
@@ -571,7 +570,7 @@ def get_array_calls(formula):
     return calls
     
 def get_minimum_array_size_from_file(smt_file):
-    formula = read_file(smt_file)[3]
+    formula = read_file(smt_file)[2]
     return constrain_array_size(formula)[0]
 
 def constrain_array_size(formula):
@@ -610,7 +609,7 @@ def check_files(file_path, resfile):
         env.enable_infix_notation = True
         #Check number of atoms
         #print("[*] Check atoms:")
-        #formula = read_file(file_path)[3]
+        #formula = read_file(file_path)[2]
         #if len(formula.get_atoms()) < 5:
         #    raise ValueError("Not enough atoms") 
         #print("[*] Done")
@@ -618,7 +617,7 @@ def check_files(file_path, resfile):
         # Check that everything is understood by the parser
         # and file doesn't get too large
         print("[*] Check parser:")
-        _, _, _, formula = read_file(file_path)
+        _, _, formula = read_file(file_path)
         clauses = conjunction_to_clauses(formula)
         for clause in clauses:
             symbols = set()
