@@ -46,14 +46,21 @@ class Generator:
         if(l >= 0)
             return -1ULL >> (64-width); // Make sure we shift with 0s
         return 1;
-    }
-    return l / r;
+    } else if (r == -1 && l == 0x8000000000000000LL >> (64-width))
+        return 0x8000000000000000ULL;
+    return (unsigned long) (l / r );
 }
 
 unsigned long div_helper(unsigned long l, unsigned long r, int width){
     if(r == 0)
         return -1ULL >> (64-width);
     return l / r;
+}
+
+unsigned long srem_helper(long l, long r, int width){
+    if(r == 0)
+        return l;
+    return l % r;
 }
 
 unsigned long rem_helper(unsigned long l, unsigned long r, int width){

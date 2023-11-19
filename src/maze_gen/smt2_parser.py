@@ -57,7 +57,7 @@ def bits_to_utype(n):
 def signed(node,n_string):
     width = get_bv_width(node)
     scast = bits_to_type(width)  
-    if width in (8,16,32,64):
+    if width in (1,8,16,32,64):
         return '(%s) %s' % (scast, n_string)  
     return ('scast_helper(%s,%s)' % (n_string,width))
 
@@ -142,15 +142,16 @@ def div_helper(symbs,node,cons):
     lString = convert_to_string(symbs, l)
     rString = convert_to_string(symbs, r)
     
-    if node.is_bv_urem() or node.is_bv_srem():
-        if node.is_bv_srem():
-            lString = signed(l,lString)
-            rString = signed(r,rString)
-        cons.write(node,"rem_helper(%s,%s,%s)" % (lString,rString,width))
+    if node.is_bv_srem():
+        lString = signed(l,lString)
+        rString = signed(r,rString)
+        cons.write("srem_helper(%s,%s,%s)" % (lString,rString,width))
+    elif node.is_bv_urem():
+        cons.write("rem_helper(%s,%s,%s)" % (lString,rString,width))
     elif node.is_bv_udiv():
-        cons.write(node,"div_helper(%s,%s,%s)" % (lString,rString,width))
+        cons.write("div_helper(%s,%s,%s)" % (lString,rString,width))
     else:
-        cons.write(node,"sdiv_helper(%s,%s,%s)" % (signed(l,lString),signed(r,rString),width))
+        cons.write("sdiv_helper(%s,%s,%s)" % (signed(l,lString),signed(r,rString),width))
         
 def convert_to_string(symbs, node):
     buff = StringIO()
@@ -401,11 +402,11 @@ def parse(file_path, check_neg):
 
         symbs = set()
         buffer = StringIO()
-        try:
-            convert(symbs,clause, buffer)
-        except Exception as e:
-           print("Could not convert clause: ", e)
-           continue
+        # try:
+        convert(symbs,clause, buffer)
+        # except Exception as e:
+        #    print("Could not convert clause: ", e)
+        #    continue
         cons_in_c =  buffer.getvalue()
         if "model_version" not in cons_in_c:
             if check_neg == True:
