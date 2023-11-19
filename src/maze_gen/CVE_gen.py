@@ -41,7 +41,7 @@ class Generator:
     }
     return i;
 }\n""")
-        logic_def += ("""long sdiv_helper(long l, long r, int width){
+        logic_def += ("""unsigned long sdiv_helper(long l, long r, int width){
     if(r == 0){
         if(l >= 0)
             return -1ULL >> (64-width); // Make sure we shift with 0s

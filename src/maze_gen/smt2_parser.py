@@ -57,10 +57,9 @@ def bits_to_utype(n):
 def signed(node,n_string):
     width = get_bv_width(node)
     scast = bits_to_type(width)  
-    ucast = get_unsigned_cast(node)
     if width in (8,16,32,64):
-        return '%s ((%s) %s)' % (ucast, scast, n_string)  
-    return ('%s scast_helper(%s,%s)' % (ucast,n_string,width))
+        return '(%s) %s' % (scast, n_string)  
+    return ('scast_helper(%s,%s)' % (n_string,width))
 
 def unsigned(node,n_string):
     return '%s %s' % (get_unsigned_cast(node), n_string)  
@@ -147,11 +146,11 @@ def div_helper(symbs,node,cons):
         if node.is_bv_srem():
             lString = signed(l,lString)
             rString = signed(r,rString)
-        cons.write(unsigned(node,"rem_helper(%s,%s,%s)" % (lString,rString,width)))
+        cons.write(node,"rem_helper(%s,%s,%s)" % (lString,rString,width))
     elif node.is_bv_udiv():
-        cons.write(unsigned(node,"div_helper(%s,%s,%s)" % (lString,rString,width)))
+        cons.write(node,"div_helper(%s,%s,%s)" % (lString,rString,width))
     else:
-        cons.write(unsigned(node,"sdiv_helper(%s,%s,%s)" % (signed(l,lString),signed(r,rString),width)))
+        cons.write(node,"sdiv_helper(%s,%s,%s)" % (signed(l,lString),signed(r,rString),width))
         
 def convert_to_string(symbs, node):
     buff = StringIO()
