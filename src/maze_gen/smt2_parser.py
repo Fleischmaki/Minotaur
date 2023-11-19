@@ -4,7 +4,8 @@ from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict, OrderedDict
 from pysmt.shortcuts import *
 from io import StringIO
-
+from pysmt.typing import INT
+from pysmt.oracles import get_logic
 
 """
 Transform a flattened operation (e.g. And (a,b,c,d)) into nested binary operations of that type. 
@@ -318,12 +319,31 @@ def convert(symbs,node, cons):
         cons.write(")")
     elif node.is_function_application():
         for n in node.args():
-            if not n.is_bv_constant():
+            if not (n.is_bv_constant() or node.is_int_constant()):
                 error(1, node)
         index = "".join(["_" + str(n.constant_value()) for n in node.args()])
         fn = clean_string(node.function_name())
         cons.write(fn + index)
         symbs.add(fn + index)
+    elif node.is_int_constant():
+        value = str(node.constant_value())
+        if int(value) > 2**32:
+            value += 'LL'
+        cons.write(value)
+    elif node.is_plus():
+        node = deflatten(node.args(),Plus)
+        convert_helper(symbs,node,cons,'+')
+    elif node.is_minus():
+        convert_helper(symbs,node,cons,'-')
+    elif node.is_times():
+        node = deflatten(node.args(),Times)
+        convert_helper(symbs,node,cons,'*')
+    elif node.is_div():
+        convert_helper(symbs,node,cons,'/')
+    elif node.is_le():
+        convert_helper(symbs,node,cons,'<=')
+    elif node.is_lt():
+        convert_helper(symbs,node,cons,'<')
     else:
         error(0, node)
         return("")
@@ -389,9 +409,14 @@ def write_to_file(formula, file):
 def parse(file_path, check_neg):
     print("Converting %s: " % file_path)
     decl_arr, variables, formula = read_file(file_path)
+    logic = get_logic(formula)
     parsed_cons = OrderedDict()
     formula_clauses = conjunction_to_clauses(formula) 
-    array_size, array_constraints = constrain_array_size(formula)
+    if logic.split('_')[-1].startswith('A'): # Arrays
+        array_size, array_constraints = constrain_array_size(formula)
+    if 'LIA' in logic:
+        if not sat_in_int_range(formula):
+            raise ValueError('Unsat with ints in range')
     clauses = [*array_constraints]# Make sure to render constraints first
     clauses.extend(formula_clauses)
     for c, clause in enumerate(clauses,start=1):
@@ -405,11 +430,11 @@ def parse(file_path, check_neg):
 
         symbs = set()
         buffer = StringIO()
-        # try:
-        convert(symbs,clause, buffer)
-        # except Exception as e:
-        #    print("Could not convert clause: ", e)
-        #    continue
+        try:
+            convert(symbs,clause, buffer)
+        except Exception as e:
+           print("Could not convert clause: ", e)
+           continue
         cons_in_c =  buffer.getvalue()
         if "model_version" not in cons_in_c:
             if check_neg == True:
@@ -432,7 +457,10 @@ def parse(file_path, check_neg):
                 type_in_c = type_to_c(vartype)
                 if vartype.is_array_type():
                     symb += "[%d]" % array_size 
-                variables[symb] = type_in_c
+                if vartype is Int:
+                    variables[symb] = 'long'
+                else:                    
+                    variables[symb] = type_in_c
     return parsed_cons, variables
 
 def read_file(file_path):
@@ -456,6 +484,20 @@ def check_indices(symbol,maxArity,maxId, cons_in_c):
         res = set([var]) if var in cons_in_c else set()
         res = res.union(check_indices(var, maxArity-1,maxId,cons_in_c))
     return res    
+
+def sat_in_int_range(formula):
+    constraints = get_integer_constraints(formula)
+    formula = And(formula, *constraints)
+    return is_sat(formula)
+
+def get_integer_constraints(formula):
+    constraints = set()
+    if formula.get_type() is INT:
+        constraints.add(GT(formula, Int(-(2**63))))
+        constraints.add(LT(formula, Int(2**63 - 1)))
+    for node in formula.args():
+        constraints = constraints.union(get_integer_constraints(node))
+    return constraints
 
 def extract_vars(cond, variables):    
     vars = dict()
@@ -611,24 +653,11 @@ def check_files(file_path, resfile):
         env = reset_env()
         env.enable_infix_notation = True
         #Check number of atoms
-        #print("[*] Check atoms:")
-        #formula = read_file(file_path)[2]
-        #if len(formula.get_atoms()) < 5:
-        #    raise ValueError("Not enough atoms") 
-        #print("[*] Done")
-
-        # Check that everything is understood by the parser
-        # and file doesn't get too large
-        print("[*] Check parser:")
-        _, _, formula = read_file(file_path)
-        clauses = conjunction_to_clauses(formula)
-        for clause in clauses:
-            symbols = set()
-            buffer = StringIO()
-            convert(symbols,clause, buffer) 
-            print(".",end ="")
-        print("")
-        print("[*] Done.")
+        print("[*] Check atoms:")
+        formula = read_file(file_path)[2]
+        if len(formula.get_atoms()) < 5:
+            raise ValueError("Not enough atoms") 
+        print("[*] Done")
 
         # Check that satisfiability is easily found
         # (else STORM will take a long time to run)
@@ -639,9 +668,33 @@ def check_files(file_path, resfile):
             raise ValueError('Takes too long to process')
         print("[*] Done.")
 
+        _, _, formula = read_file(file_path)
+        logic = get_logic(formula)
+
+        # Check that it is satisfiable on bounded integers
+        if 'LIA' in str(logic):
+            print("[*] Check Integers:")
+            if not sat_in_int_range(formula): 
+                raise ValueError('Unsat in range')
+            print("[*] Done.")
+
         # Check that it is satisfiable on bounded arrays
-        print("[*] Check array size:")
-        get_minimum_array_size_from_file(file_path)
+        if str(logic).split('_')[-1].startswith('A'):
+            print("[*] Check array size:")
+            get_minimum_array_size_from_file(file_path)
+            print("[*] Done.")
+
+
+        # Check that everything is understood by the parser
+        # and file doesn't get too large          
+        print("[*] Check parser:")
+        clauses = conjunction_to_clauses(formula)
+        for clause in clauses:
+            symbols = set()
+            buffer = StringIO()
+            convert(symbols,clause, buffer) 
+            print(".",end ="")
+        print("")
         print("[*] Done.")
 
     except Exception as e:
