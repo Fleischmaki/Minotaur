@@ -19,8 +19,8 @@ class Generator:
             self.array_size = -1 # This should make model checkers throw an error 
         try:
             self.constraints, self.vars_all = smt2_parser.parse(smt_file, check_neg = False)
-        except(e):
-            print("Error while parsing smt file %s" % str(e))
+        except ValueError as e:
+            print('Error while parsing smt file %s' % str(e))
             self.constraints = {}
             self.vars_all = {}
         transforms.remove_constraints(self.constraints, transformations['dc'])

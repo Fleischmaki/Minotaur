@@ -23,7 +23,7 @@ Raise and error and print the given nodes
 """
 def error(flag, *nodes):
     if flag == 0:
-        raise ValueError("ERROR: node type not recognized: ", nodes, map(lambda n: n.get_type()))
+        raise ValueError("ERROR: node type not recognized: ", nodes, ','.join(map(lambda n: n.get_type(), nodes)))
     elif flag == 1:
         raise ValueError("ERROR: nodes not supported", nodes)
     else:
@@ -98,6 +98,8 @@ def get_bv_width(node):
     return res
 
 def type_to_c(type):
+    if type.is_int_type():
+        return 'long'
     if type.is_bool_type():
         return 'bool'
     elif type.is_bv_type():
@@ -177,7 +179,25 @@ def convert(symbs,node, cons):
                 return
             error(1, node)
         convert_helper(symbs,node, cons, " == ")
-
+    elif node.is_int_constant():
+        value = str(node.constant_value())
+        if int(value) > 2**32:
+            value += 'LL'
+        cons.write(value)
+    elif node.is_plus():
+        node = deflatten(node.args(),Plus)
+        convert_helper(symbs,node,cons,'+')
+    elif node.is_minus():
+        convert_helper(symbs,node,cons,'-')
+    elif node.is_times():
+        node = deflatten(node.args(),Times)
+        convert_helper(symbs,node,cons,'*')
+    elif node.is_div():
+        convert_helper(symbs,node,cons,'/')
+    elif node.is_le():
+        convert_helper(symbs,node,cons,'<=')
+    elif node.is_lt():
+        convert_helper(symbs,node,cons,'<')
     elif node.is_bv_sle():
         convert_helper(symbs,node, cons, " <= ", 's')
     elif node.is_bv_ule():
@@ -325,25 +345,6 @@ def convert(symbs,node, cons):
         fn = clean_string(node.function_name())
         cons.write(fn + index)
         symbs.add(fn + index)
-    elif node.is_int_constant():
-        value = str(node.constant_value())
-        if int(value) > 2**32:
-            value += 'LL'
-        cons.write(value)
-    elif node.is_plus():
-        node = deflatten(node.args(),Plus)
-        convert_helper(symbs,node,cons,'+')
-    elif node.is_minus():
-        convert_helper(symbs,node,cons,'-')
-    elif node.is_times():
-        node = deflatten(node.args(),Times)
-        convert_helper(symbs,node,cons,'*')
-    elif node.is_div():
-        convert_helper(symbs,node,cons,'/')
-    elif node.is_le():
-        convert_helper(symbs,node,cons,'<=')
-    elif node.is_lt():
-        convert_helper(symbs,node,cons,'<')
     else:
         error(0, node)
         return("")
@@ -409,15 +410,16 @@ def write_to_file(formula, file):
 def parse(file_path, check_neg):
     print("Converting %s: " % file_path)
     decl_arr, variables, formula = read_file(file_path)
-    logic = get_logic(formula)
+    logic = str(get_logic(formula))
     parsed_cons = OrderedDict()
     formula_clauses = conjunction_to_clauses(formula) 
+    clauses =  []
     if logic.split('_')[-1].startswith('A'): # Arrays
         array_size, array_constraints = constrain_array_size(formula)
+        clauses.extend(array_constraints)# Make sure to render constraints first
     if 'LIA' in logic:
         if not sat_in_int_range(formula):
             raise ValueError('Unsat with ints in range')
-    clauses = [*array_constraints]# Make sure to render constraints first
     clauses.extend(formula_clauses)
     for c, clause in enumerate(clauses,start=1):
         print("%d/%d" % (c,len(clauses)))
@@ -457,10 +459,7 @@ def parse(file_path, check_neg):
                 type_in_c = type_to_c(vartype)
                 if vartype.is_array_type():
                     symb += "[%d]" % array_size 
-                if vartype is Int:
-                    variables[symb] = 'long'
-                else:                    
-                    variables[symb] = type_in_c
+                variables[symb] = type_in_c
     return parsed_cons, variables
 
 def read_file(file_path):
