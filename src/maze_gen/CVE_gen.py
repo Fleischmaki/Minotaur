@@ -46,9 +46,9 @@ class Generator:
         if(l >= 0)
             return -1ULL >> (64-width); // Make sure we shift with 0s
         return 1;
-    } else if (r == -1 && l == 0x8000000000000000LL >> (64-width))
+    } else if ((r == -1) && (l == ((-0x7FFFFFFFFFFFFFFFLL-1) >> (64-width))))
         return 0x8000000000000000ULL;
-    return (unsigned long) (l / r );
+    return l / r;
 }
 
 unsigned long div_helper(unsigned long l, unsigned long r, int width){
