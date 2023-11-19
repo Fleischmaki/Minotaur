@@ -207,7 +207,10 @@ def convert(symbs,node, cons):
         convert_helper(symbs,node, cons, " & ")
     elif node.is_bv_lshl():
         check_shift_size(node)
-        convert_helper(symbs,node, cons, " << ", 'u', False)
+        (l,r) = node.args()
+        l_string = convert_to_string(symbs,l)
+        r_string = convert_to_string(symbs,r)
+        cons.write(unsigned(node,'(%s << %s)' % (unsigned(l,l_string),r_string)))
     elif node.is_bv_not():
         (b,) = node.args()
         cons.write(unsigned(node,"(~%s)" % convert_to_string(symbs,b)))
