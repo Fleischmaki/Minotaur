@@ -17,7 +17,12 @@ class Generator:
         except ValueError as e:
             print(e)
             self.array_size = -1 # This should make model checkers throw an error 
-        self.constraints, self.vars_all = smt2_parser.parse(smt_file, check_neg = False)
+        try:
+            self.constraints, self.vars_all = smt2_parser.parse(smt_file, check_neg = False)
+        except ValueError as e:
+            print('Error while parsing smt file %s' % str(e))
+            self.constraints = {}
+            self.vars_all = {}
         transforms.remove_constraints(self.constraints, transformations['dc'])
         self.groups, self.vars = smt2_parser.independent_formulas(self.constraints, self.vars_all)
         if transformations['sh']:
@@ -37,7 +42,7 @@ class Generator:
         logic_def = ""
         logic_def += ("""long scast_helper(unsigned long i, unsigned char width){
     if((i & (1ULL << (width-1))) > 0){
-        return i - (1ULL<< width);
+        return (long) (i - (1ULL<< width));
     }
     return i;
 }\n""")
