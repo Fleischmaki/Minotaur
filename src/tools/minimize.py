@@ -117,12 +117,12 @@ def load(argv):
             u = 0
 
         timeout = ceil(float(timeout)/60) + 1
-        if u == '1':
-            params['u'] = ''
         seeddir = argv[1]
         outdir = argv[2]
         gen = argv[3]
         params = {'m':int(id),'a':a,'w':int(w),'h':int(h),'c':int(c),'t':t,'g':'CVE_gen','s':os.path.join(seeddir,g+'.smt2'),'r':int(r)}
+        if u == '1':
+            params['u'] = ''
     else:
         maze = argv[0]
         seeddir = argv[1]
