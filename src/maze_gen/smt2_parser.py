@@ -59,11 +59,11 @@ def signed(node,n_string):
     width = get_bv_width(node)
     scast = bits_to_type(width)  
     if width in (1,8,16,32,64):
-        return '(%s) %s' % (scast, n_string)  
+        return '((%s) %s)' % (scast, n_string)  
     return ('scast_helper(%s,%s)' % (n_string,width))
 
 def unsigned(node,n_string):
-    return '%s %s' % (get_unsigned_cast(node), n_string)  
+    return '(%s %s)' % (get_unsigned_cast(node), n_string)  
 
 def get_unsigned_cast(node):
     width = get_bv_width(node)
