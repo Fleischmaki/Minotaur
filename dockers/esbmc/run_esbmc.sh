@@ -20,5 +20,3 @@ let TIMEOUT=60*$2
 # Tell CPA how long it has (to select heuristics, etc.), but use timeout to ensure termination
 timeout $2m /home/maze/tools/release/bin/esbmc --timeout $2m ${@:3} $1 &> $OUTDIR/res 
 touch $WORKDIR/.end
-
-mv output outputs/output
