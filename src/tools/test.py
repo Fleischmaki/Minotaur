@@ -206,14 +206,13 @@ def write_summary(conf,out_dir, target,tag,runtime):
     offset = 0 if 'keepId' in params['t'] else 1
     with open(out_dir + '/summary.csv', 'a') as f:
         f.write(tool + ',' + variant + ',' + flags + ',' + str(id % conf['transforms'] + offset) + ',')
+        params['u'] = '0' if 'u' not in params.keys() else '1'
         for key, value in params.items():
             if key == 'g':
                 f.write(str(params['s'].split('/')[-1])[:-5] + ',')
-            elif key == 'u':
-                f.write('1,')
             elif key in conf['parameters'].keys():
                 f.write(str(value) + ',')
-        f.write('%s,%s,' % (runtime, tag))
+        f.write('%s,%s' % (runtime, tag))
         f.write('\n')
     if conf['verbosity'] == 'summary': 
         commands.run_cmd(REMOVE_CMD % out_path)
