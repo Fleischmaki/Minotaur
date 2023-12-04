@@ -21,11 +21,11 @@ def deflatten(args, op):
 """
 Raise and error and print the given nodes
 """
-def error(flag, *nodes):
+def error(flag, *info):
     if flag == 0:
-        raise ValueError("ERROR: node type not recognized: ", nodes, ','.join(map(lambda n: n.get_type(), nodes)))
+        raise ValueError("ERROR: node type not recognized: ", ','.join(map(lambda n: n.get_type(), info)))
     elif flag == 1:
-        raise ValueError("ERROR: nodes not supported", nodes)
+        raise ValueError("ERROR: nodes not supported", info)
     else:
         raise ValueError("ERROR: an unknown error occurred")
 
@@ -34,7 +34,7 @@ Transform a binary string into a decimal string
 """
 def binary_to_decimal(binary, unsigned = True):
     if len(binary) > 64:
-        error(1, binary)
+        error(1, "BV width > 64: ",binary)
     val = str(BV(binary).constant_value() if unsigned else BV(binary).bv_signed_value())
     if len(binary) > 32:
         val += 'ULL' if unsigned else 'LL'
@@ -50,7 +50,7 @@ def bits_to_type(n):
     elif n <= 64:
         return "long"
     else:
-        error(1, n)
+        error(1, "BV width > 64:", n)
         
 def bits_to_utype(n):
     return "unsigned " + bits_to_type(n)
@@ -91,10 +91,10 @@ def get_bv_width(node):
         elif r.is_bv_constant() or r.is_symbol or r.is_function_application() or r.is_ite() or r.is_select():
             res = r.bv_width()
     else:
-        error(1,node)
+        error(1,"Could not compute BV width: ", node)
     
     if res <= 0 or res > 64:
-        error(1,node)
+        error(1,"Invalid bv width: ", res, node)
     return res
 
 def type_to_c(type,array_size):
@@ -136,7 +136,7 @@ def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
 def check_shift_size(node):
     (l,r) = node.args()
     if not r.is_bv_constant() or r.constant_value() > get_bv_width(node):
-        error(1, node)
+        error(1, "Invalid shift: ", node)
 
 def div_helper(symbs,node,cons):
     (l,r) = node.args()
@@ -166,9 +166,10 @@ def convert_to_string(symbs, node):
 def get_array_dim(node):
     dim = 0
     curr_type = node.get_type() 
-    while node.is_array_type():
+    while curr_type.is_array_type():
         curr_type = curr_type.elem_type
         dim += 1
+    return dim
 
 def convert(symbs,node,cons):
     #if cons.tell() > 2**20:
@@ -184,7 +185,7 @@ def convert(symbs,node,cons):
                 convert(symbs,r,cons)
                 cons.write("),%d)" % get_array_dim(l))
                 return
-            error(1, node)
+            error(1, "Cannot compare array with non-array", node)
         convert_helper(symbs,node, cons, " == ")
     elif node.is_int_constant():
         value = str(node.constant_value())
@@ -339,7 +340,7 @@ def convert(symbs,node,cons):
     elif node.is_store():
         (a, p, v) = node.args()
         if get_array_dim(a) > 1:
-            error(1,node)
+            error(1,"Multi-dimensional Array-Store: ",node)
         cons.write("array_store(")
         convert(symbs, a, cons)
         cons.write(",")
@@ -350,7 +351,7 @@ def convert(symbs,node,cons):
     elif node.is_function_application():
         for n in node.args():
             if not (n.is_bv_constant() or node.is_int_constant()):
-                error(1, node)
+                error(1, "Non-constant function call: ", node)
         index = "".join(["_" + str(n.constant_value()) for n in node.args()])
         fn = clean_string(node.function_name())
         cons.write(fn + index)
@@ -417,7 +418,7 @@ def write_to_file(formula, file):
         formula = And(*formula)
     return write_smtlib(formula, file)
 
-def parse(file_path, check_neg):
+def parse(file_path, check_neg, continue_on_error=True):
     print("Converting %s: " % file_path)
     decl_arr, variables, formula = read_file(file_path)
     logic = str(get_logic(formula))
@@ -442,11 +443,14 @@ def parse(file_path, check_neg):
 
         symbs = set()
         buffer = StringIO()
-        # try:
-        convert(symbs,clause, buffer)
-        # except Exception as e:
-        #    print("Could not convert clause: ", e)
-        #    continue
+        try:
+            convert(symbs,clause, buffer)
+        except Exception as e:
+            print("Could not convert clause: ", e)
+            if continue_on_error:
+                continue
+            else:
+                raise Exception(e)
         cons_in_c =  buffer.getvalue()
         if "model_version" not in cons_in_c:
             if check_neg == True:
