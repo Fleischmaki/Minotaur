@@ -505,7 +505,7 @@ def check_indices(symbol,maxArity,maxId, cons_in_c):
 def sat_in_int_range(formula):
     constraints = get_integer_constraints(formula)
     formula = And(formula, *constraints)
-    return is_sat(formula)
+    return is_sat(formula, solver_name = "z3")
 
 def get_integer_constraints(formula):
     constraints = set()
@@ -641,7 +641,7 @@ def constrain_array_size(formula):
         return 0, set()
     sat = False
     array_size = 2
-    if not is_sat(formula):
+    if not is_sat(formula, solver_name = "z3"):
         formula = Not(formula)
     assertions = set()
     while not sat:
@@ -649,7 +649,7 @@ def constrain_array_size(formula):
             raise ValueError("Minimum array size too large")
         assertions = {i < array_size for i in map(lambda x: x.args()[1], array_ops)}
         new_formula = And(*assertions, formula)
-        sat = is_sat(new_formula)
+        sat = is_sat(new_formula, solver_name = "z3")
         array_size *= 2 
     return array_size // 2, assertions
 
