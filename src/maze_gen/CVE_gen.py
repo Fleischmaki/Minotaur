@@ -74,18 +74,25 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
     return l % r;
 }\n""")
         if self.array_size != 0:
+            logic_def += """int array_dim_to_size(int dim){ //Basically just x^n
+    int res = 1;
+    for(int i=0; i<dim;i++){
+        res*=%d;
+    }
+    return res;
+}\n""" % self.array_size
             logic_def += """long* array_store(long a[],int p,long v){
     a[p] = v;
     return a;\n}\n"""
-            logic_def += ("""int array_comp(long a1[], long a2[]){
-    for(int i = 0; i < %d; i++){
+            logic_def += ("""int array_comp(long* a1, long* a2, int dim){
+    for(int i = 0; i < array_dim_to_size(dim); i++){
     \tif(a1[i] != a2[i]) return 0;
     }
-    return 1;\n}\n""" % self.array_size)
-            logic_def += ("""void init(long array[]){
-    for(int i = 0; i < %d; i++){
+    return 1;\n}\n""")
+            logic_def += ("""void init(long* array,int dim){
+    for(int i = 0; i < array_dim_to_size(dim); i++){
     \tarray[i] = __VERIFIER_nondet_long();
-    }\n}""" % self.array_size)
+    }\n}""")
 
         return logic_def
 
@@ -104,11 +111,15 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
                 buggy_constraints = ""  
                 for var in vars:
                     if '[' in var: #Arrays
-                        buggy_constraints += "\t{} {};\n\tinit({});\n".format(self.vars_all[var],var,var.split('[')[0])
+                        dim = var.count('[')
+                        buggy_constraints += "\t{} {};\n\tinit({}{},{});\n".format(self.vars_all[var],var,'*'*(dim-1),var.split('[')[0],dim)
                     elif self.vars_all[var] == 'bool':
                         buggy_constraints += "\t_Bool {} = __VERIFIER_nondet_bool();\n".format(var)
                     else:
-                        buggy_constraints += "\t{} {} = __VERIFIER_nondet_{}();\n".format(self.vars_all[var], var, 'u' + self.vars_all[var][9:])
+                        type = self.vars_all[var]
+                        if 'unsigned' in type:
+                            type = 'u' + type[9:]
+                        buggy_constraints += "\t{} {} = __VERIFIER_nondet_{}();\n".format(self.vars_all[var], var, type)
                     
                 buggy_constraints += "\tchar c = __VERIFIER_nondet_char();\n".format(len(vars))
                 buggy_constraints += "\tint flag = 0;\n"

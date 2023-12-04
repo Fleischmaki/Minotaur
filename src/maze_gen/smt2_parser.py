@@ -97,7 +97,7 @@ def get_bv_width(node):
         error(1,node)
     return res
 
-def type_to_c(type):
+def type_to_c(type,array_size):
     if type.is_int_type():
         return 'long'
     if type.is_bool_type():
@@ -105,9 +105,9 @@ def type_to_c(type):
     elif type.is_bv_type():
         return bits_to_utype(type.width)
     elif type.is_function_type():
-        return type_to_c(type.return_type)
+        return type_to_c(type.return_type, array_size)
     elif type.is_array_type():
-        return 'long' # otherwise store might be unsound, we can always cast afterwards
+        return '%s[%d]' % (type_to_c(type.elem_type, array_size), array_size) # otherwise store might be unsound, we can always cast afterwards
     # elif type.is_string_type():
     #     return 'string'
     else:
@@ -163,7 +163,14 @@ def convert_to_string(symbs, node):
     buff.close()
     return lString
 
-def convert(symbs,node, cons):
+def get_array_dim(node):
+    dim = 0
+    curr_type = node.get_type() 
+    while node.is_array_type():
+        curr_type = curr_type.elem_type
+        dim += 1
+
+def convert(symbs,node,cons):
     #if cons.tell() > 2**20:
     #    raise ValueError("Parse result too large") # Avoid file sizes > 1 MB
     cons.write('(')
@@ -171,11 +178,11 @@ def convert(symbs,node, cons):
         (l, r) = node.args()
         if "Array" in str(l.get_type()):
             if "Array" in str(r.get_type()):
-                cons.write("array_comp(")
+                cons.write("array_comp(&")
                 convert(symbs,l,cons)
-                cons.write(",")
+                cons.write(",&")
                 convert(symbs,r,cons)
-                cons.write("))")
+                cons.write("),%d)" % get_array_dim(l))
                 return
             error(1, node)
         convert_helper(symbs,node, cons, " == ")
@@ -322,14 +329,17 @@ def convert(symbs,node, cons):
         symbs.add(node)
     elif node.is_select():
         (a, p) = node.args()
-        cast = get_unsigned_cast(node)
-        cons.write(cast)
+        if 'BV' in str(node.get_type()): 
+            cast = get_unsigned_cast(node)
+            cons.write(cast)
         convert(symbs, a, cons)
         cons.write("[")
         convert(symbs,p,cons)
         cons.write("]")
     elif node.is_store():
         (a, p, v) = node.args()
+        if get_array_dim(a) > 1:
+            error(1,node)
         cons.write("array_store(")
         convert(symbs, a, cons)
         cons.write(",")
@@ -419,7 +429,7 @@ def parse(file_path, check_neg):
         clauses.extend(array_constraints)# Make sure to render constraints first
     if 'LIA' in logic:
         if not sat_in_int_range(formula):
-            raise ValueError('Unsat with ints in range')
+            raise ValueError('Unsat on ints in range')
     clauses.extend(formula_clauses)
     for c, clause in enumerate(clauses,start=1):
         print("%d/%d" % (c,len(clauses)))
@@ -432,11 +442,11 @@ def parse(file_path, check_neg):
 
         symbs = set()
         buffer = StringIO()
-        try:
-            convert(symbs,clause, buffer)
-        except Exception as e:
-           print("Could not convert clause: ", e)
-           continue
+        # try:
+        convert(symbs,clause, buffer)
+        # except Exception as e:
+        #    print("Could not convert clause: ", e)
+        #    continue
         cons_in_c =  buffer.getvalue()
         if "model_version" not in cons_in_c:
             if check_neg == True:
@@ -456,9 +466,11 @@ def parse(file_path, check_neg):
                     decl = symb.split("_")[0]
                 i = decls.index(decl)
                 vartype = ldecl_arr[i].get_type()
-                type_in_c = type_to_c(vartype)
+                type_in_c = type_to_c(vartype,array_size)
                 if vartype.is_array_type():
-                    symb += "[%d]" % array_size 
+                    first_bracket = type_in_c.find('[')
+                    symb += type_in_c[first_bracket:]
+                    type_in_c = type_in_c[:first_bracket]
                 variables[symb] = type_in_c
     return parsed_cons, variables
 
@@ -634,7 +646,6 @@ def constrain_array_size(formula):
         sat = is_sat(new_formula)
         array_size *= 2 
     return array_size // 2, assertions
-
 
 def main(file_path, resfile):    
     return check_files(file_path, resfile)
