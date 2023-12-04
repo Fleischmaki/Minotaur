@@ -428,6 +428,8 @@ def parse(file_path, check_neg, continue_on_error=True):
     if logic.split('_')[-1].startswith('A'): # Arrays
         array_size, array_constraints = constrain_array_size(formula)
         clauses.extend(array_constraints)# Make sure to render constraints first
+    else:
+        array_size = 0
     if 'LIA' in logic:
         if not sat_in_int_range(formula):
             raise ValueError('Unsat on ints in range')
