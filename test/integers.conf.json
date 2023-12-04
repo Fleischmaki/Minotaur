@@ -1,22 +1,26 @@
 {
-	"verbosity": "all",
-	"repeats" : 1,
-	"transforms" : 2,
+	"verbosity": "bug",
+	"repeats" : 500,
 	"duration" : 1,
-	"workers" : 7,
-	"memory" : 3,
+	"workers" : 120,
+	"memory" : 4,
+	"transforms" : 15,
+	"maze_gen" : "container",
 	"tool" : { 
 		"cpa" : {
-			"variant" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution", "invariantGeneration", "smg2","bmc"]
+			"variant" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution", "invariantGeneration", "smg2","bmc","ldv"]
 		},
 		"seahorn" : {
 			"variant" : ["spf", "bpf", "fpcf", "fpf"],
 			"choose" : {
-				"" : ["--step=large", "--step=small", "--bmc=mono","--bmc=path","--bmc=opsem","--crab"]
+				"--bmc=" : ["none","mono","path","opsem"],
+				"--step=" : ["large", "small"],
+				"--crab --crab-track=mem --crab-dom=" : [0, "int", "ric","term-int", "dis-int", "term-dis-int","zones","soct","rtz","w-int"],
+				"--horn-use-invs=" : ["bg","always"]
 			}
 		},
 		"ultimate" : {
-			"variant" : ["Automizer Default","Taipan Default","Kojak Default","GemCutter Default", "Automizer Bitvector","Taipan Bitvector","Kojak Bitvector","GemCutter Bitvector"]
+			"variant" : ["Automizer Default","Taipan Default","Kojak Default","GemCutter Default"]
 		},
 		"cbmc": {
 			"variant" : [""]
@@ -33,11 +37,13 @@
 		},
 		"esbmc": {
 			"variant" : [""],
-			"toggle" : ["--initialize-nondet-variables", "--incremental-bmc", "--interval-analysis", "--smt-during-symex","--array-flattener"],
+			"toggle" : ["--smt-during-symex","--array-flattener","--unwind 1024"],
 			"choose" : {
 				"" : ["--z3", "--boolector", "--cvc", "--mathsat", "--yices", "--bitwuzla", "--bv"],
+				"--incremental-bmc" : [0,""," --falsification"],
 				"--tuple" : [0,"-node-flattener", "-sym-flattener"],
-				"--k-induction": [0,""," --bidirectional"]
+				"--k-induction": [0,""," --bidirectional"],
+				"--interval-analysis": [0,"", "-wrapped", "-arithmetic","-bitwise", "-modular"]
 			}
 		},
 		"mopsa": {
@@ -45,13 +51,14 @@
 		}
 	},
 	"parameters" : {
+		"u" : [0,1],
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
 		"w" : {
 			"min" : 4,
 			"max" : 7
 		},
 		"h" : {
-			"min" : 4,
+			"min" : 5,
 			"max" : 7
 		},
 		"c" : {
@@ -59,15 +66,14 @@
 			"max" : 0
 		},
 		"t" : {
-			"storm" : [1],
-			"keepId" : [0]
+			"storm": [1],
+			"keepId": [0]
 		},
-		"u" : [1],
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MasterThesis/safe",
-		"r": {
-			"min": 0,
+		"s": "/home/mfleischmann/Integers",
+		"r" : {
+			"min" : 0,
 			"max" : 65536
-		}	
+		}
 	}
 }
