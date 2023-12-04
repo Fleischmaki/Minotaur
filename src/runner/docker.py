@@ -58,9 +58,9 @@ def run_docker(duration, tool, name, variant='', flags=''):
     cmd = '%s %s %s %s %s' % (script, src_path, duration, variant,flags)
     return spawn_cmd_in_docker(get_container(tool,variant,flags,name), cmd)
 
-def collect_docker_results(tool,name, variant='', flags=''):
+def collect_docker_results(tool,name, variant='', flags='', expected_result='error'):
     user = get_user(tool)
-    cmd = 'python3 /home/%s/tools/get_tcs.py /home/%s/workspace/outputs' % (user,user)
+    cmd = 'python3 /home/%s/tools/get_tcs.py /home/%s/workspace/outputs %s' % (user,user,expected_result)
     return spawn_cmd_in_docker(get_container(tool,variant,flags,name), cmd)
 
 def copy_docker_results(tool, name , out_path, variant = '', flags = ''):

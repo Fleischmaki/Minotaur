@@ -10,7 +10,7 @@ def save_tc(dest_dir, tc_path, start_time, end_time, sig):
 WORKDIR = '/home/maze/workspace'
 OUTDIR = '/home/maze/workspace/outputs'
 
-def main(dest_dir):           
+def main(dest_dir,expected_result):           
     # Create destination directory
     os.system('mkdir -p %s' % dest_dir)
 
@@ -22,10 +22,10 @@ def main(dest_dir):
     respath = '%s/res' %(OUTDIR)
     resfile = open(respath, 'r').read()
     if ('VERIFICATION FAILED' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time, 'tp')
+        save_tc(dest_dir, respath, start_time, end_time, 'positive', expected_result)
 
     elif ('VERIFICATION SUCCESSFUL' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time, 'fn')
+        save_tc(dest_dir, respath, start_time, end_time, 'negative', expected_result)
 
     #elif ('UNKNOWN' in resfile):
     #    save_tc(dest_dir, respath, start_time, end_time, 'uk')
@@ -37,4 +37,6 @@ def main(dest_dir):
     
 if __name__ == '__main__':
     dest_dir = sys.argv[1]
-    main(dest_dir)
+    expected_result = sys.argv[2]
+    expected_result = sys.argv[2]
+    main(dest_dir,expected_result)
