@@ -192,8 +192,11 @@ def store_outputs(conf, out_dir, works):
                 runtime, tag = filename.split('_')
                 if (tag == 'fn'):
                     commands.run_cmd(CP_CMD % (get_maze_dir(maze), out_path)) # Keep buggy mazes
+                write_summary(conf, out_dir, w, tag, runtime)
+
+        if runtime == 'notFound' or tag == 'notFound':
             write_summary(conf, out_dir, w, tag, runtime)
-                
+
     time.sleep(5)
 
 def write_summary(conf,out_dir, target,tag,runtime):
