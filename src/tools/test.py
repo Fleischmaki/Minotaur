@@ -177,7 +177,7 @@ def run_tools(conf,works):
 def store_outputs(conf, out_dir, works):
     for i in range(len(works)):
         target = works[i]
-        docker.collect_docker_results(target.tool, target.index, target.variant, target.flags, conf.expected_results)
+        docker.collect_docker_results(target.tool, target.index, target.variant, target.flags, conf['expected_results'])
     time.sleep(10)
 
     for i in range(len(works)):
