@@ -1,15 +1,10 @@
 import os, sys
 
-def save_tc(dest_dir, tc_path, start_time, sig, expected_result):
+def save_tc(dest_dir, tc_path, start_time, sig):
     creation_time = os.path.getctime(tc_path)
     elapsed_time = creation_time - start_time
     if sig == '':
         sig = 'tc'
-    elif sig == 'postive':
-        sig = 'tp' if expected_result == 'error' else 'fp'
-    elif sig == 'negative':
-        sig = 'tn' if expected_result == 'error' else 'fn'
-
     name = '%011.5f_%s' % (elapsed_time, sig)
     file_path = os.path.join(dest_dir, name)
     os.system('cp %s %s' % (tc_path, file_path))
@@ -34,7 +29,7 @@ def main(dest_dir,expected_result):
         flag = 'wa-'
     # True positives
     if ('Assertion failure' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time,flag + ('tp' if expected_result == 'error' else 'fn'))
+        save_tc(dest_dir, respath, start_time, end_time,flag + ('tp' if expected_result == 'error' else 'fp'))
     # False negatives
     elif ('No alarm' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, flag + ('fn' if expected_result == 'error' else 'tn'))

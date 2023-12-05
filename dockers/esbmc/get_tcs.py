@@ -1,6 +1,6 @@
 import os, sys
 
-def save_tc(dest_dir, tc_path, start_time, sig, expected_result):
+def save_tc(dest_dir, tc_path, start_time, sig, expected_result='positive'):
     creation_time = os.path.getctime(tc_path)
     elapsed_time = creation_time - start_time
     if sig == '':
@@ -35,7 +35,7 @@ def main(dest_dir,expected_result):
 
     # False negatives
     elif ('VERIFICATION SUCCESSFUL' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time, 'positive', expected_result)
+        save_tc(dest_dir, respath, start_time, end_time, 'negative', expected_result)
 
     # Crashes/Errors
     elif ('VERIFICATION UNKNOWN' in resfile):
