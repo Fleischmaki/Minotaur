@@ -8,7 +8,7 @@ def save_tc(dest_dir, tc_path, start_time, sig, expected_result='positive'):
     elif sig == 'postive':
         sig = 'tp' if expected_result == 'error' else 'fp'
     elif sig == 'negative':
-        sig = 'tn' if expected_result == 'error' else 'fn'
+        sig = 'fn' if expected_result == 'error' else 'tn'
 
     name = '%011.5f_%s' % (elapsed_time, sig)
     file_path = os.path.join(dest_dir, name)

@@ -1,7 +1,15 @@
 import os, sys
 
-def save_tc(dest_dir, tc_path, start_time, end_time, sig):
-    elapsed_time = end_time - start_time
+def save_tc(dest_dir, tc_path, start_time, sig, expected_result='positive'):
+    creation_time = os.path.getctime(tc_path)
+    elapsed_time = creation_time - start_time
+    if sig == '':
+        sig = 'tc'
+    elif sig == 'postive':
+        sig = 'tp' if expected_result == 'error' else 'fp'
+    elif sig == 'negative':
+        sig = 'fn' if expected_result == 'error' else 'tn'
+
     name = '%011.5f_%s' % (elapsed_time, sig)
     file_path = os.path.join(dest_dir, name)
     os.system('cp %s %s' % (tc_path, file_path))
