@@ -18,7 +18,8 @@ def load_config(path):
         conf['verbosity'] = 'all'
     if 'maze_gen' not in conf.keys():
         conf['maze_gen'] = 'local'
-
+    if 'expected_result' not in conf.keys():
+        conf['maze_gen'] = 'error'
 
     assert conf['repeats'] > 0
     assert conf['duration'] > 0
@@ -27,6 +28,7 @@ def load_config(path):
     assert conf['transforms'] >= 0
     assert conf['maze_gen'] in ['local', 'container']
     assert conf['verbosity'] in ['all','summary','bug','bug_only']
+    assert conf['expected_result'] in ['error','safe']
 
     return conf
 
@@ -175,7 +177,7 @@ def run_tools(conf,works):
 def store_outputs(conf, out_dir, works):
     for i in range(len(works)):
         target = works[i]
-        docker.collect_docker_results(target.tool, target.index, target.variant, target.flags)
+        docker.collect_docker_results(target.tool, target.index, target.variant, target.flags, conf.expected_results)
     time.sleep(10)
 
     for i in range(len(works)):
