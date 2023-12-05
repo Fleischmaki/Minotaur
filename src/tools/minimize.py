@@ -26,7 +26,7 @@ def main(params, outdir,timeout,gen,err,tool,variant,flags):
     keep_first_half = True
     misses_bug = True 
     params = set_fake_params(params)
-    while misses_bug or not keep_first_half:
+    while len(clauses) > 1 and (misses_bug or not keep_first_half):
         half = len(clauses) // 2
         new_clauses = clauses[:half] if keep_first_half else clauses[half+1:]
 
@@ -45,6 +45,8 @@ def main(params, outdir,timeout,gen,err,tool,variant,flags):
     # Check individual files
     empty_clauses = 0
     for i in range(len(clauses)):
+        if len(clauses) == 1:
+            break
         commands.run_cmd('mkdir -p %s' % os.path.join(outdir,'seeds'))
         pos = i - empty_clauses
         seed = os.path.join(outdir, 'seeds', str(len(clauses)) + '-' + str(pos+1))
