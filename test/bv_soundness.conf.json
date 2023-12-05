@@ -6,6 +6,7 @@
 	"memory" : 4,
 	"transforms" : 15,
 	"maze_gen" : "container",
+	"expected_result": "error",
 	"tool" : { 
 		"cpa" : {
 			"variant" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution", "invariantGeneration", "smg2","bmc"]
