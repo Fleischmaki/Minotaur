@@ -40,6 +40,7 @@ class Generator:
             
     def get_logic_def(self):
         logic_def = ""
+        logic_def += ("\n\n//Helper functions for division and casts\n")
         logic_def += ("""long scast_helper(unsigned long i, unsigned char width){
     if((i & (1ULL << (width-1))) > 0){
         return (long) (i - (1ULL<< width));
@@ -55,42 +56,46 @@ class Generator:
         return 0x8000000000000000ULL;
     return l / r;
 }
-
 unsigned long div_helper(unsigned long l, unsigned long r, int width){
     if(r == 0)
         return -1ULL >> (64-width);
     return l / r;
 }
-
 unsigned long srem_helper(long l, long r, int width){
     if(r == 0)
         return l;
     return l % r;
 }
-
 unsigned long rem_helper(unsigned long l, unsigned long r, int width){
     if(r == 0)
         return l;
     return l % r;
 }\n""")
         if self.array_size != 0:
-            logic_def += """int array_dim_to_size(int dim){ //Basically just x^n
-    int res = 1;
-    for(int i=0; i<dim;i++){
-        res*=%d;
-    }
-    return res;
-}\n""" % self.array_size
-            logic_def += """long* array_store(long a[],int p,long v){
-    a[p] = v;
+            logic_def += "\n\n//Array support\n"
+            logic_def += "#define ARRAY_SIZE %d\n" % self.array_size
+    #         logic_def += """int array_dim_to_size(int dim){ //Basically just x^n
+    # int res = 1;
+    # for(int i=0; i<dim;i++){
+    #     res*=%d;
+    # }
+    # return res;
+# }\n""" % self.array_size
+            logic_def += """long* value_store(long* a,long pos,long v){
+    a[pos] = v;
     return a;\n}\n"""
-            logic_def += ("""int array_comp(long* a1, long* a2, int dim){
-    for(int i = 0; i < array_dim_to_size(dim); i++){
+            logic_def += """long* array_store(long* a,long pos,long* v, int size){
+    for (int i=0;i<size;i++){
+        a[pos*size+i] = v[i];
+    }
+    return a;\n}\n"""
+            logic_def += ("""int array_comp(long* a1, long* a2, int size){
+    for(int i = 0; i < size; i++){
     \tif(a1[i] != a2[i]) return 0;
     }
     return 1;\n}\n""")
-            logic_def += ("""void init(long* array,int dim){
-    for(int i = 0; i < array_dim_to_size(dim); i++){
+            logic_def += ("""void init(long* array,int size){
+    for(int i = 0; i < size; i++){
     \tarray[i] = __VERIFIER_nondet_long();
     }\n}""")
 
@@ -112,7 +117,7 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
                 for var in vars:
                     if '[' in var: #Arrays
                         dim = var.count('[')
-                        buggy_constraints += "\t{} {};\n\tinit({}{},{});\n".format(self.vars_all[var],var,'*'*(dim-1),var.split('[')[0],dim)
+                        buggy_constraints += "\t{} {};\n\tinit({}{},{});\n".format(self.vars_all[var],var,'*'*(dim-1),var.split('[')[0],smt2_parser.get_array_size_from_dim(dim))
                     elif self.vars_all[var] == 'bool':
                         buggy_constraints += "\t_Bool {} = __VERIFIER_nondet_bool();\n".format(var)
                     else:

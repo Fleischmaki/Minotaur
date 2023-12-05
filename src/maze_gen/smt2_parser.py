@@ -97,7 +97,7 @@ def get_bv_width(node):
         error(1,"Invalid bv width: ", res, node)
     return res
 
-def type_to_c(type,array_size):
+def type_to_c(type):
     if type.is_int_type():
         return 'long'
     if type.is_bool_type():
@@ -105,9 +105,11 @@ def type_to_c(type,array_size):
     elif type.is_bv_type():
         return bits_to_utype(type.width)
     elif type.is_function_type():
-        return type_to_c(type.return_type, array_size)
+        return type_to_c(type.return_type)
     elif type.is_array_type():
-        return '%s[%d]' % (type_to_c(type.elem_type, array_size), array_size) # otherwise store might be unsound, we can always cast afterwards
+        if type.elem_type.is_array_type():
+            return '%s[ARRAY_SIZE]' % type_to_c(type.elem_type) # otherwise store might be unsound, we can always cast afterwards
+        return 'long[ARRAY_SIZE]'
     # elif type.is_string_type():
     #     return 'string'
     else:
@@ -171,6 +173,15 @@ def get_array_dim(node):
         dim += 1
     return dim
 
+def get_array_size_from_dim(dim):
+    if dim <= 0:
+        return '1'
+    return ('ARRAY_SIZE*'*dim)[:-1]
+
+
+def get_array_size(node):
+    return get_array_size_from_dim(get_array_dim(node))
+
 def convert(symbs,node,cons):
     #if cons.tell() > 2**20:
     #    raise ValueError("Parse result too large") # Avoid file sizes > 1 MB
@@ -179,11 +190,14 @@ def convert(symbs,node,cons):
         (l, r) = node.args()
         if "Array" in str(l.get_type()):
             if "Array" in str(r.get_type()):
-                cons.write("array_comp(&")
+                cons.write("array_comp(")
+                dim = get_array_dim(l)
+                cons.write("*"*(dim-1))
                 convert(symbs,l,cons)
-                cons.write(",&")
+                cons.write(",")
+                cons.write("*"*(dim-1))
                 convert(symbs,r,cons)
-                cons.write("),%d)" % get_array_dim(l))
+                cons.write(",%s))" % get_array_size(l))
                 return
             error(1, "Cannot compare array with non-array", node)
         convert_helper(symbs,node, cons, " == ")
@@ -339,14 +353,26 @@ def convert(symbs,node,cons):
         cons.write("]")
     elif node.is_store():
         (a, p, v) = node.args()
-        if get_array_dim(a) > 1:
-            error(1,"Multi-dimensional Array-Store: ",node)
-        cons.write("array_store(")
+        a_dim = get_array_dim(a)
+        v_dim = get_array_dim(v)
+        if v_dim != (a_dim -1):
+            error(1, "Invalid array dimensions for store", node)
+        if v_dim == 0:
+            cons.write("value_store(")
+        else:
+            if(a_dim > 1):
+                cons.write("(long " + "*"*a_dim + ")")
+            cons.write("array_store(")
+        cons.write("*"*(v_dim))
         convert(symbs, a, cons)
         cons.write(",")
         convert(symbs,p,cons)
         cons.write(",")
+        cons.write("*" * (v_dim-1))
         convert(symbs,v,cons)
+        if v_dim > 0:
+            cons.write(",")
+            cons.write(get_array_size_from_dim(v_dim))
         cons.write(")")
     elif node.is_function_application():
         for n in node.args():
@@ -472,7 +498,7 @@ def parse(file_path, check_neg, continue_on_error=True):
                     decl = symb.split("_")[0]
                 i = decls.index(decl)
                 vartype = ldecl_arr[i].get_type()
-                type_in_c = type_to_c(vartype,array_size)
+                type_in_c = type_to_c(vartype)
                 if vartype.is_array_type():
                     first_bracket = type_in_c.find('[')
                     symb += type_in_c[first_bracket:]
