@@ -69,7 +69,8 @@ def main(params, outdir,timeout,gen,err,tool,variant,flags):
         maze_gen.generate_maze(params, outdir)    
 
 def result_is_err(err,tool,variant,flags,params, outdir, timeout,gen):
-    docker.run_mc(tool,variant,flags, 'min', params, outdir,timeout=timeout, gen=gen)
+    expected_result = 'error' if err in ('fn','tp') else 'safe'
+    docker.run_mc(tool,variant,flags, 'min', params, outdir,timeout=timeout, gen=gen, expected_result=expected_result)
     sat = is_err(outdir,err)
     return sat
 

@@ -83,7 +83,7 @@ def kill_docker(tool,name,variant='', flags=''):
     return commands.spawn_cmd(cmd)
 
 
-def run_mc(tool,variant,flags, name, params,outdir, memory = 4,  timeout=1, gen='container'):
+def run_mc(tool,variant,flags, name, params,outdir, memory = 4,  timeout=1, gen='container', expected_result='error'):
     spawn_docker(memory,name,tool,variant=variant,flags=flags).wait()
     if gen == 'container':
         maze_gen.generate_maze_in_docker(params,name).wait()
@@ -95,6 +95,6 @@ def run_mc(tool,variant,flags, name, params,outdir, memory = 4,  timeout=1, gen=
     maze_path = os.path.join(outdir,'src',maze_gen.get_maze_names(params)[t_index]) #'outputs' should not be necessary but somehow it is ¯\_(ツ)_/¯
     set_docker_maze(maze_path,name,tool,variant,flags).wait()
     run_docker(timeout, tool, name, variant,flags).wait()
-    collect_docker_results(tool,name,variant,flags).wait()
+    collect_docker_results(tool,name,variant,flags,expected_result).wait()
     copy_docker_results(tool,name,os.path.join(outdir, 'res'),variant,flags)
     kill_docker(tool,name,variant,flags).wait()
