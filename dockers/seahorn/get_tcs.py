@@ -30,10 +30,10 @@ def main(dest_dir,expected_result):
 
     # False negatives
     if ('unsat' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time, 'positive', expected_result)
+        save_tc(dest_dir, respath, start_time, end_time, 'negative', expected_result)
     # True positives
     elif ('sat' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time, 'negative', expected_result)
+        save_tc(dest_dir, respath, start_time, end_time, 'positive', expected_result)
 
     
     ## Crashes/Errors
