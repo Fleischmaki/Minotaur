@@ -1,6 +1,6 @@
 import os, sys
 
-def save_tc(dest_dir, tc_path, start_time, end_time, sig, expected_result='positive'):
+def save_tc(dest_dir, tc_path, start_time, end_time, sig, expected_result='error'):
     elapsed_time = end_time - start_time
     if sig == '':
         sig = 'tc'
