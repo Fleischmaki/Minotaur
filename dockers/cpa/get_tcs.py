@@ -4,7 +4,7 @@ def save_tc(dest_dir, tc_path, start_time, end_time, sig, expected_result='error
     elapsed_time = end_time - start_time
     if sig == '':
         sig = 'tc'
-    elif sig == 'postive':
+    elif sig == 'positive':
         sig = 'tp' if expected_result == 'error' else 'fp'
     elif sig == 'negative':
         sig = 'fn' if expected_result == 'error' else 'tn'
