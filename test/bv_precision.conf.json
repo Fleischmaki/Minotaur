@@ -64,8 +64,11 @@
 			"max" : 0
 		},
 		"t" : {
-			"storm": [1],
-			"keepId": [0]
+			"keepId": [0,1],
+			"rw":{
+				"min": 0,
+				"max": 40
+			}
 		},
 		"g": ["CVE_gen"],
 		"s": "/home/mfleischmann/unsat_seeds",
