@@ -17,5 +17,5 @@ mkdir -p $OUTDIR
 
 # Create dummy file to indicate running start
 touch $WORKDIR/.start
-timeout $2m sea $3 -m=64 -unroll-threshold=1024 ${@:4} $1 &> $OUTFILE
+timeout $2s sea $3 -m=64 -unroll-threshold=1024 ${@:4} $1 &> $OUTFILE
 touch $WORKDIR/.end

@@ -1,7 +1,7 @@
 {
 	"verbosity": "all",
 	"repeats" : 10,
-	"duration" : 1,
+	"duration" : 60,
 	"workers" : 12,
 	"transforms" : 4,
 	"memory" : 2,

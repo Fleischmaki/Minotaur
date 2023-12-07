@@ -1,7 +1,7 @@
 {
 	"verbosity": "bug",
 	"repeats" : 500,
-	"duration" : 1,
+	"duration" : 60,
 	"workers" : 120,
 	"memory" : 4,
 	"transforms" : 15,

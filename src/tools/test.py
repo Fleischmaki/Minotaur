@@ -165,20 +165,20 @@ def spawn_containers(conf, works):
         # Copy maze in the container
         procs.append(docker.set_docker_maze(get_maze_dir(target.maze), target.index,target.tool, target.variant, target.flags ))
     commands.wait_for_procs(procs)
-    time.sleep(10)
+    time.sleep(5)
 
 def run_tools(conf,works):
     duration = conf['duration']
     for i in range(len(works)):
         target  = works[i]
         docker.run_docker(duration, target.tool, target.index, target.variant, target.flags )
-    time.sleep(duration*60 + 15) 
+    time.sleep(duration + 10) 
 
 def store_outputs(conf, out_dir, works):
     for i in range(len(works)):
         target = works[i]
         docker.collect_docker_results(target.tool, target.index, target.variant, target.flags, conf['expected_result'])
-    time.sleep(10)
+    time.sleep(5)
 
     for i in range(len(works)):
         maze, tool, id, params, variant, flags = w = works[i]
@@ -237,7 +237,7 @@ def kill_containers(works):
         _, tool, id, _, variant, flags  = works[i]
         procs.append(docker.kill_docker(tool,id, variant, flags ))
     commands.wait_for_procs(procs)
-    time.sleep(10)
+    time.sleep(5)
 
 def cleanup(completed):
     procs = []
