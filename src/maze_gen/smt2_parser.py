@@ -183,8 +183,8 @@ def get_array_size(node):
     return get_array_size_from_dim(get_array_dim(node))
 
 def convert(symbs,node,cons):
-    #if cons.tell() > 2**20:
-    #    raise ValueError("Parse result too large") # Avoid file sizes > 1 MB
+    if cons.len > 2**20:
+        raise ValueError("Parse result too large") # Avoid file sizes > 1 MB
     cons.write('(')
     if node.is_iff() or node.is_equals() or node.is_bv_comp():
         (l, r) = node.args()
