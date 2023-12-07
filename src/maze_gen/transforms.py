@@ -2,13 +2,12 @@ import random
 from storm.smt.smt_object import smtObject
 from storm.fuzzer.fuzzer import generate_mutants
 from storm.parameters import get_parameters_dict
+from smt2_parser import get_logic_from_script
 import math as m
 
 from z3 import *
 from pysmt.smtlib.parser import SmtLibParser
 from pysmt.shortcuts import *
-from pysmt.smtlib.commands import SET_LOGIC
-from pysmt.oracles import get_logic
 
 
 def remove_constraints(constraints, dc):
@@ -29,6 +28,7 @@ def parse_transformations(t_type):
     transformations = t_type.split('_')
     shuffle = False
     storm = False
+    well_defined = False
     keepId = t_type == 'id'
     dc = 0
     for t in transformations:
@@ -36,11 +36,13 @@ def parse_transformations(t_type):
             shuffle = True
         elif t == 'storm':
             storm = True
+        elif t == 'wd':
+            well_defined = True
         elif t.startswith('dc'):
             dc = int(t[2:])
         elif t == 'keepId':
             keepId = True
-    return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keepId}
+    return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keepId, 'wd' : well_defined}
 
 def run_storm(smt_file,mutant_path, seed,n):
     if n <= 0:
@@ -56,13 +58,6 @@ def run_storm(smt_file,mutant_path, seed,n):
     # Find the logic of the formula
     parser = SmtLibParser()
     script = parser.get_script_fname(smt_file)
-    if script.contains_command(SET_LOGIC):
-        logic = str(script.filter_by_command_name(SET_LOGIC).__next__().args[0])
-        print('Found Logic: %s' % str(logic))
-    else:
-        formula = script.get_strict_formula()
-        logic = str(get_logic(formula))
-        print('Logic not found in script. Using logic from formula: ' % (logic))
-
+    logic = get_logic_from_script(script)
     generate_mutants(smt_obj, mutant_path, fpars['max_depth'],fpars['max_assert'],seed, logic,fpars)
     return [mutant_path + '/mutant_%s.smt2' % i for i in range(n)]

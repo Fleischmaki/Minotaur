@@ -6,6 +6,8 @@ from pysmt.shortcuts import *
 from io import StringIO
 from pysmt.typing import INT
 from pysmt.oracles import get_logic
+from pysmt.smtlib.commands import SET_LOGIC
+
 
 """
 Transform a flattened operation (e.g. And (a,b,c,d)) into nested binary operations of that type. 
@@ -136,9 +138,11 @@ def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
 
 
 def check_shift_size(node):
-    (l,r) = node.args()
-    if not r.is_bv_constant() or r.constant_value() > get_bv_width(node):
-        error(1, "Invalid shift: ", node)
+    global GENERATE_WELL_DEFINED
+    if GENERATE_WELL_DEFINED:
+        (l,r) = node.args()        
+        if not r.is_bv_constant() or r.constant_value() > get_bv_width(node):
+            error(1, "Invalid shift: ", node)
 
 def div_helper(symbs,node,cons):
     (l,r) = node.args()
@@ -146,18 +150,27 @@ def div_helper(symbs,node,cons):
 
     lString = convert_to_string(symbs, l)
     rString = convert_to_string(symbs, r)
-    
-    if node.is_bv_srem():
+
+    if node.is_bv_srem() or node.is_bv_sdiv():
         lString = signed(l,lString)
         rString = signed(r,rString)
-        cons.write("srem_helper(%s,%s,%s)" % (lString,rString,width))
-    elif node.is_bv_urem():
-        cons.write("rem_helper(%s,%s,%s)" % (lString,rString,width))
-    elif node.is_bv_udiv():
-        cons.write("div_helper(%s,%s,%s)" % (lString,rString,width))
+
+    if GENERATE_WELL_DEFINED:
+        if node.is_bv_srem():
+            cons.write("srem_helper(%s,%s,%s)" % (lString,rString,width))
+        elif node.is_bv_urem():
+            cons.write("rem_helper(%s,%s,%s)" % (lString,rString,width))
+        elif node.is_bv_udiv():
+            cons.write("div_helper(%s,%s,%s)" % (lString,rString,width))
+        else:
+            cons.write("sdiv_helper(%s,%s,%s)" % (signed(l,lString),signed(r,rString),width))
     else:
-        cons.write("sdiv_helper(%s,%s,%s)" % (signed(l,lString),signed(r,rString),width))
-        
+        if node.is_bv_urem or node.is_bv_srem():
+            op = '%'
+        else:
+            op = '/'
+        cons.write(unsigned(node, '%s %s %s' % (lString, op, rString)))
+ 
 def convert_to_string(symbs, node):
     buff = StringIO()
     convert(symbs, node, buff)
@@ -444,21 +457,34 @@ def write_to_file(formula, file):
         formula = And(*formula)
     return write_smtlib(formula, file)
 
-def parse(file_path, check_neg, continue_on_error=True):
+def get_logic_from_script(script):
+    if script.contains_command(SET_LOGIC):
+        logic = str(script.filter_by_command_name(SET_LOGIC).__next__().args[0])
+    else:
+        formula = script.get_strict_formula()
+        logic = str(get_logic(formula))
+        print('Logic not found in script. Using logic from formula: ' % (logic))
+    return logic
+
+
+def parse(file_path, check_neg, continue_on_error=True, generate_well_defined=True):
+    global GENERATE_WELL_DEFINED
+    GENERATE_WELL_DEFINED = generate_well_defined
     print("Converting %s: " % file_path)
-    decl_arr, variables, formula = read_file(file_path)
-    logic = str(get_logic(formula))
+    decl_arr, variables, script, formula = read_file(file_path)
+    logic = get_logic_from_script(script)
     parsed_cons = OrderedDict()
     formula_clauses = conjunction_to_clauses(formula) 
     clauses =  []
-    if logic.split('_')[-1].startswith('A'): # Arrays
-        array_size, array_constraints = constrain_array_size(formula)
+    if 'BV' not in logic and generate_well_defined:
+        print("WARNING: Can only guarantee well-definedness on bitvectors")
+    if logic.split('_')[-1].startswith('A') and generate_well_defined: # Arrays
+        _, array_constraints = constrain_array_size(formula)
         clauses.extend(array_constraints)# Make sure to render constraints first
-    else:
-        array_size = 0
     if 'LIA' in logic:
         if not sat_in_int_range(formula):
             raise ValueError('Unsat on ints in range')
+
     clauses.extend(formula_clauses)
     for c, clause in enumerate(clauses,start=1):
         print("%d/%d" % (c,len(clauses)))
@@ -472,7 +498,7 @@ def parse(file_path, check_neg, continue_on_error=True):
         symbs = set()
         buffer = StringIO()
         try:
-            convert(symbs,clause, buffer)
+            convert(symbs,clause,buffer)
         except Exception as e:
             print("Could not convert clause: ", e)
             if continue_on_error:
@@ -517,7 +543,7 @@ def read_file(file_path):
             if (str)(arg) != "model_version":
                 decl_arr.append(arg)
     formula = script.get_strict_formula()
-    return decl_arr,variables,formula
+    return decl_arr,variables,script,formula
 
 def check_indices(symbol,maxArity,maxId, cons_in_c):
     if maxArity == 0:
@@ -658,7 +684,7 @@ def get_array_calls(formula):
     return calls
     
 def get_minimum_array_size_from_file(smt_file):
-    formula = read_file(smt_file)[2]
+    formula = read_file(smt_file)[3]
     return constrain_array_size(formula)[0]
 
 def constrain_array_size(formula):
@@ -692,25 +718,26 @@ def check_files(file_path, resfile):
         return
     print("Checking file " + file_path)
     try:
-        env = reset_env()
-        env.enable_infix_notation = True
-        #Check number of atoms
-        print("[*] Check atoms:")
-        formula = read_file(file_path)[2]
-        if len(formula.get_atoms()) < 5:
-            raise ValueError("Not enough atoms") 
-        print("[*] Done")
-
         # Check that satisfiability is easily found
-        # (else STORM will take a long time to run)
+        # (else everything will take a long time to run)
         print("[*] Check sat:")
         so = smtObject(file_path,'temp')
-        so.check_satisfiability(60)
+        so.check_satisfiability(20)
         if so.orig_satisfiability == 'timeout':
             raise ValueError('Takes too long to process')
         print("[*] Done.")
 
-        _, _, formula = read_file(file_path)
+
+        env = reset_env()
+        env.enable_infix_notation = True
+        #Check number of atoms
+        print("[*] Check atoms:")
+        formula = read_file(file_path)[3]
+        if len(formula.get_atoms()) < 5:
+            raise ValueError("Not enough atoms") 
+        print("[*] Done")
+
+        _, _, _, formula = read_file(file_path)
         logic = get_logic(formula)
 
         # Check that it is satisfiable on bounded integers

@@ -82,7 +82,7 @@ def set_seed(params, seed, clauses):
 
 
 def get_clauses(mutant):
-    formula = sp.read_file(mutant)[2]
+    formula = sp.read_file(mutant)[3]
     return list(sp.conjunction_to_clauses(formula))
 
 def is_err(outdir,err):

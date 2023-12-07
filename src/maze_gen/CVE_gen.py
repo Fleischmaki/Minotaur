@@ -12,13 +12,15 @@ class Generator:
         self.size = size
         self.edges = edges
         self.sln = sln
+        self.transformations = transformations
+
         try:
             self.array_size = smt2_parser.get_minimum_array_size_from_file(smt_file)
         except ValueError as e:
             print(e)
             self.array_size = -1 # This should make model checkers throw an error 
         try:
-            self.constraints, self.vars_all = smt2_parser.parse(smt_file, check_neg = False)
+            self.constraints, self.vars_all = smt2_parser.parse(smt_file, check_neg = False, generate_well_defined=transformations['wd'])
         except ValueError as e:
             print('Error while parsing smt file %s' % str(e))
             self.constraints = {}
@@ -47,7 +49,8 @@ class Generator:
     }
     return i;
 }\n""")
-        logic_def += ("""unsigned long sdiv_helper(long l, long r, int width){
+        if self.transformations['wd']:
+            logic_def += ("""unsigned long sdiv_helper(long l, long r, int width){
     if(r == 0){
         if(l >= 0)
             return -1ULL >> (64-width); // Make sure we shift with 0s
@@ -74,13 +77,6 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
         if self.array_size != 0:
             logic_def += "\n\n//Array support\n"
             logic_def += "#define ARRAY_SIZE %d\n" % self.array_size
-    #         logic_def += """int array_dim_to_size(int dim){ //Basically just x^n
-    # int res = 1;
-    # for(int i=0; i<dim;i++){
-    #     res*=%d;
-    # }
-    # return res;
-# }\n""" % self.array_size
             logic_def += """long* value_store(long* a,long pos,long v){
     a[pos] = v;
     return a;\n}\n"""
@@ -98,7 +94,6 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
     for(int i = 0; i < size; i++){
     \tarray[i] = __VERIFIER_nondet_long();
     }\n}""")
-
         return logic_def
 
     def get_logic_c(self):
