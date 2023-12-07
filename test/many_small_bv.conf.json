@@ -6,7 +6,7 @@
 	"memory" : 4,
 	"transforms" : 40,
 	"maze_gen" : "container",
-	"expected_result": "safe",
+	"expected_result": "error",
 	"tool" : { 
 		"cpa" : {
 			"variant" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution", "invariantGeneration", "smg2","bmc"]
@@ -64,12 +64,9 @@
 			"max" : 0
 		},
 		"t" : {
-			"keepId": [1],
-			"wd": [1],
-			"rw":{
-				"min": 0,
-				"max": 40
-			}
+			"storm": [1],
+			"wd": [0,1],
+			"keepId": [0]
 		},
 		"g": ["CVE_gen"],
 		"s": "/home/mfleischmann/seeds",
