@@ -165,11 +165,11 @@ def div_helper(symbs,node,cons):
         else:
             cons.write("sdiv_helper(%s,%s,%s)" % (signed(l,lString),signed(r,rString),width))
     else:
-        if node.is_bv_urem or node.is_bv_srem():
+        if node.is_bv_urem() or node.is_bv_srem():
             op = '%'
         else:
             op = '/'
-        cons.write(unsigned(node, '%s %s %s' % (lString, op, rString)))
+        cons.write(unsigned(node, '(%s %s %s)' % (lString, op, rString)))
  
 def convert_to_string(symbs, node):
     buff = StringIO()
@@ -193,7 +193,7 @@ def get_array_size_from_dim(dim):
 
 
 def get_array_size(node):
-    return get_array_size_from_dim(get_array_dim(node))
+    return get_array_size_from_dim(get_array_dim(node))    
 
 def convert(symbs,node,cons):
     if cons.tell() > 2**20:
@@ -279,7 +279,7 @@ def convert(symbs,node,cons):
         cons.write('((%s & %s) > 0 ? ((%s)%s - %s) : (%s)%s)' % (binary_to_decimal("1" + "0"*(width-1)),res,newtype,res,binary_to_decimal("1"+"0"*width),newtype,res))
     elif node.is_bv_zext():
         (l,) = node.args()
-        get_unsigned_cast(node)
+        cons.write(get_unsigned_cast(node))
         convert(symbs,l, cons)
     elif node.is_bv_concat():
         (l,r) = node.args()
@@ -466,6 +466,18 @@ def get_logic_from_script(script):
         print('Logic not found in script. Using logic from formula: ' % (logic))
     return logic
 
+def sat_without_zero_div(formula):
+    constraints = [Not(Equals(BV(0,get_bv_width(div)),div)) for div in get_divisors(formula)]
+    return is_sat(And(*constraints, formula), solver_name = "z3")
+
+def get_divisors(formula):
+    divisors = set()
+    if formula.is_div() or formula.is_bv_udiv() or formula.is_bv_sdiv() or formula.is_bv_urem() or formula.is_bv_srem():
+        (_,r) = formula.args()
+        divisors.add(r)
+    for sub in formula.args():
+        divisors = divisors.union(get_divisors(sub))
+    return divisors
 
 def parse(file_path, check_neg, continue_on_error=True, generate_well_defined=True):
     global GENERATE_WELL_DEFINED
@@ -484,6 +496,9 @@ def parse(file_path, check_neg, continue_on_error=True, generate_well_defined=Tr
     if 'LIA' in logic:
         if not sat_in_int_range(formula):
             raise ValueError('Unsat on ints in range')
+    if not generate_well_defined:
+        if not sat_without_zero_div(formula):
+            raise ValueError('All models include division by zero')
 
     clauses.extend(formula_clauses)
     for c, clause in enumerate(clauses,start=1):
