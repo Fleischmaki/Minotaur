@@ -119,7 +119,7 @@ def load(argv):
             tool,variant,flags,id,a,w,h,c,t,g,_,r,timeout,err = run.split(',')
             u = 0
 
-        timeout = timeout + 60 # Add a minute for buffer
+        timeout = ceil(float(timeout)) + 60 # Add a minute for buffer
         seeddir = argv[1]
         outdir = argv[2]
         gen = argv[3]
