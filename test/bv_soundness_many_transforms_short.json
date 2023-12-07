@@ -72,7 +72,7 @@
 			}
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/mfleischmann/unsat_seeds",
+		"s": "/home/mfleischmann/seeds",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
