@@ -157,13 +157,15 @@ def div_helper(symbs,node,cons):
 
     if GENERATE_WELL_DEFINED:
         if node.is_bv_srem():
-            cons.write("srem_helper(%s,%s,%s)" % (lString,rString,width))
+            helper = 'srem_helper'
         elif node.is_bv_urem():
-            cons.write("rem_helper(%s,%s,%s)" % (lString,rString,width))
+            helper = 'rem_helper'
         elif node.is_bv_udiv():
-            cons.write("div_helper(%s,%s,%s)" % (lString,rString,width))
+            helper = 'div_helper'
         else:
-            cons.write("sdiv_helper(%s,%s,%s)" % (signed(l,lString),signed(r,rString),width))
+            helper = 'sdiv_helper'
+        cons.write(unsigned(node,"%s(%s,%s,%s)" % (helper,lString,rString,width)))
+
     else:
         if node.is_bv_urem() or node.is_bv_srem():
             op = '%'
