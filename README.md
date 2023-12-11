@@ -34,6 +34,7 @@ Symbiotic | [open](https://github.com/staticafi/symbiotic/issues/247) | ??
 Ultimate | [fixed](https://github.com/ultimate-pa/ultimate/issues/646) | Bitwise Operators
 ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1363) | Type Casts
 ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1392) | Type Casts
+CPA -InvariantsCPA | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1194) | Modulo Operator
 ### Other bugs / Issues
 Tool | Status | Type
  -- | -- | --
