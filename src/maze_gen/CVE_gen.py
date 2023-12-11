@@ -12,12 +12,19 @@ class Generator:
         self.size = size
         self.edges = edges
         self.sln = sln
+        self.transformations = transformations
+
         try:
             self.array_size = smt2_parser.get_minimum_array_size_from_file(smt_file)
         except ValueError as e:
             print(e)
             self.array_size = -1 # This should make model checkers throw an error 
-        self.constraints, self.vars_all = smt2_parser.parse(smt_file, check_neg = False)
+        try:
+            self.constraints, self.vars_all = smt2_parser.parse(smt_file, check_neg = False, generate_well_defined=transformations['wd'])
+        except ValueError as e:
+            print('Error while parsing smt file %s' % str(e))
+            self.constraints = {}
+            self.vars_all = {}
         transforms.remove_constraints(self.constraints, transformations['dc'])
         self.groups, self.vars = smt2_parser.independent_formulas(self.constraints, self.vars_all)
         if transformations['sh']:
@@ -35,46 +42,58 @@ class Generator:
             
     def get_logic_def(self):
         logic_def = ""
+        logic_def += ("\n\n//Helper functions for division and casts\n")
         logic_def += ("""long scast_helper(unsigned long i, unsigned char width){
     if((i & (1ULL << (width-1))) > 0){
-        return i - (1ULL<< width);
+        return (long) (i - (1ULL<< width));
     }
     return i;
 }\n""")
-        logic_def += ("""long sdiv_helper(long l, long r, int width){
+        if self.transformations['wd']:
+            logic_def += ("""unsigned long sdiv_helper(long l, long r, int width){
     if(r == 0){
         if(l >= 0)
             return -1ULL >> (64-width); // Make sure we shift with 0s
         return 1;
-    }
+    } else if ((r == -1) && (l == ((-0x7FFFFFFFFFFFFFFFLL-1) >> (64-width))))
+        return 0x8000000000000000ULL;
     return l / r;
 }
-
 unsigned long div_helper(unsigned long l, unsigned long r, int width){
     if(r == 0)
         return -1ULL >> (64-width);
     return l / r;
 }
-
+unsigned long srem_helper(long l, long r, int width){
+    if(r == 0)
+        return l;
+    return l % r;
+}
 unsigned long rem_helper(unsigned long l, unsigned long r, int width){
     if(r == 0)
         return l;
     return l % r;
 }\n""")
         if self.array_size != 0:
-            logic_def += """long* array_store(long a[],int p,long v){
-    a[p] = v;
+            logic_def += "\n\n//Array support\n"
+            logic_def += "#define ARRAY_SIZE %d\n" % self.array_size
+            logic_def += """long* value_store(long* a,long pos,long v){
+    a[pos] = v;
     return a;\n}\n"""
-            logic_def += ("""int array_comp(long a1[], long a2[]){
-    for(int i = 0; i < %d; i++){
+            logic_def += """long* array_store(long* a,long pos,long* v, int size){
+    for (int i=0;i<size;i++){
+        a[pos*size+i] = v[i];
+    }
+    return a;\n}\n"""
+            logic_def += ("""int array_comp(long* a1, long* a2, int size){
+    for(int i = 0; i < size; i++){
     \tif(a1[i] != a2[i]) return 0;
     }
-    return 1;\n}\n""" % self.array_size)
-            logic_def += ("""void init(long array[]){
-    for(int i = 0; i < %d; i++){
+    return 1;\n}\n""")
+            logic_def += ("""void init(long* array,int size){
+    for(int i = 0; i < size; i++){
     \tarray[i] = __VERIFIER_nondet_long();
-    }\n}""" % self.array_size)
-
+    }\n}""")
         return logic_def
 
     def get_logic_c(self):
@@ -85,18 +104,22 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
                 logic_c.append("\t\tchar c = __VERIFIER_nondet_char();")
             else:
                 tab_cnt = 0
-                constraints, vars = set(), set()
+                constraints, vars = list(), set()
                 for cnt in range(self.insert[idx]):
-                    constraints = constraints.union(self.groups[group_idx + cnt])
+                    constraints.extend(self.groups[group_idx + cnt])
                     vars = vars.union(self.vars[group_idx + cnt])
                 buggy_constraints = ""  
                 for var in vars:
                     if '[' in var: #Arrays
-                        buggy_constraints += "\t{} {};\n\tinit({});\n".format(self.vars_all[var],var,var.split('[')[0])
+                        dim = var.count('[')
+                        buggy_constraints += "\t{} {};\n\tinit({}{},{});\n".format(self.vars_all[var],var,'*'*(dim-1),var.split('[')[0],smt2_parser.get_array_size_from_dim(dim))
                     elif self.vars_all[var] == 'bool':
                         buggy_constraints += "\t_Bool {} = __VERIFIER_nondet_bool();\n".format(var)
                     else:
-                        buggy_constraints += "\t{} {} = __VERIFIER_nondet_{}();\n".format(self.vars_all[var], var, 'u' + self.vars_all[var][9:])
+                        type = self.vars_all[var]
+                        if 'unsigned' in type:
+                            type = 'u' + type[9:]
+                        buggy_constraints += "\t{} {} = __VERIFIER_nondet_{}();\n".format(self.vars_all[var], var, type)
                     
                 buggy_constraints += "\tchar c = __VERIFIER_nondet_char();\n".format(len(vars))
                 buggy_constraints += "\tint flag = 0;\n"

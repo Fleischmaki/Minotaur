@@ -1,11 +1,12 @@
 {
 	"verbosity": "bug",
 	"repeats" : 500,
-	"duration" : 1,
+	"duration" : 60,
 	"workers" : 120,
 	"memory" : 4,
 	"transforms" : 15,
 	"maze_gen" : "container",
+	"expected_result": "error",
 	"tool" : { 
 		"cpa" : {
 			"variant" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution", "invariantGeneration", "smg2","bmc"]
@@ -13,7 +14,7 @@
 		"seahorn" : {
 			"variant" : ["spf", "bpf", "fpcf", "fpf"],
 			"choose" : {
-				"" : ["--step=large", "--step=small", "--bmc=mono","--bmc=path","--bmc=opsem"]
+				"" : ["--bv-chc --step=large", "--bv-chc --step=small", "--bmc=mono","--bmc=opsem"]
 			}
 		},
 		"ultimate" : {
@@ -34,11 +35,13 @@
 		},
 		"esbmc": {
 			"variant" : [""],
-			"toggle" : ["--initialize-nondet-variables", "--incremental-bmc", "--interval-analysis", "--smt-during-symex","--array-flattener"],
+			"toggle" : ["--smt-during-symex","--array-flattener","--unwind 1024"],
 			"choose" : {
 				"" : ["--z3", "--boolector", "--cvc", "--mathsat", "--yices", "--bitwuzla", "--bv"],
+				"--incremental-bmc" : [0,""," --falsification"],
 				"--tuple" : [0,"-node-flattener", "-sym-flattener"],
-				"--k-induction": [0,""," --bidirectional"]
+				"--k-induction": [0,""," --bidirectional"],
+				"--interval-analysis": [0,"", "-wrapped", "-arithmetic","-bitwise", "-modular"]
 			}
 		},
 		"mopsa": {
@@ -62,6 +65,7 @@
 		},
 		"t" : {
 			"storm": [1],
+			"wd": [0,1],
 			"keepId": [0]
 		},
 		"g": ["CVE_gen"],

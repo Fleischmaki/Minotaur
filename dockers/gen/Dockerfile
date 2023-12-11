@@ -12,7 +12,7 @@ RUN sudo apt-get update && sudo apt-get -y install \
 # Install requirements
 ADD requirements.txt /home/maze/workspace/requirements.txt
 RUN pip install -r requirements.txt
-
+RUN python3 -m pysmt install --confirm-agreement --z3
 ADD token.txt /home/maze/workspace/token.txt
 RUN sudo chmod +r token.txt
 

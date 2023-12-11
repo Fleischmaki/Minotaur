@@ -2,14 +2,13 @@ import random
 from storm.smt.smt_object import smtObject
 from storm.fuzzer.fuzzer import generate_mutants
 from storm.parameters import get_parameters_dict
+from smt2_parser import get_logic_from_script
 import math as m
-import smt2_parser as sp
 
 from z3 import *
 from pysmt.smtlib.parser import SmtLibParser
 from pysmt.shortcuts import *
-from pysmt.typing import *
-from pysmt.smtlib.solver import *
+
 
 def remove_constraints(constraints, dc):
     curr = len(constraints)
@@ -29,6 +28,7 @@ def parse_transformations(t_type):
     transformations = t_type.split('_')
     shuffle = False
     storm = False
+    well_defined = False
     keepId = t_type == 'id'
     dc = 0
     for t in transformations:
@@ -36,11 +36,13 @@ def parse_transformations(t_type):
             shuffle = True
         elif t == 'storm':
             storm = True
+        elif t == 'wd':
+            well_defined = True
         elif t.startswith('dc'):
             dc = int(t[2:])
         elif t == 'keepId':
             keepId = True
-    return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keepId}
+    return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keepId, 'wd' : well_defined}
 
 def run_storm(smt_file,mutant_path, seed,n):
     if n <= 0:
@@ -52,5 +54,10 @@ def run_storm(smt_file,mutant_path, seed,n):
     fpars = get_parameters_dict(False, 0)
     fpars['number_of_mutants'] = n
     fpars['max_depth'] = 10 # Reduce the depth, we want simpler formulas
-    generate_mutants(smt_obj, mutant_path, fpars['max_depth'],fpars['max_assert'],seed, 'QF_AUFBV',fpars)
+
+    # Find the logic of the formula
+    parser = SmtLibParser()
+    script = parser.get_script_fname(smt_file)
+    logic = get_logic_from_script(script)
+    generate_mutants(smt_obj, mutant_path, fpars['max_depth'],fpars['max_assert'],seed, logic,fpars)
     return [mutant_path + '/mutant_%s.smt2' % i for i in range(n)]

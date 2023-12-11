@@ -58,9 +58,9 @@ def run_docker(duration, tool, name, variant='', flags=''):
     cmd = '%s %s %s %s %s' % (script, src_path, duration, variant,flags)
     return spawn_cmd_in_docker(get_container(tool,variant,flags,name), cmd)
 
-def collect_docker_results(tool,name, variant='', flags=''):
+def collect_docker_results(tool,name, variant='', flags='', expected_result='error'):
     user = get_user(tool)
-    cmd = 'python3 /home/%s/tools/get_tcs.py /home/%s/workspace/outputs' % (user,user)
+    cmd = 'python3 /home/%s/tools/get_tcs.py /home/%s/workspace/outputs %s' % (user,user,expected_result)
     return spawn_cmd_in_docker(get_container(tool,variant,flags,name), cmd)
 
 def copy_docker_results(tool, name , out_path, variant = '', flags = ''):
@@ -83,7 +83,7 @@ def kill_docker(tool,name,variant='', flags=''):
     return commands.spawn_cmd(cmd)
 
 
-def run_mc(tool,variant,flags, name, params,outdir, memory = 4,  timeout=1, gen='container'):
+def run_mc(tool,variant,flags, name, params,outdir, memory = 4,  timeout=1, gen='container', expected_result='error'):
     spawn_docker(memory,name,tool,variant=variant,flags=flags).wait()
     if gen == 'container':
         maze_gen.generate_maze_in_docker(params,name).wait()
@@ -95,6 +95,6 @@ def run_mc(tool,variant,flags, name, params,outdir, memory = 4,  timeout=1, gen=
     maze_path = os.path.join(outdir,'src',maze_gen.get_maze_names(params)[t_index]) #'outputs' should not be necessary but somehow it is ¯\_(ツ)_/¯
     set_docker_maze(maze_path,name,tool,variant,flags).wait()
     run_docker(timeout, tool, name, variant,flags).wait()
-    collect_docker_results(tool,name,variant,flags).wait()
+    collect_docker_results(tool,name,variant,flags,expected_result).wait()
     copy_docker_results(tool,name,os.path.join(outdir, 'res'),variant,flags)
     kill_docker(tool,name,variant,flags).wait()

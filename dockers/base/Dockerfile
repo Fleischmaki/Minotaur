@@ -12,7 +12,6 @@ RUN groupadd --gid 2000 maze \
 ### Set up directory structure
 USER maze
 RUN mkdir -p /home/maze/tools
-ADD ./utils.py /home/maze/tools/utils.py
 RUN mkdir -p /home/maze/workspace
 
 USER root

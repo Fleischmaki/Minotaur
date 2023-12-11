@@ -18,7 +18,8 @@ def load_config(path):
         conf['verbosity'] = 'all'
     if 'maze_gen' not in conf.keys():
         conf['maze_gen'] = 'local'
-
+    if 'expected_result' not in conf.keys():
+        conf['maze_gen'] = 'error'
 
     assert conf['repeats'] > 0
     assert conf['duration'] > 0
@@ -27,6 +28,7 @@ def load_config(path):
     assert conf['transforms'] >= 0
     assert conf['maze_gen'] in ['local', 'container']
     assert conf['verbosity'] in ['all','summary','bug','bug_only']
+    assert conf['expected_result'] in ['error','safe']
 
     return conf
 
@@ -163,20 +165,20 @@ def spawn_containers(conf, works):
         # Copy maze in the container
         procs.append(docker.set_docker_maze(get_maze_dir(target.maze), target.index,target.tool, target.variant, target.flags ))
     commands.wait_for_procs(procs)
-    time.sleep(10)
+    time.sleep(5)
 
 def run_tools(conf,works):
     duration = conf['duration']
     for i in range(len(works)):
         target  = works[i]
         docker.run_docker(duration, target.tool, target.index, target.variant, target.flags )
-    time.sleep(duration*60 + 15) 
+    time.sleep(duration + 10) 
 
 def store_outputs(conf, out_dir, works):
     for i in range(len(works)):
         target = works[i]
-        docker.collect_docker_results(target.tool, target.index, target.variant, target.flags)
-    time.sleep(10)
+        docker.collect_docker_results(target.tool, target.index, target.variant, target.flags, conf['expected_result'])
+    time.sleep(5)
 
     for i in range(len(works)):
         maze, tool, id, params, variant, flags = w = works[i]
@@ -193,7 +195,10 @@ def store_outputs(conf, out_dir, works):
                 if (tag == 'fn'):
                     commands.run_cmd(CP_CMD % (get_maze_dir(maze), out_path)) # Keep buggy mazes
                 write_summary(conf, out_dir, w, tag, runtime)
-                
+
+        if runtime == 'notFound' or tag == 'notFound':
+            write_summary(conf, out_dir, w, tag, runtime)
+
     time.sleep(5)
 
 def write_summary(conf,out_dir, target,tag,runtime):
@@ -205,15 +210,14 @@ def write_summary(conf,out_dir, target,tag,runtime):
             return
     offset = 0 if 'keepId' in params['t'] else 1
     with open(out_dir + '/summary.csv', 'a') as f:
-        f.write(tool + ',' + variant + ',' + flags + ',' + str(id % conf['transforms'] + offset) + ',')
+        u = '0' if 'u' not in params.keys() else '1'
+        f.write(tool + ',' + variant + ',' + flags + ',' + str(id % conf['transforms'] + offset) + ',' + u + ',')
         for key, value in params.items():
             if key == 'g':
                 f.write(str(params['s'].split('/')[-1])[:-5] + ',')
-            elif key == 'u':
-                f.write('1,')
             elif key in conf['parameters'].keys():
                 f.write(str(value) + ',')
-        f.write('%s,%s,' % (runtime, tag))
+        f.write('%s,%s' % (runtime, tag))
         f.write('\n')
     if conf['verbosity'] == 'summary': 
         commands.run_cmd(REMOVE_CMD % out_path)
@@ -221,9 +225,10 @@ def write_summary(conf,out_dir, target,tag,runtime):
 
 def write_summary_header(conf, out_dir):
     with open(out_dir + '/summary.csv', 'w') as f:
-        f.write('tool,variant, flags ,id,')
+        f.write('tool,variant,flags,id,u,')
         for key in conf['parameters'].keys():
-            f.write(str(key)+',')
+            if key != 'u':
+                f.write(str(key)+',')
         f.write('runtime,status\n')
 
 
@@ -233,7 +238,7 @@ def kill_containers(works):
         _, tool, id, _, variant, flags  = works[i]
         procs.append(docker.kill_docker(tool,id, variant, flags ))
     commands.wait_for_procs(procs)
-    time.sleep(10)
+    time.sleep(5)
 
 def cleanup(completed):
     procs = []

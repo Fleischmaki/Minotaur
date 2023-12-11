@@ -21,7 +21,6 @@ RUN ./build.sh
 ### Set up directory structure
 USER maze
 RUN mkdir -p /home/maze/tools
-ADD ./utils.py /home/maze/tools/utils.py
 RUN mkdir -p /home/maze/workspace
 ADD run_symbiotic.sh /home/maze/tools/run_symbiotic.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py

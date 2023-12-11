@@ -19,7 +19,7 @@ export PATH=$PATH:/home/maze/tools/$3
 
 # Create dummy file to indicate running start
 touch $WORKDIR/.start
-timeout $2m /home/maze/tools/$3/Ultimate.py --spec unreach.prp --witness-dir $OUTDIR --architecture 64bit --file $1 &> $OUTFILE
+timeout $2s /home/maze/tools/$3/Ultimate.py --spec unreach.prp --witness-dir $OUTDIR --architecture 64bit --file $1 &> $OUTFILE
 touch $WORKDIR/.end
 
 # Cleanup outputs

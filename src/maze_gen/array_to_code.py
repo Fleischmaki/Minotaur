@@ -156,13 +156,16 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     logic_def = generator.get_logic_def()
     logic_c = generator.get_logic_c()
     guard = generator.get_guard()
+    
     bug, bug_headers = get_bug(bugtype)
-
     f.write('\n%s\n' % bug_headers)
+
     for type in ['char','uchar', 'short', 'ushort', 'int', 'uint', 'long', 'ulong']:
         ctype = 'unsigned ' + type[1:] if type.startswith('u') else type
         f.write("extern %s __VERIFIER_nondet_%s(void);\n" % (ctype, type))
     f.write("extern _Bool __VERIFIER_nondet_bool(void);\n")
+
+    f.write("\n//Function declarations\n")
     function_format_declaration = """void func_{}();\n"""
     function_declarations = "\n"
     for k in range(size):
@@ -170,8 +173,10 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     f.write(function_declarations)
     f.write("""\nvoid func_start(){ func_0(); }\n""")
     f.write("""void func_bug(){{ {} }}\n""".format(bug))
+
     f.write(logic_def)
 
+    f.write("\n\n//Actual program")
     function_begin_format = """\nvoid func_{}(){{\n{}"""
     function_format = """\t{} ({}) {{
     \t\tfunc_{}();
