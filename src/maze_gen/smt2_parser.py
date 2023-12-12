@@ -273,28 +273,20 @@ def convert(symbs,node,cons):
         (b,) = node.args()
         cons.write(unsigned(node,"(~%s)" % convert_to_string(symbs,b)))
     elif node.is_bv_sext():
-        extend_step = node.bv_extend_step()
         (l,) = node.args()
-        width = get_bv_width(l)
-        newtype=bits_to_type(extend_step+width)
         res = convert_to_string(symbs,l)
-        cons.write('((%s & %s) > 0 ? ((%s)%s - %s) : (%s)%s)' % (binary_to_decimal("1" + "0"*(width-1)),res,newtype,res,binary_to_decimal("1"+"0"*width),newtype,res))
+        cons.write(signed(node,res))
     elif node.is_bv_zext():
         (l,) = node.args()
+        cons.write('(')
         cons.write(get_unsigned_cast(node))
         convert(symbs,l, cons)
+        cons.write(')')
     elif node.is_bv_concat():
         (l,r) = node.args()
-        cast = get_unsigned_cast(node)
-        cons.write('(')
-        cons.write(cast)
-        convert(symbs,l, cons)
-        cons.write(')')
+        cons.write(unsigned(node,convert_to_string(symbs,l)))
         cons.write(' << %d | ' % get_bv_width(r))
-        cons.write('(')
-        cons.write(cast)
-        convert(symbs,r,cons)
-        cons.write(')')
+        cons.write(unsigned(node,convert_to_string(symbs,r)))        
     elif node.is_bv_extract():
         ext_start = node.bv_extract_start()
         ext_end = node.bv_extract_end()
@@ -692,34 +684,43 @@ def get_subgroup(groups, vars_by_groups, seed):
 
 def get_array_calls(formula):
     calls = []
+    min_size = 1
     if formula.is_store() or formula.is_select():
-        calls = [formula]
-
+        if formula.args()[1].is_constant():
+            min_size = max(min_size, formula.args()[1].constant_value())
+        else:
+            calls = [formula]
     for subformula in formula.args():
         if not (subformula.is_constant() or subformula.is_literal()):
-            calls = calls + get_array_calls(subformula)
-    return calls
+            sub_min, sub_calls =get_array_calls(subformula)
+            calls += sub_calls
+            min_size = max(min_size, sub_min)
+    return min_size, calls
     
 def get_minimum_array_size_from_file(smt_file):
     formula = read_file(smt_file)[3]
     return constrain_array_size(formula)[0]
 
 def constrain_array_size(formula):
-    array_ops = get_array_calls(formula)
+    if not is_sat(formula, solver_name = "z3"):
+        formula = Not(formula)
+    min_index, array_ops = get_array_calls(formula)
     if len(array_ops) == 0:
         return 0, set()
     sat = False
-    array_size = 2
-    if not is_sat(formula, solver_name = "z3"):
-        formula = Not(formula)
     assertions = set()
+    array_size = 2
+    
+    while array_size < min_index:
+        array_size *= 2
+
     while not sat:
         if array_size > 2**12:  
             raise ValueError("Minimum array size too large")
         assertions = {i < array_size for i in map(lambda x: x.args()[1], array_ops)}
         new_formula = And(*assertions, formula)
         sat = is_sat(new_formula, solver_name = "z3")
-        array_size *= 2 
+        array_size *= 2
     return array_size // 2, assertions
 
 def main(file_path, resfile):    
