@@ -495,6 +495,10 @@ def parse(file_path, check_neg, continue_on_error=True, generate_well_defined=Tr
             raise ValueError('All models include division by zero')
 
     clauses.extend(formula_clauses)
+    if len(clauses) > 256:
+        print("WARNING: Original number of clauses (%d) too large, dropping some" % len(clauses))
+        clauses = clauses[:255]
+
     for c, clause in enumerate(clauses,start=1):
         print("%d/%d" % (c,len(clauses)))
         clause, constraints = rename_arrays(clause)
