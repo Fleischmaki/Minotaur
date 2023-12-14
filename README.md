@@ -31,7 +31,7 @@ Ultimate | [fixed](https://github.com/ultimate-pa/ultimate/issues/642#issuecomme
 CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1130) | Bitwise Operations
 CPA - Intervallanalysis | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1132#note_1544904422) | Overflow
 Symbiotic | [open](https://github.com/staticafi/symbiotic/issues/247) | ??
-Ultimate | [fixed](https://github.com/ultimate-pa/ultimate/issues/646) | Bitwise Operators
+Ultimate Automizer/Gemcutter | [fixed](https://github.com/ultimate-pa/ultimate/issues/646) | Bitwise Operators
 ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1363) | Type Casts
 ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1392) | Type Casts
 CPA -InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1194) | Modulo Operator
