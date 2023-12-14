@@ -40,7 +40,7 @@ Tool | Status | Type
  -- | -- | --
  Symbiotic | [open](https://github.com/staticafi/symbiotic/issues/246) | Arrays
  Ultimate Kojak | [fixed](https://github.com/ultimate-pa/ultimate/issues/647#event-10423593364) |
- MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/150) | Type Casts / Arrays
+ MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/150) | Type Casts
  MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/157) | ITE value propagation
 ## About
 ```mermaid
