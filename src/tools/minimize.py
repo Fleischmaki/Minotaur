@@ -19,8 +19,12 @@ def main(params, outdir,timeout,gen,err,tool,variant,flags):
         else:
             params.update({'w':1,'h':1})
 
-    mutant = os.path.join(outdir,'smt', 'mutant_%d.smt2' % (params['m'] - 1))
-    clauses = get_clauses(mutant)
+    if 'storm' in params['t']:
+        seed = os.path.join(outdir,'smt', 'mutant_%d.smt2' % (params['m'] - 1))
+    else:
+        seed = params['s']
+
+    clauses = get_clauses(seed)
 
     commands.run_cmd('rm -r %s' % os.path.join(outdir, 'src'))
     keep_first_half = True
@@ -102,10 +106,10 @@ def get_params(maze_path, smt_path = ''):
 def set_fake_params(params):
     params['t'] = params['t'].replace('storm', '')
     params['t'] = params['t'].replace('__', '_')
-    if params['t'].endswith('_'):
-        params['t'] = params['t'][:-1]
-    if params['t'] == '':
-        params['t'] = 'keepId'
+    params['t'] = params['t'].strip('_')
+    if params['t'] in ['', 'wd']:
+        params['t'] = ('keepId_' + params['t']).strip('_')
+        params['t']
         params['m'] = 0
     return params
 
