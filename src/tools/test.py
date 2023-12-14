@@ -172,7 +172,7 @@ def run_tools(conf,works):
     for i in range(len(works)):
         target  = works[i]
         docker.run_docker(duration, target.tool, target.index, target.variant, target.flags )
-    time.sleep(duration + 10) 
+    time.sleep(duration + 15) 
 
 def store_outputs(conf, out_dir, works):
     for i in range(len(works)):
@@ -215,6 +215,8 @@ def write_summary(conf,out_dir, target,tag,runtime):
         for key, value in params.items():
             if key == 'g':
                 f.write(str(params['s'].split('/')[-1])[:-5] + ',')
+            if key == 'u':
+                continue # We already wrote u 
             elif key in conf['parameters'].keys():
                 f.write(str(value) + ',')
         f.write('%s,%s' % (runtime, tag))
