@@ -487,7 +487,7 @@ def parse(file_path, check_neg, continue_on_error=True, generate_well_defined=Tr
     if logic.split('_')[-1].startswith('A') and generate_well_defined: # Arrays
         _, array_constraints = constrain_array_size(formula)
         clauses.extend(array_constraints)# Make sure to render constraints first
-    if 'LIA' in logic:
+    if 'IA' in logic:
         if not sat_in_int_range(formula):
             raise ValueError('Unsat on ints in range')
     if not generate_well_defined:
@@ -763,7 +763,7 @@ def check_files(file_path, resfile):
         logic = get_logic(formula)
 
         # Check that it is satisfiable on bounded integers
-        if 'LIA' in str(logic):
+        if 'IA' in str(logic):
             print("[*] Check Integers:")
             if not sat_in_int_range(formula): 
                 raise ValueError('Unsat in range')
