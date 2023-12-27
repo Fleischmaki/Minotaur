@@ -7,7 +7,7 @@ from io import StringIO
 from pysmt.typing import INT
 from pysmt.oracles import get_logic
 from pysmt.smtlib.commands import SET_LOGIC
-
+import math
 
 """
 Transform a flattened operation (e.g. And (a,b,c,d)) into nested binary operations of that type. 
@@ -206,11 +206,8 @@ def convert(symbs,node,cons):
         if "Array" in str(l.get_type()):
             if "Array" in str(r.get_type()):
                 cons.write("array_comp(")
-                dim = get_array_dim(l)
-                cons.write("*"*(dim-1))
                 convert(symbs,l,cons)
                 cons.write(",")
-                cons.write("*"*(dim-1))
                 convert(symbs,r,cons)
                 cons.write(",%s))" % get_array_size(l))
                 return
@@ -344,6 +341,8 @@ def convert(symbs,node,cons):
         value =  "1" if node.is_bool_constant(True) else "0"
         cons.write(value)
     elif node.is_symbol():
+        dim = get_array_dim(node)
+        cons.write("*"*(dim-1))
         if str(node) == 'c':
             node = '__original_smt_name_was_c__'
         node = clean_string(node)
@@ -354,10 +353,17 @@ def convert(symbs,node,cons):
         if 'BV' in str(node.get_type()): 
             cast = get_unsigned_cast(node)
             cons.write(cast)
+        dim = get_array_dim(a)
         convert(symbs, a, cons)
-        cons.write("[")
-        convert(symbs,p,cons)
-        cons.write("]")
+        if dim == 1:
+            cons.write("[")
+            convert(symbs,p,cons)
+            cons.write("]")
+        else:
+            size = get_array_size_from_dim(dim-1)
+            cons.write("+(%s*" % size)
+            convert(symbs,p,cons)
+            cons.write(")")
     elif node.is_store():
         (a, p, v) = node.args()
         a_dim = get_array_dim(a)
@@ -367,15 +373,11 @@ def convert(symbs,node,cons):
         if v_dim == 0:
             cons.write("value_store(")
         else:
-            if(a_dim > 1):
-                cons.write("(long " + "*"*a_dim + ")")
             cons.write("array_store(")
-        cons.write("*"*(v_dim))
         convert(symbs, a, cons)
         cons.write(",")
         convert(symbs,p,cons)
         cons.write(",")
-        cons.write("*" * (v_dim-1))
         convert(symbs,v,cons)
         if v_dim > 0:
             cons.write(",")
@@ -457,7 +459,7 @@ def get_logic_from_script(script):
     else:
         formula = script.get_strict_formula()
         logic = str(get_logic(formula))
-        print('Logic not found in script. Using logic from formula: ' % (logic))
+        print('NOTE: Logic not found in script. Using logic from formula: ' % (logic))
     return logic
 
 def sat_without_zero_div(formula):
@@ -488,11 +490,15 @@ def parse(file_path, check_neg, continue_on_error=True, generate_well_defined=Tr
         _, array_constraints = constrain_array_size(formula)
         clauses.extend(array_constraints)# Make sure to render constraints first
     if 'IA' in logic:
+        print("NOTE: Checking if satisfiable in range of formulas.", end=" ")
         if not sat_in_int_range(formula):
             raise ValueError('Unsat on ints in range')
+        print("Done.")
     if not generate_well_defined:
+        print("NOTE: Checking if satisfiable without division by zero.", end = " ")
         if not sat_without_zero_div(formula):
             raise ValueError('All models include division by zero')
+        print("Done.")
 
     clauses.extend(formula_clauses)
     if len(clauses) > 256:
@@ -503,7 +509,7 @@ def parse(file_path, check_neg, continue_on_error=True, generate_well_defined=Tr
         print("%d/%d" % (c,len(clauses)))
         clause, constraints = rename_arrays(clause)
         if len(constraints) > 0:
-            print("Added %d new arrays" % len(constraints))
+            print("NOTE: Added %d new arrays" % len(constraints))
         ldecl_arr = decl_arr
         ldecl_arr.extend(map(lambda c: c.args()[1],constraints))
         clause = And(*constraints, clause) # Make sure to render constraints first
@@ -706,11 +712,13 @@ def get_minimum_array_size_from_file(smt_file):
     return constrain_array_size(formula)[0]
 
 def constrain_array_size(formula):
+    print("NOTE: Calculating array size.",end=" ")
     if not is_sat(formula, solver_name = "z3"):
         formula = Not(formula)
     min_index, array_ops = get_array_calls(formula)
     if len(array_ops) == 0:
         return 0, set()
+    max_dim = max(map(lambda op : get_array_dim(op.args()[0]),array_ops))
     sat = False
     assertions = set()
     array_size = 2
@@ -719,13 +727,15 @@ def constrain_array_size(formula):
         array_size *= 2
 
     while not sat:
-        if array_size > 2**12:  
+        if (math.pow(array_size,max_dim)) > 2**12:  
             raise ValueError("Minimum array size too large")
-        assertions = {i < array_size for i in map(lambda x: x.args()[1], array_ops)}
+        assertions = {And(i < array_size, i >= 0) for i in map(lambda x: x.args()[1], array_ops)}
         new_formula = And(*assertions, formula)
         sat = is_sat(new_formula, solver_name = "z3")
         array_size *= 2
-    return array_size // 2, assertions
+    array_size //= 2
+    print("Sat on size %d."  % array_size)
+    return array_size, assertions
 
 def main(file_path, resfile):    
     return check_files(file_path, resfile)
