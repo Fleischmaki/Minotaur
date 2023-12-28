@@ -727,7 +727,7 @@ def constrain_array_size(formula):
         array_size *= 2
 
     while not sat:
-        if (math.pow(array_size,max_dim)) > 2**12:  
+        if (math.pow(array_size,max_dim)) > 2**9:  
             raise ValueError("Minimum array size too large")
         assertions = {And(i < array_size, i >= 0) for i in map(lambda x: x.args()[1], array_ops)}
         new_formula = And(*assertions, formula)
