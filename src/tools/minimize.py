@@ -117,10 +117,11 @@ def set_fake_params(params):
 def load(argv):
     if ',' in argv[0]:
         run = argv[0][:-1] if argv[0].endswith(',') else argv[0]
-        if len(run.split(',')) == 15:
-            tool,variant,flags,id,u,a,w,h,c,t,g,_,r,timeout,err = run.split(',')
+        args = run.split(',')
+        if len(args) == 16:
+            tool,variant,flags,id,u,a,w,h,c,t,g,_,_,r,timeout,err = args
         else:
-            tool,variant,flags,id,a,w,h,c,t,g,_,r,timeout,err = run.split(',')
+            tool,variant,flags,id,a,w,h,c,t,g,_,_,r,timeout,err = args
             u = 0
 
         timeout = ceil(float(timeout)) + 60 # Add a minute for buffer
