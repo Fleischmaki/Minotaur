@@ -492,9 +492,10 @@ def parse(file_path, check_neg, continue_on_error=True, generate_well_defined=Tr
     clauses =  []
     if 'BV' not in logic and generate_well_defined:
         print("WARNING: Can only guarantee well-definedness on bitvectors")
-    if logic.split('_')[-1].startswith('A') and generate_well_defined: # Arrays
+    if logic.split('_')[-1].startswith('A'): # Arrays
         _, array_constraints = constrain_array_size(formula)
-        clauses.extend(array_constraints)# Make sure to render constraints first
+        if  generate_well_defined:
+            clauses.extend(array_constraints)# Make sure to render constraints first
     if 'LIA' in logic:
         if not sat_in_int_range(formula):
             raise ValueError('Unsat on ints in range')
