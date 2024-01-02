@@ -22,6 +22,7 @@ The following transformations are supported at the moment:
 - `sh`: shuffle gurad constraints
 - `dcX`: remvoe X% of guard constraints
 - `storm`: run STORM on seed SMT file to produce new gurads. Strongly recommended.
+- `wd: generate well-defined programs. Also recommended
 
 ## Checking SMT-File compatibility
 Running `python3 Minotaur/mc2/maze-gen/smt2_parser.py $outfile $smt_dir` will recursively check if CVE_gen can handle smt2 files contained in $smt_dir or subdirectories. Compatible files are written to $outfile.
