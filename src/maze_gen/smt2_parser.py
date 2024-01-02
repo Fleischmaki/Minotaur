@@ -536,9 +536,7 @@ def parse(file_path, check_neg, continue_on_error=True, generate_well_defined=Tr
                 if symb in decls:
                     decl = symb
                 elif 'c' in decls and symb == '__original_smt_name_was_c__':
-                    decls.remove('c')
-                    decls.append(symb)
-                    decl = symb
+                    decl = 'c'
                 else:
                     decl = symb.split("_")[0]
                 i = decls.index(decl)
