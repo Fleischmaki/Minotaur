@@ -10,17 +10,18 @@ pip install -r Minotaur/requirements.txt
 Note that the provided dockers build most tools from source. Building might take up to a few hours and several GBs of memory.
 
 ## Using Minotaur
-### Run tests
+### Test Analyzers
 Runs are configured via conf.json files located in Minotaur/test.
-To perform a test using the config file conf_name.conf.json run `python3 Minotaur --t conf_name outdir`
+To perform a test using the config file test/conf_name.conf.json run `python3 Minotaur --t conf_name outdir`
 For more info on config files check [config.md](./config.md)
 
 ### Generate a single maze
-`python3 Minotaur --g outdir params...` or ./Minotaur/scripts/generate.sh -o outdir params...
+`python3 Minotaur --g {local,container} outdir params...` or ./Minotaur/scripts/generate.sh -o outdir params...
 See [params.md](./params.md)
 
 ### Minimize a maze
-`python3 Minotaur --m maze.c tool [variant] seed_dir out_dir timeout`
+Run `python3 Minotaur --m report seed-dir out-dir {local,container}`, where 'report' the line of the summary.csv file from testing
+Alternatively, first generate the maze and then run `python3 Minotaur --m maze.c seed-dir out-dir timeout {container,local} {fn,fp,er,...} tool [variant] [params]`
 
 ## Bugs found by Minotaur
 ### Critical Bugs
