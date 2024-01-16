@@ -19,16 +19,22 @@ class Generator:
         except ValueError as e:
             print(e)
             self.array_size = -1 # This should make model checkers throw an error 
+
         try:
             self.constraints, self.vars_all = smt2_parser.parse(smt_file, check_neg = False, generate_well_defined=transformations['wd'])
         except ValueError as e:
             print('Error while parsing smt file %s' % str(e))
             self.constraints = {}
             self.vars_all = {}
+
         transforms.remove_constraints(self.constraints, transformations['dc'])
+        transforms.make_const(self.vars_all, transformations['mc'])
+
         self.groups, self.vars = smt2_parser.independent_formulas(self.constraints, self.vars_all)
+
         if transformations['sh']:
             self.groups, self.vars = transforms.coshuffle(self.groups, self.vars)
+
         self.insert = list()
         for _ in range(self.size):
             self.insert.append(0)
@@ -37,6 +43,7 @@ class Generator:
                 self.insert[func] += 1
                 if sum(self.insert) >= len(self.groups):
                     break
+
         if transformations['sh']:
             random.shuffle(self.insert)
             
@@ -116,10 +123,11 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
                     elif self.vars_all[var] == 'bool':
                         buggy_constraints += "\t_Bool {} = __VERIFIER_nondet_bool();\n".format(var)
                     else:
-                        type = self.vars_all[var]
-                        if 'unsigned' in type:
-                            type = 'u' + type[9:]
-                        buggy_constraints += "\t{} {} = __VERIFIER_nondet_{}();\n".format(self.vars_all[var], var, type)
+                        orig_type = self.vars_all[var]
+                        short_type = orig_type.split(" ")[-1]
+                        if 'unsigned' in orig_type:
+                            short_type = 'u' + short_type
+                        buggy_constraints += "\t{} {} = __VERIFIER_nondet_{}();\n".format(self.vars_all[var], var, short_type)
                     
                 buggy_constraints += "\tchar c = __VERIFIER_nondet_char();\n".format(len(vars))
                 buggy_constraints += "\tint flag = 0;\n"

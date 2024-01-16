@@ -10,7 +10,7 @@ from pysmt.smtlib.parser import SmtLibParser
 from pysmt.shortcuts import *
 
 
-def remove_constraints(constraints, dc):
+def remove_constraints(constraints: dict, dc: int):
     curr = len(constraints)
     rm = m.ceil(curr*(dc/100)) 
     while rm > 0:
@@ -18,17 +18,25 @@ def remove_constraints(constraints, dc):
         constraints.pop(r)
         rm -= 1
 
-def coshuffle(list1,list2):
+def make_const(variables: dict, mc: int):
+    symbols = list(filter(lambda t: '[' not in t, variables.keys()))
+    goal = m.ceil(len(symbols)*(mc/100))
+    for _ in range(goal):
+        const = symbols.pop(random.randrange(0,len(symbols)))
+        variables[const] = 'const ' + variables[const]
+
+def coshuffle(list1: list,list2: list) -> (list, list):
     temp = list(zip(list1,list2)) #shuffle groups and vars together
     random.shuffle(temp)
     r1, r2 = zip(*temp)
     return list(r1), list(r2)
 
-def parse_transformations(t_type):
+def parse_transformations(t_type: str) -> dict:
     transformations = t_type.split('_')
     shuffle = False
     storm = False
     well_defined = False
+    make_const = 0
     keepId = t_type == 'id'
     dc = 0
     for t in transformations:
@@ -42,9 +50,12 @@ def parse_transformations(t_type):
             dc = int(t[2:])
         elif t == 'keepId':
             keepId = True
-    return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keepId, 'wd' : well_defined}
+        elif t.startswith('mc'):
+            make_const = int(t[2:])
+    return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keepId, 'wd' : well_defined, 'mc' : make_const}
 
-def run_storm(smt_file,mutant_path, seed,n):
+def run_storm(smt_file: str, mutant_path: str, seed: int, n: int) -> list:
+    print("NOTE: Running Storm.")
     if n <= 0:
         return
     smt_obj = smtObject(smt_file, mutant_path)
