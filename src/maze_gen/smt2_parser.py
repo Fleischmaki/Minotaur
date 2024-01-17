@@ -550,7 +550,7 @@ def set_well_defined(generate_well_defined: bool):
     global GENERATE_WELL_DEFINED
     GENERATE_WELL_DEFINED = generate_well_defined
 
-def run_checks(formula: FNode, logic: str, formula_clauses: t.set[FNode]):
+def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
     clauses =  []
     constraints = set()
     if 'BV' not in logic and GENERATE_WELL_DEFINED:
@@ -714,7 +714,7 @@ def get_array_calls(formula: FNode):
     return get_array_calls_helper(formula, set())
 
 def get_array_calls_helper(formula: FNode, visited_nodes: set):
-    visited_nodes.add(subformula.node_id())
+    visited_nodes.add(formula.node_id())
     calls = []
     min_size = 1
     if formula.is_store() or formula.is_select():
@@ -724,7 +724,7 @@ def get_array_calls_helper(formula: FNode, visited_nodes: set):
             calls = [formula]
     for subformula in formula.args():
         if not (subformula.is_constant() or subformula.is_literal() or subformula.node_id() in visited_nodes):
-            sub_min, sub_calls = get_array_calls(subformula, visited_nodes)
+            sub_min, sub_calls = get_array_calls_helper(subformula, visited_nodes)
             calls += sub_calls
             min_size = max(min_size, sub_min)
     return min_size, calls
