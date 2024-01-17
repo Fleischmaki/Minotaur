@@ -99,7 +99,7 @@ def get_bv_width(node):
         error(1,"Invalid bv width: ", res, node)
     return res
 
-def type_to_c(node_type, sorts):
+def type_to_c(node_type):
     if node_type.is_int_type():
         return 'long'
     if node_type.is_bool_type():
@@ -107,10 +107,10 @@ def type_to_c(node_type, sorts):
     elif node_type.is_bv_type():
         return bits_to_utype(node_type.width)
     elif node_type.is_function_type():
-        return type_to_c(node_type.return_type, sorts)
+        return type_to_c(node_type.return_type)
     elif node_type.is_array_type():
         if node_type.elem_type.is_array_type():
-            return '%s[ARRAY_SIZE]' % type_to_c(node_type.elem_type, sorts) # otherwise store might be unsound, we can always cast afterwards
+            return '%s[ARRAY_SIZE]' % type_to_c(node_type.elem_type) # otherwise store might be unsound, we can always cast afterwards
         return 'long[ARRAY_SIZE]'
     # elif type.is_string_type():
     #     return 'string'
