@@ -427,7 +427,7 @@ def conjunction_to_clauses(formula):
 
 def clean_string(s):
     s = str(s)
-    return re.sub('[^A-Za-z0-9_]+','',s)
+    return re.sub('[^A-Za-z0-9_]+','_',s)
 
 def rename_arrays(formula):
     constraints = set()
@@ -507,10 +507,9 @@ def parse(file_path, check_neg, continue_on_error=True, generate_well_defined=Tr
         clauses = clauses[:255]
 
     for c, clause in enumerate(clauses,start=1):
-        print("%d/%d" % (c,len(clauses)))
+        print("NOTE: Renaming array stores", end = " ")
         clause, constraints = rename_arrays(clause)
-        if len(constraints) > 0:
-            print("NOTE: Added %d new arrays" % len(constraints))
+        print("Added %d new arrays" % len(constraints))
         ldecl_arr = decl_arr
         ldecl_arr.extend(map(lambda c: c.args()[1],constraints))
         clause = And(*constraints, clause) # Make sure to render constraints first
@@ -518,6 +517,7 @@ def parse(file_path, check_neg, continue_on_error=True, generate_well_defined=Tr
         symbs = set()
         buffer = StringIO()
         try:
+            print("NOTE: converting clause %d/%d." % (c,len(clauses)), end = " ")
             convert(symbs,clause,buffer)
         except Exception as e:
             print("Could not convert clause: ", e)
@@ -525,6 +525,7 @@ def parse(file_path, check_neg, continue_on_error=True, generate_well_defined=Tr
                 continue
             else:
                 raise Exception(e)
+        print("Done.")
         cons_in_c =  buffer.getvalue()
         if "model_version" not in cons_in_c:
             if check_neg == True:
