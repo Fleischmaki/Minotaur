@@ -462,18 +462,24 @@ def get_logic_from_script(script):
         print('NOTE: Logic not found in script. Using logic from formula: ' % (logic))
     return logic
 
-def sat_without_zero_div(formula):
-    constraints = [Not(Equals(BV(0,get_bv_width(div)),div)) for div in get_divisors(formula)]
-    return is_sat(And(*constraints, formula), solver_name = "z3")
+def get_division_constraints(formula):
+    divisions = get_nodes(formula, (lambda f : f.is_div() or f.is_bv_udiv() or f.is_bv_sdiv() or f.is_bv_urem() or f.is_bv_srem()))
+    return [Not(Equals(BV(0,get_bv_width(div)),div)) for div in map(lambda division : division.args[1], divisions)]
 
-def get_divisors(formula):
-    divisors = set()
-    if formula.is_div() or formula.is_bv_udiv() or formula.is_bv_sdiv() or formula.is_bv_urem() or formula.is_bv_srem():
-        (_,r) = formula.args()
-        divisors.add(r)
-    for sub in formula.args():
-        divisors = divisors.union(get_divisors(sub))
-    return divisors
+def get_nodes(formula, cond):
+    return get_nodes_helper(formula,cond,set())
+
+def get_nodes_helper(node,cond,visited_nodes: set):
+    visited_nodes.add(node.node_id())
+    matching = set()
+    if cond(node):
+        matching.add(node)
+    for sub in node.args():
+        if sub.node_id() not in visited_nodes:
+            matching.update(get_nodes_helper(sub, cond, visited_nodes))
+    print(len(visited_nodes))
+    return matching
+    
 
 def parse(file_path, check_neg, continue_on_error=True, generate_well_defined=True):
     global GENERATE_WELL_DEFINED
@@ -484,35 +490,41 @@ def parse(file_path, check_neg, continue_on_error=True, generate_well_defined=Tr
     parsed_cons = OrderedDict()
     formula_clauses = conjunction_to_clauses(formula) 
     clauses =  []
+    constraints = set()
     if 'BV' not in logic and generate_well_defined:
         print("WARNING: Can only guarantee well-definedness on bitvectors")
     if logic.split('_')[-1].startswith('A'):
-        _, array_constraints = constrain_array_size(formula)
+        array_size, array_constraints = constrain_array_size(formula)
         if generate_well_defined: # Arrays 
             clauses.extend(array_constraints)# Make sure to render constraints first
+        constraints.update(array_constraints)
+    else:
+        array_size = -1
     if 'IA' in logic:
-        print("NOTE: Checking if satisfiable in range of formulas.", end=" ")
-        if not sat_in_int_range(formula):
-            raise ValueError('Unsat on ints in range')
-        print("Done.")
+        print("NOTE: Generating integer constraints")
+        constraints.update(get_integer_constraints(formula))
     if not generate_well_defined:
-        print("NOTE: Checking if satisfiable without division by zero.", end = " ")
-        if not sat_without_zero_div(formula):
-            raise ValueError('All models include division by zero')
+        print("NOTE: Generating divsion constraints")
+        constraints.update(get_division_constraints(formula))
+    if len(constraints) > 0:
+        print("NOTE: Checking satisfiability with global constraints")
+        if not is_sat(And(formula, *constraints), solver_name='z3'):
+            raise ValueError("Cannot guarantee a valid solution")
         print("Done.")
-
     clauses.extend(formula_clauses)
     if len(clauses) > 256:
         print("WARNING: Original number of clauses (%d) too large, dropping some" % len(clauses))
         clauses = clauses[:255]
 
     for c, clause in enumerate(clauses,start=1):
-        print("NOTE: Renaming array stores", end = " ")
-        clause, constraints = rename_arrays(clause)
-        print("Added %d new arrays" % len(constraints))
         ldecl_arr = decl_arr
-        ldecl_arr.extend(map(lambda c: c.args()[1],constraints))
-        clause = And(*constraints, clause) # Make sure to render constraints first
+
+        if logic.split('_')[-1].startswith('A'):
+            print("NOTE: Renaming array stores", end = " ")
+            clause, constraints = rename_arrays(clause)
+            print("Added %d new arrays" % len(constraints))
+            ldecl_arr.extend(map(lambda c: c.args()[1],constraints))
+            clause = And(*constraints, clause) # Make sure to render constraints first
 
         symbs = set()
         buffer = StringIO()
@@ -549,7 +561,7 @@ def parse(file_path, check_neg, continue_on_error=True, generate_well_defined=Tr
                     symb += type_in_c[first_bracket:]
                     type_in_c = type_in_c[:first_bracket]
                 variables[symb] = type_in_c
-    return parsed_cons, variables
+    return parsed_cons, variables, array_size
 
 def read_file(file_path):
     parser = SmtLibParser()
@@ -573,19 +585,9 @@ def check_indices(symbol,maxArity,maxId, cons_in_c):
         res = res.union(check_indices(var, maxArity-1,maxId,cons_in_c))
     return res    
 
-def sat_in_int_range(formula):
-    constraints = get_integer_constraints(formula)
-    formula = And(formula, *constraints)
-    return is_sat(formula, solver_name = "z3")
-
 def get_integer_constraints(formula):
-    constraints = set()
-    if formula.get_type() is INT:
-        constraints.add(GT(formula, Int(-(2**63))))
-        constraints.add(LT(formula, Int(2**63 - 1)))
-    for node in formula.args():
-        constraints = constraints.union(get_integer_constraints(node))
-    return constraints
+    integer_operations = get_nodes(formula, lambda f: f.get_type() is INT)
+    return {(GT(i, Int(-(2**63)))) for i in integer_operations}.union((LT(i, Int(2**63 - 1))) for i in integer_operations)
 
 def extract_vars(cond, variables):    
     vars = dict()
@@ -693,6 +695,10 @@ def get_subgroup(groups, vars_by_groups, seed):
     return subgroup, vars
 
 def get_array_calls(formula):
+    return get_array_calls_helper(formula, set())
+
+def get_array_calls_helper(formula, visited_nodes):
+    visited_nodes.add(subformula)
     calls = []
     min_size = 1
     if formula.is_store() or formula.is_select():
@@ -701,8 +707,8 @@ def get_array_calls(formula):
         else:
             calls = [formula]
     for subformula in formula.args():
-        if not (subformula.is_constant() or subformula.is_literal()):
-            sub_min, sub_calls =get_array_calls(subformula)
+        if not (subformula.is_constant() or subformula.is_literal() or subformula in visited_nodes):
+            sub_min, sub_calls = get_array_calls(subformula, visited_nodes)
             calls += sub_calls
             min_size = max(min_size, sub_min)
     return min_size, calls
@@ -712,12 +718,13 @@ def get_minimum_array_size_from_file(smt_file):
     return constrain_array_size(formula)[0]
 
 def constrain_array_size(formula):
-    print("NOTE: Calculating array size.",end=" ")
-    if not is_sat(formula, solver_name = "z3"):
-        formula = Not(formula)
     min_index, array_ops = get_array_calls(formula)
     if len(array_ops) == 0:
         return 0, set()
+
+    print("NOTE: Calculating array size.")
+    if not is_sat(formula, solver_name = "z3"):
+        formula = Not(formula)
     max_dim = max(map(lambda op : get_array_dim(op.args()[0]),array_ops))
     sat = False
     assertions = set()

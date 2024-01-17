@@ -15,13 +15,7 @@ class Generator:
         self.transformations = transformations
 
         try:
-            self.array_size = smt2_parser.get_minimum_array_size_from_file(smt_file)
-        except ValueError as e:
-            print(e)
-            self.array_size = -1 # This should make model checkers throw an error 
-
-        try:
-            self.constraints, self.vars_all = smt2_parser.parse(smt_file, check_neg = False, generate_well_defined=transformations['wd'])
+            self.constraints, self.vars_all, self.array_size = smt2_parser.parse(smt_file, check_neg = False, generate_well_defined=transformations['wd'])
         except ValueError as e:
             print('Error while parsing smt file %s' % str(e))
             self.constraints = {}
