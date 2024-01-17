@@ -111,17 +111,7 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
                     vars = vars.union(self.vars[group_idx + cnt])
                 buggy_constraints = ""  
                 for var in vars:
-                    if '[' in var: #Arrays
-                        dim = var.count('[')
-                        buggy_constraints += "\t{} {};\n\tinit({}{},{});\n".format(self.vars_all[var],var,'*'*(dim-1),var.split('[')[0],smt2_parser.get_array_size_from_dim(dim))
-                    elif self.vars_all[var] == 'bool':
-                        buggy_constraints += "\t_Bool {} = __VERIFIER_nondet_bool();\n".format(var)
-                    else:
-                        orig_type = self.vars_all[var]
-                        short_type = orig_type.split(" ")[-1]
-                        if 'unsigned' in orig_type:
-                            short_type = 'u' + short_type
-                        buggy_constraints += "\t{} {} = __VERIFIER_nondet_{}();\n".format(self.vars_all[var], var, short_type)
+                    buggy_constraints += self.get_initialisation(var)
                     
                 buggy_constraints += "\tchar c = __VERIFIER_nondet_char();\n".format(len(vars))
                 buggy_constraints += "\tint flag = 0;\n"
@@ -134,6 +124,19 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
                 logic_c.append(buggy_constraints)
                 group_idx += self.insert[idx]
         return logic_c
+
+    def get_initialisation(self, var):
+        if '[' in var: #Arrays
+            dim = var.count('[')
+            return "\t{} {};\n\tinit({}{},{});\n".format(self.vars_all[var],var,'*'*(dim-1),var.split('[')[0],smt2_parser.get_array_size_from_dim(dim))
+        elif self.vars_all[var] == 'bool':
+            return "\t_Bool {} = __VERIFIER_nondet_bool();\n".format(var)
+        else:
+            orig_type = self.vars_all[var]
+            short_type = orig_type.split(" ")[-1]
+            if 'unsigned' in orig_type:
+                short_type = 'u' + short_type
+            return "\t{} {} = __VERIFIER_nondet_{}();\n".format(self.vars_all[var], var, short_type)
 
     def get_numb_bytes(self):
         numb_bytes = list()
