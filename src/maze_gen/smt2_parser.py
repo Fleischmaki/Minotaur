@@ -477,7 +477,6 @@ def get_nodes_helper(node,cond,visited_nodes: set):
     for sub in node.args():
         if sub.node_id() not in visited_nodes:
             matching.update(get_nodes_helper(sub, cond, visited_nodes))
-    print(len(visited_nodes))
     return matching
     
 
@@ -698,7 +697,7 @@ def get_array_calls(formula):
     return get_array_calls_helper(formula, set())
 
 def get_array_calls_helper(formula, visited_nodes):
-    visited_nodes.add(subformula)
+    visited_nodes.add(subformula.node_id())
     calls = []
     min_size = 1
     if formula.is_store() or formula.is_select():
@@ -707,7 +706,7 @@ def get_array_calls_helper(formula, visited_nodes):
         else:
             calls = [formula]
     for subformula in formula.args():
-        if not (subformula.is_constant() or subformula.is_literal() or subformula in visited_nodes):
+        if not (subformula.is_constant() or subformula.is_literal() or subformula.node_id() in visited_nodes):
             sub_min, sub_calls = get_array_calls(subformula, visited_nodes)
             calls += sub_calls
             min_size = max(min_size, sub_min)
