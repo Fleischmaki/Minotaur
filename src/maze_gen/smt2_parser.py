@@ -25,7 +25,7 @@ Raise and error and print the given nodes
 """
 def error(flag, *info):
     if flag == 0:
-        raise ValueError("ERROR: node type not recognized: ", ','.join(map(lambda n: n.get_type(), info)))
+        raise ValueError("ERROR: node type not recognized: ", info)
     elif flag == 1:
         raise ValueError("ERROR: nodes not supported", info)
     else:
@@ -99,23 +99,23 @@ def get_bv_width(node):
         error(1,"Invalid bv width: ", res, node)
     return res
 
-def type_to_c(type):
-    if type.is_int_type():
+def type_to_c(node_type, sorts):
+    if node_type.is_int_type():
         return 'long'
-    if type.is_bool_type():
+    if node_type.is_bool_type():
         return 'bool'
-    elif type.is_bv_type():
-        return bits_to_utype(type.width)
-    elif type.is_function_type():
-        return type_to_c(type.return_type)
-    elif type.is_array_type():
-        if type.elem_type.is_array_type():
-            return '%s[ARRAY_SIZE]' % type_to_c(type.elem_type) # otherwise store might be unsound, we can always cast afterwards
+    elif node_type.is_bv_type():
+        return bits_to_utype(node_type.width)
+    elif node_type.is_function_type():
+        return type_to_c(node_type.return_type, sorts)
+    elif node_type.is_array_type():
+        if node_type.elem_type.is_array_type():
+            return '%s[ARRAY_SIZE]' % type_to_c(node_type.elem_type, sorts) # otherwise store might be unsound, we can always cast afterwards
         return 'long[ARRAY_SIZE]'
     # elif type.is_string_type():
     #     return 'string'
     else:
-        error(0, type)
+        error(0, node_type)
 
 def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
     (l, r) = node.args()
@@ -392,7 +392,7 @@ def convert(symbs,node,cons):
         cons.write(fn + index)
         symbs.add(fn + index)
     else:
-        error(0, node)
+        error(0, node.get_type())
         return("")
     cons.write(')')
     return ""
@@ -589,9 +589,9 @@ def get_integer_constraints(formula):
 
 def extract_vars(cond, variables):    
     vars = dict()
-    for var, type in variables.items():
+    for var, vartype in variables.items():
         if var + " " in cond or var + ")" in cond or var.split('[')[0] in cond:
-            vars[var] = type
+            vars[var] = vartype
     return vars
 
 class Graph:
