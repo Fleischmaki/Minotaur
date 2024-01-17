@@ -432,7 +432,6 @@ def clean_string(s: str):
     return re.sub('[^A-Za-z0-9_]+','_',s)
 
 def rename_arrays(formula: FNode):
-    print("NOTE: Renaming array stores", end = " ")
     constraints = set()
     subs = dict()
 
@@ -449,7 +448,6 @@ def rename_arrays(formula: FNode):
             subs.update({old : new})
 
     formula = formula.substitute(subs)
-    print("Added %d new arrays" % len(constraints))
     return formula, constraints
 
 def write_to_file(formula, file):
@@ -498,7 +496,9 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
         ldecl_arr = decl_arr
 
         if logic.split('_')[-1].startswith('A'):
+            print("NOTE: Renaming array stores", end = " ")
             clause, constraints = rename_arrays(clause)
+            print("Added %d new arrays" % len(constraints))
             clause = And(*constraints, clause) # Make sure to render constraints first
             ldecl_arr.extend(map(lambda c: c.args()[1],constraints))
 
@@ -551,13 +551,14 @@ def set_well_defined(generate_well_defined: bool):
     GENERATE_WELL_DEFINED = generate_well_defined
 
 def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
+    print(logic)
     clauses =  []
     constraints = set()
     if 'BV' not in logic and GENERATE_WELL_DEFINED:
         print("WARNING: Can only guarantee well-definedness on bitvectors")
     if logic.split('_')[-1].startswith('A'):
         array_size, array_constraints = constrain_array_size(formula)
-        if GENERATE_WELL_DEFINED: # Arrays 
+        if GENERATE_WELL_DEFINED:
             clauses.extend(array_constraints)# Make sure to render constraints first
         constraints.update(array_constraints)
     else:
@@ -660,7 +661,7 @@ def independent_formulas(conds: OrderedDict, variables: 'dict[str,str]'):
         used_vars = dict()
         for cond in group:
             used_vars.update(extract_vars(cond, variables))
-        vars_by_groups.append(sorted(used_vars))
+        vars_by_groups.append(used_vars)
     return groups, vars_by_groups
 
 def get_negated(conds, group, vars, numb):
@@ -700,11 +701,11 @@ def get_negated(conds, group, vars, numb):
             new_vars.append(new_var)
     return negated_groups, new_vars
 
-def get_subgroup(groups, vars_by_groups, seed):
+def get_subgroup(groups: list, vars_by_groups: t.List[t.Dict[str,str]], seed: int):
     # get a subset of a randomly selected independent group
     random.seed(seed)
     rand = random.randint(0, len(groups)-1)
-    vars = dict()
+    vars = set()
     subgroup = groups[rand]
     for cond in subgroup:
         vars.update(extract_vars(cond, vars_by_groups[rand]))
@@ -720,8 +721,7 @@ def get_array_calls_helper(formula: FNode, visited_nodes: set):
     if formula.is_store() or formula.is_select():
         if formula.args()[1].is_constant():
             min_size = max(min_size, formula.args()[1].constant_value())
-        else:
-            calls = [formula]
+        calls = [formula]
     for subformula in formula.args():
         if not (subformula.is_constant() or subformula.is_literal() or subformula.node_id() in visited_nodes):
             sub_min, sub_calls = get_array_calls_helper(subformula, visited_nodes)
@@ -734,11 +734,12 @@ def get_minimum_array_size_from_file(smt_file: str):
     return constrain_array_size(formula)[0]
 
 def constrain_array_size(formula: FNode):
+    print("NOTE: Calculating array size.")
     min_index, array_ops = get_array_calls(formula)
     if len(array_ops) == 0:
+        print("No arrays found")
         return 0, set()
 
-    print("NOTE: Calculating array size.")
     if not is_sat(formula, solver_name = "z3"):
         formula = Not(formula)
     max_dim = max(map(lambda op : get_array_dim(op.args()[0]),array_ops))
