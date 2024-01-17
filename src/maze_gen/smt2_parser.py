@@ -1,29 +1,31 @@
 import re
 import sys, random, os
-from pysmt.smtlib.parser import SmtLibParser
 from collections import defaultdict, OrderedDict
+import io
+
+from pysmt.smtlib.parser import SmtLibParser
 from pysmt.shortcuts import *
-from io import StringIO
 from pysmt.typing import INT
 from pysmt.oracles import get_logic
 from pysmt.smtlib.commands import SET_LOGIC
-import math
+from pysmt.fnode import FNode
+from pysmt.typing import PySMTType as node_type
 
-"""
-Transform a flattened operation (e.g. And (a,b,c,d)) into nested binary operations of that type. 
-"""
-def deflatten(args, op):
+import math
+import typing as t
+
+
+T = t.TypeVar('T')
+
+
+def deflatten(args: t.List[T], op: t.Callable[[T,T],T]) -> T:
     x = args[0]
     for i in range(1,len(args)):
         y = args[i]
         x = op(x,y)
     return x
 
-
-"""
-Raise and error and print the given nodes
-"""
-def error(flag, *info):
+def error(flag: int, *info):
     if flag == 0:
         raise ValueError("ERROR: node type not recognized: ", info)
     elif flag == 1:
@@ -31,10 +33,7 @@ def error(flag, *info):
     else:
         raise ValueError("ERROR: an unknown error occurred")
 
-"""
-Transform a binary string into a decimal string
-"""
-def binary_to_decimal(binary, unsigned = True):
+def binary_to_decimal(binary: str, unsigned : bool = True) -> str:
     if len(binary) > 64:
         error(1, "BV width > 64: ",binary)
     val = str(BV(binary).constant_value() if unsigned else BV(binary).bv_signed_value())
@@ -42,38 +41,40 @@ def binary_to_decimal(binary, unsigned = True):
         val += 'ULL' if unsigned else 'LL'
     return val 
 
-def bits_to_type(n):
-    if n <= 8:
+def bits_to_type(num_bits: int):
+    if num_bits <= 8:
         return "char"
-    elif n <= 16:
+    elif num_bits <= 16:
         return "short"
-    elif n <= 32:
+    elif num_bits <= 32:
         return "int"
-    elif n <= 64:
+    elif num_bits <= 64:
         return "long"
     else:
-        error(1, "BV width > 64:", n)
+        error(1, "BV width > 64:", num_bits)
         
-def bits_to_utype(n):
-    return "unsigned " + bits_to_type(n)
+def bits_to_stype(numb_bits: int) -> str:
+    return "signed " + bits_to_type(numb_bits)
+def bits_to_utype(num_bits: int) -> str:
+    return "unsigned " + bits_to_type(num_bits)
 
-def signed(node,n_string):
+def signed(node: FNode,converted_node: str) -> str:
     width = get_bv_width(node)
-    scast = bits_to_type(width)  
+    scast = bits_to_stype(width)  
     if width in (1,8,16,32,64):
-        return '((%s) %s)' % (scast, n_string)  
-    return ('scast_helper(%s,%s)' % (n_string,width))
+        return '((%s) %s)' % (scast, converted_node)  
+    return ('scast_helper(%s,%s)' % (converted_node,width))
 
-def unsigned(node,n_string):
-    return '(%s %s)' % (get_unsigned_cast(node), n_string)  
+def unsigned(node: FNode,converted_node: str) -> str:
+    return '(%s %s)' % (get_unsigned_cast(node), converted_node)  
 
-def get_unsigned_cast(node):
+def get_unsigned_cast(node: FNode) -> str:
     width = get_bv_width(node)
     if width in (8,16,32,64):
         return '(' + bits_to_utype(width) + ') '
     return '(%s)%s&' % (bits_to_utype(width),binary_to_decimal('1'*width))
 
-def get_bv_width(node):
+def get_bv_width(node: FNode) -> int:
     res = 0
     if node.is_bv_constant() or node.is_symbol or node.is_function_application() or node.is_ite() or node.is_select():
         res = node.bv_width()
@@ -99,25 +100,26 @@ def get_bv_width(node):
         error(1,"Invalid bv width: ", res, node)
     return res
 
-def type_to_c(node_type):
-    if node_type.is_int_type():
+def type_to_c(ntype: node_type) -> str:
+    if ntype.is_int_type():
         return 'long'
-    if node_type.is_bool_type():
+    if ntype.is_bool_type():
         return 'bool'
-    elif node_type.is_bv_type():
-        return bits_to_utype(node_type.width)
-    elif node_type.is_function_type():
-        return type_to_c(node_type.return_type)
-    elif node_type.is_array_type():
-        if node_type.elem_type.is_array_type():
-            return '%s[ARRAY_SIZE]' % type_to_c(node_type.elem_type) # otherwise store might be unsound, we can always cast afterwards
+    elif ntype.is_bv_type():
+        return bits_to_utype(ntype.width)
+    elif ntype.is_function_type():
+        return type_to_c(ntype.return_type)
+    elif ntype.is_array_type():
+        if ntype.elem_type.is_array_type():
+            return '%s[ARRAY_SIZE]' % type_to_c(ntype.elem_type) # otherwise store might be unsound, we can always cast afterwards
         return 'long[ARRAY_SIZE]'
     # elif type.is_string_type():
     #     return 'string'
     else:
-        error(0, node_type)
+        error(0, ntype)
 
-def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
+def convert_helper(symbs: t.Set[str],node: FNode, cons: io.TextIOBase, op: str, cast_sign: str = '', cast_args: bool = True):
+
     (l, r) = node.args()
     l_string = convert_to_string(symbs,l)
     r_string = convert_to_string(symbs,r)
@@ -137,14 +139,14 @@ def convert_helper(symbs,node, cons, op, cast_sign = '', cast_args = True):
         cons.write(unsigned(node,n_string) if cast_sign == 'u' else signed(node,n_string))
 
 
-def check_shift_size(node):
+def check_shift_size(node: FNode) -> None:
     global GENERATE_WELL_DEFINED
     if GENERATE_WELL_DEFINED:
         (l,r) = node.args()        
         if not r.is_bv_constant() or r.constant_value() > get_bv_width(node):
             error(1, "Invalid shift: ", node)
 
-def div_helper(symbs,node,cons):
+def div_helper(symbs: t.Set[str],node: FNode, cons: io.TextIOBase):
     (l,r) = node.args()
     width = get_bv_width(node)
 
@@ -173,14 +175,14 @@ def div_helper(symbs,node,cons):
             op = '/'
         cons.write(unsigned(node, '(%s %s %s)' % (lString, op, rString)))
  
-def convert_to_string(symbs, node):
-    buff = StringIO()
+def convert_to_string(symbs: t.Set[str], node: FNode):
+    buff = io.StringIO()
     convert(symbs, node, buff)
     lString = buff.getvalue()
     buff.close()
     return lString
 
-def get_array_dim(node):
+def get_array_dim(node: FNode):
     dim = 0
     curr_type = node.get_type() 
     while curr_type.is_array_type():
@@ -188,16 +190,16 @@ def get_array_dim(node):
         dim += 1
     return dim
 
-def get_array_size_from_dim(dim):
+def get_array_size_from_dim(dim: int):
     if dim <= 0:
         return '1'
     return ('ARRAY_SIZE*'*dim)[:-1]
 
 
-def get_array_size(node):
+def get_array_size(node: FNode):
     return get_array_size_from_dim(get_array_dim(node))    
 
-def convert(symbs,node,cons):
+def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
     if cons.tell() > 2**20:
         raise ValueError("Parse result too large") # Avoid file sizes > 1 MB
     cons.write('(')
@@ -397,7 +399,7 @@ def convert(symbs,node,cons):
     cons.write(')')
     return ""
 
-def rotate_helper(symbs, node, cons, op):
+def rotate_helper(symbs: t.Set[str], node: FNode, cons: io.TextIOBase, op: str):
     (l,) = node.args()
     m = get_bv_width(node)
     i = node.bv_rotation_step()
@@ -416,7 +418,7 @@ def is_neg_sat(c, clauses):
     sat = is_sat(form_neg, solver_name = "z3")
     return sat
 
-def conjunction_to_clauses(formula):
+def conjunction_to_clauses(formula: FNode):
     if formula.is_and():
         clauses = set()
         for node in formula.args():
@@ -425,11 +427,12 @@ def conjunction_to_clauses(formula):
         clauses = set([formula])
     return clauses
 
-def clean_string(s):
+def clean_string(s: str):
     s = str(s)
     return re.sub('[^A-Za-z0-9_]+','_',s)
 
-def rename_arrays(formula):
+def rename_arrays(formula: FNode):
+    print("NOTE: Renaming array stores", end = " ")
     constraints = set()
     subs = dict()
 
@@ -446,6 +449,7 @@ def rename_arrays(formula):
             subs.update({old : new})
 
     formula = formula.substitute(subs)
+    print("Added %d new arrays" % len(constraints))
     return formula, constraints
 
 def write_to_file(formula, file):
@@ -462,14 +466,14 @@ def get_logic_from_script(script):
         print('NOTE: Logic not found in script. Using logic from formula: ' % (logic))
     return logic
 
-def get_division_constraints(formula):
+def get_division_constraints(formula: FNode):
     divisions = get_nodes(formula, (lambda f : f.is_div() or f.is_bv_udiv() or f.is_bv_sdiv() or f.is_bv_urem() or f.is_bv_srem()))
     return [Not(Equals(BV(0,get_bv_width(div)),div)) for div in map(lambda division : division.args[1], divisions)]
 
-def get_nodes(formula, cond):
+def get_nodes(formula: FNode, cond: t.Callable[[FNode], bool]):
     return get_nodes_helper(formula,cond,set())
 
-def get_nodes_helper(node,cond,visited_nodes: set):
+def get_nodes_helper(node: FNode,cond: t.Callable[[FNode], bool],visited_nodes: set) -> t.Set[FNode]:
     visited_nodes.add(node.node_id())
     matching = set()
     if cond(node):
@@ -480,21 +484,80 @@ def get_nodes_helper(node,cond,visited_nodes: set):
     return matching
     
 
-def parse(file_path, check_neg, continue_on_error=True, generate_well_defined=True):
+def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well_defined=True):
+    set_well_defined(generate_well_defined)
+    print("Converting %s: " % file_path)
+
+    decl_arr, variables, script, formula = read_file(file_path)  
+    logic = get_logic_from_script(script)  
+    formula_clauses = conjunction_to_clauses(formula) 
+    clauses, array_size = run_checks(formula, logic, formula_clauses)
+
+    parsed_cons = OrderedDict()
+    for c, clause in enumerate(clauses,start=1):
+        ldecl_arr = decl_arr
+
+        if logic.split('_')[-1].startswith('A'):
+            clause, constraints = rename_arrays(clause)
+            clause = And(*constraints, clause) # Make sure to render constraints first
+            ldecl_arr.extend(map(lambda c: c.args()[1],constraints))
+
+        symbs = set()
+
+        try:
+            print("NOTE: converting clause %d/%d." % (c,len(clauses)), end = " ")
+            result = convert_to_string(symbs,clause)
+        except Exception as e:
+            print("Could not convert clause: ", e)
+            if continue_on_error:
+                continue
+            else:
+                raise Exception(e)
+        print("Done.")
+
+        add_parsed_cons(check_neg, clauses, parsed_cons, clause, result)
+        add_used_variables(variables, ldecl_arr, symbs)
+
+    return parsed_cons, variables, array_size
+
+def add_parsed_cons(check_neg:bool, clauses:list, parsed_cons:OrderedDict, clause:FNode, cons_in_c: str):
+    if "model_version" not in cons_in_c:
+        if check_neg == True:
+            neg_sat = is_neg_sat(clause, clauses)
+            parsed_cons[cons_in_c] = neg_sat
+        else:
+            parsed_cons[cons_in_c] = ""
+
+def add_used_variables(variables: set, ldecl_arr: t.List[FNode], symbs: t.Set[str]):
+    for symb in symbs:
+        decls = list(map(lambda x: clean_string(x), ldecl_arr))
+        if symb in decls:
+            decl = symb
+        elif 'c' in decls and symb == '__original_smt_name_was_c__':
+            decl = 'c'
+        else:
+            decl = symb.split("_")[0]
+        i = decls.index(decl)
+        vartype = ldecl_arr[i].get_type()
+        type_in_c = type_to_c(vartype)
+        if vartype.is_array_type():
+            first_bracket = type_in_c.find('[')
+            symb += type_in_c[first_bracket:]
+            type_in_c = type_in_c[:first_bracket]
+        variables[symb] = type_in_c
+
+def set_well_defined(generate_well_defined: bool):
     global GENERATE_WELL_DEFINED
     GENERATE_WELL_DEFINED = generate_well_defined
-    print("Converting %s: " % file_path)
-    decl_arr, variables, script, formula = read_file(file_path)
-    logic = get_logic_from_script(script)
-    parsed_cons = OrderedDict()
-    formula_clauses = conjunction_to_clauses(formula) 
+
+def run_checks(formula: FNode, logic: str, formula_clauses: t.set[FNode]):
     clauses =  []
     constraints = set()
-    if 'BV' not in logic and generate_well_defined:
+    if 'BV' not in logic and GENERATE_WELL_DEFINED:
         print("WARNING: Can only guarantee well-definedness on bitvectors")
     if logic.split('_')[-1].startswith('A'):
         array_size, array_constraints = constrain_array_size(formula)
-        if generate_well_defined: # Arrays 
+        if GENERATE_WELL_DEFINED: # Arrays 
             clauses.extend(array_constraints)# Make sure to render constraints first
         constraints.update(array_constraints)
     else:
@@ -502,7 +565,7 @@ def parse(file_path, check_neg, continue_on_error=True, generate_well_defined=Tr
     if 'IA' in logic:
         print("NOTE: Generating integer constraints")
         constraints.update(get_integer_constraints(formula))
-    if not generate_well_defined:
+    if not GENERATE_WELL_DEFINED:
         print("NOTE: Generating divsion constraints")
         constraints.update(get_division_constraints(formula))
     if len(constraints) > 0:
@@ -514,55 +577,9 @@ def parse(file_path, check_neg, continue_on_error=True, generate_well_defined=Tr
     if len(clauses) > 256:
         print("WARNING: Original number of clauses (%d) too large, dropping some" % len(clauses))
         clauses = clauses[:255]
+    return clauses,array_size
 
-    for c, clause in enumerate(clauses,start=1):
-        ldecl_arr = decl_arr
-
-        if logic.split('_')[-1].startswith('A'):
-            print("NOTE: Renaming array stores", end = " ")
-            clause, constraints = rename_arrays(clause)
-            print("Added %d new arrays" % len(constraints))
-            ldecl_arr.extend(map(lambda c: c.args()[1],constraints))
-            clause = And(*constraints, clause) # Make sure to render constraints first
-
-        symbs = set()
-        buffer = StringIO()
-        try:
-            print("NOTE: converting clause %d/%d." % (c,len(clauses)), end = " ")
-            convert(symbs,clause,buffer)
-        except Exception as e:
-            print("Could not convert clause: ", e)
-            if continue_on_error:
-                continue
-            else:
-                raise Exception(e)
-        print("Done.")
-        cons_in_c =  buffer.getvalue()
-        if "model_version" not in cons_in_c:
-            if check_neg == True:
-                neg_sat = is_neg_sat(clause, clauses)
-                parsed_cons[cons_in_c] = neg_sat
-            else:
-                parsed_cons[cons_in_c] = ""
-            for symb in symbs:
-                decls = list(map(lambda x: clean_string(x), ldecl_arr))
-                if symb in decls:
-                    decl = symb
-                elif 'c' in decls and symb == '__original_smt_name_was_c__':
-                    decl = 'c'
-                else:
-                    decl = symb.split("_")[0]
-                i = decls.index(decl)
-                vartype = ldecl_arr[i].get_type()
-                type_in_c = type_to_c(vartype)
-                if vartype.is_array_type():
-                    first_bracket = type_in_c.find('[')
-                    symb += type_in_c[first_bracket:]
-                    type_in_c = type_in_c[:first_bracket]
-                variables[symb] = type_in_c
-    return parsed_cons, variables, array_size
-
-def read_file(file_path):
+def read_file(file_path: str):
     parser = SmtLibParser()
     script = parser.get_script_fname(file_path)
     decl_arr = list()
@@ -575,7 +592,7 @@ def read_file(file_path):
     formula = script.get_strict_formula()
     return decl_arr,variables,script,formula
 
-def check_indices(symbol,maxArity,maxId, cons_in_c):
+def check_indices(symbol: str,maxArity: int,maxId :int, cons_in_c: str):
     if maxArity == 0:
         return set([symbol]) if symbol in cons_in_c else set()
     for id in range(maxId):
@@ -584,11 +601,11 @@ def check_indices(symbol,maxArity,maxId, cons_in_c):
         res = res.union(check_indices(var, maxArity-1,maxId,cons_in_c))
     return res    
 
-def get_integer_constraints(formula):
+def get_integer_constraints(formula: FNode):
     integer_operations = get_nodes(formula, lambda f: f.get_type() is INT)
     return {(GT(i, Int(-(2**63)))) for i in integer_operations}.union((LT(i, Int(2**63 - 1))) for i in integer_operations)
 
-def extract_vars(cond, variables):    
+def extract_vars(cond: t.List[str], variables: 'dict[str,str]'):    
     vars = dict()
     for var, vartype in variables.items():
         if var + " " in cond or var + ")" in cond or var.split('[')[0] in cond:
@@ -629,7 +646,7 @@ class Graph:
                 groups.append(group)
         return groups
 
-def independent_formulas(conds, variables):
+def independent_formulas(conds: OrderedDict, variables: 'dict[str,str]'):
     formula = Graph()
     for cond in conds:
         formula.add_edge(cond,cond)
@@ -693,10 +710,10 @@ def get_subgroup(groups, vars_by_groups, seed):
         vars.update(extract_vars(cond, vars_by_groups[rand]))
     return subgroup, vars
 
-def get_array_calls(formula):
+def get_array_calls(formula: FNode):
     return get_array_calls_helper(formula, set())
 
-def get_array_calls_helper(formula, visited_nodes):
+def get_array_calls_helper(formula: FNode, visited_nodes: set):
     visited_nodes.add(subformula.node_id())
     calls = []
     min_size = 1
@@ -712,11 +729,11 @@ def get_array_calls_helper(formula, visited_nodes):
             min_size = max(min_size, sub_min)
     return min_size, calls
     
-def get_minimum_array_size_from_file(smt_file):
+def get_minimum_array_size_from_file(smt_file: str):
     formula = read_file(smt_file)[3]
     return constrain_array_size(formula)[0]
 
-def constrain_array_size(formula):
+def constrain_array_size(formula: FNode):
     min_index, array_ops = get_array_calls(formula)
     if len(array_ops) == 0:
         return 0, set()
@@ -781,7 +798,7 @@ def check_files(file_path, resfile):
         # Check that it is satisfiable on bounded integers
         if 'IA' in str(logic):
             print("[*] Check Integers:")
-            if not sat_in_int_range(formula): 
+            if not is_sat(And(formula, *get_integer_constraints(formula)),solver_name='z3'): 
                 raise ValueError('Unsat in range')
             print("[*] Done.")
 
@@ -798,7 +815,7 @@ def check_files(file_path, resfile):
         clauses = conjunction_to_clauses(formula)
         for clause in clauses:
             symbols = set()
-            buffer = StringIO()
+            buffer = io.StringIO()
             convert(symbols,clause, buffer) 
             print(".",end ="")
         print("")
