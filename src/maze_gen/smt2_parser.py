@@ -551,7 +551,6 @@ def set_well_defined(generate_well_defined: bool):
     GENERATE_WELL_DEFINED = generate_well_defined
 
 def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
-    print(logic)
     clauses =  []
     constraints = set()
     if 'BV' not in logic and GENERATE_WELL_DEFINED:
