@@ -14,7 +14,7 @@ if __name__ == '__main__':
     if mode == "t":
         test.load(argv)
     elif mode == "m":
-        minimize.load(argv)
+        minimize.Minimizer(argv).minimize()
     elif mode == "g":
         generate.load(argv)
     else:
