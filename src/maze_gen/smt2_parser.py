@@ -1,6 +1,6 @@
 import re
 import sys, random, os
-from collections import defaultdict, OrderedDict
+from collections import defaultdict, OrderedDict, namedtuple
 import io
 
 from pysmt.smtlib.parser import SmtLibParser
@@ -16,7 +16,8 @@ import typing as t
 
 
 T = t.TypeVar('T')
-
+SmtFileData = namedtuple('SmtFileData',['decl_arr','variables','formula', 'logic', 'clauses'])
+MAXIMUM_ARRAY_SIZE = 2**9
 
 def deflatten(args: t.List[T], op: t.Callable[[T,T],T]) -> T:
     x = args[0]
@@ -451,7 +452,7 @@ def rename_arrays(formula: FNode):
     return formula, constraints
 
 def write_to_file(formula, file):
-    if type(formula) == list:
+    if isinstance(formula,t.Iterable):
         formula = And(*formula)
     return write_smtlib(formula, file)
 
@@ -486,9 +487,8 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
     set_well_defined(generate_well_defined)
     print("Converting %s: " % file_path)
 
-    decl_arr, variables, script, formula = read_file(file_path)  
-    logic = get_logic_from_script(script)  
-    formula_clauses = conjunction_to_clauses(formula) 
+    decl_arr, variables, formula, logic, formula_clauses = read_file(file_path)  
+
     clauses, array_size = run_checks(formula, logic, formula_clauses)
 
     parsed_cons = OrderedDict()
@@ -550,11 +550,16 @@ def set_well_defined(generate_well_defined: bool):
     global GENERATE_WELL_DEFINED
     GENERATE_WELL_DEFINED = generate_well_defined
 
-def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
+def run_checks(formula: FNode, logic: str, clauses: t.Set[FNode]):
+    if not is_sat(formula,'z3', logic):
+        return clauses, MAXIMUM_ARRAY_SIZE
+    
     clauses =  []
     constraints = set()
+
     if 'BV' not in logic and GENERATE_WELL_DEFINED:
         print("WARNING: Can only guarantee well-definedness on bitvectors")
+    
     if logic.split('_')[-1].startswith('A'):
         array_size, array_constraints = constrain_array_size(formula)
         if GENERATE_WELL_DEFINED:
@@ -562,18 +567,23 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
         constraints.update(array_constraints)
     else:
         array_size = -1
+    
     if 'IA' in logic:
         print("NOTE: Generating integer constraints")
         constraints.update(get_integer_constraints(formula))
+    
     if not GENERATE_WELL_DEFINED:
         print("NOTE: Generating divsion constraints")
         constraints.update(get_division_constraints(formula))
+    
     if len(constraints) > 0:
         print("NOTE: Checking satisfiability with global constraints")
+        print(constraints)
         if not is_sat(And(formula, *constraints), solver_name='z3'):
             raise ValueError("Cannot guarantee a valid solution")
         print("Done.")
-    clauses.extend(formula_clauses)
+    
+    clauses.extend(clauses)
     if len(clauses) > 256:
         print("WARNING: Original number of clauses (%d) too large, dropping some" % len(clauses))
         clauses = clauses[:255]
@@ -590,7 +600,10 @@ def read_file(file_path: str):
             if (str)(arg) != "model_version":
                 decl_arr.append(arg)
     formula = script.get_strict_formula()
-    return decl_arr,variables,script,formula
+    logic = get_logic_from_script(script)  
+    formula_clauses = conjunction_to_clauses(formula) 
+
+    return SmtFileData(decl_arr,variables,formula, logic, formula_clauses)
 
 def check_indices(symbol: str,maxArity: int,maxId :int, cons_in_c: str):
     if maxArity == 0:
@@ -729,7 +742,7 @@ def get_array_calls_helper(formula: FNode, visited_nodes: set):
     return min_size, calls
     
 def get_minimum_array_size_from_file(smt_file: str):
-    formula = read_file(smt_file)[3]
+    formula = read_file(smt_file).formula
     return constrain_array_size(formula)[0]
 
 def constrain_array_size(formula: FNode):
@@ -750,7 +763,7 @@ def constrain_array_size(formula: FNode):
         array_size *= 2
 
     while not sat:
-        if (math.pow(array_size,max_dim)) > 2**9:  
+        if (math.pow(array_size,max_dim)) > MAXIMUM_ARRAY_SIZE:  
             raise ValueError("Minimum array size too large")
         assertions = {And(i < array_size, i >= 0) for i in map(lambda x: x.args()[1], array_ops)}
         new_formula = And(*assertions, formula)
@@ -787,13 +800,14 @@ def check_files(file_path, resfile):
         env.enable_infix_notation = True
         #Check number of atoms
         print("[*] Check atoms:")
-        formula = read_file(file_path)[3]
+        filedata = read_file(file_path).formula
+        formula = filedata.formula
+        logic = filedata.logic
+        clauses = filedata.clauses 
         if len(formula.get_atoms()) < 5:
             raise ValueError("Not enough atoms") 
         print("[*] Done")
 
-        _, _, _, formula = read_file(file_path)
-        logic = get_logic(formula)
 
         # Check that it is satisfiable on bounded integers
         if 'IA' in str(logic):
