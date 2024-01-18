@@ -131,6 +131,8 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
             return "\t{} {};\n\tinit({}{},{});\n".format(self.vars_all[var],var,'*'*(dim-1),var.split('[')[0],smt2_parser.get_array_size_from_dim(dim))
         elif self.vars_all[var] == 'bool':
             return "\t_Bool {} = __VERIFIER_nondet_bool();\n".format(var)
+        elif self.vars_all[var] == 'const bool':
+            return "\t const _Bool {} = __VERIFIER_nondet_bool();\n".format(var)
         else:
             orig_type = self.vars_all[var]
             short_type = orig_type.split(" ")[-1]
