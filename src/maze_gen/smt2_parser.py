@@ -551,7 +551,7 @@ def set_well_defined(generate_well_defined: bool):
     GENERATE_WELL_DEFINED = generate_well_defined
 
 def run_checks(formula: FNode, logic: str, clauses: t.Set[FNode]):
-    if not is_sat(formula,'z3', logic):
+    if not is_sat(formula,'z3'):
         return clauses, MAXIMUM_ARRAY_SIZE
     
     clauses =  []
@@ -578,7 +578,6 @@ def run_checks(formula: FNode, logic: str, clauses: t.Set[FNode]):
     
     if len(constraints) > 0:
         print("NOTE: Checking satisfiability with global constraints")
-        print(constraints)
         if not is_sat(And(formula, *constraints), solver_name='z3'):
             raise ValueError("Cannot guarantee a valid solution")
         print("Done.")
@@ -601,9 +600,9 @@ def read_file(file_path: str):
                 decl_arr.append(arg)
     formula = script.get_strict_formula()
     logic = get_logic_from_script(script)  
-    formula_clauses = conjunction_to_clauses(formula) 
+    clauses = conjunction_to_clauses(formula) 
 
-    return SmtFileData(decl_arr,variables,formula, logic, formula_clauses)
+    return SmtFileData(decl_arr,variables,formula, logic, clauses)
 
 def check_indices(symbol: str,maxArity: int,maxId :int, cons_in_c: str):
     if maxArity == 0:
@@ -714,6 +713,8 @@ def get_negated(conds, group, vars, numb):
     return negated_groups, new_vars
 
 def get_subgroup(groups: list, vars_by_groups: t.List[t.Dict[str,str]], seed: int):
+    if len(groups) == 0:
+        return list(), set()
     # get a subset of a randomly selected independent group
     random.seed(seed)
     rand = random.randint(0, len(groups)-1)
