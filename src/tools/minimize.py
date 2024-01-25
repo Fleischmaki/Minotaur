@@ -2,9 +2,6 @@ import os
 from ..runner import *
 from ..maze_gen import smt2_parser as sp
 from math import ceil
-from pysmt.solvers.z3 import Z3Solver
-from pysmt.shortcuts import get_env
-
 class Minimizer:
     def __init__(self,argv: 'list[str]'):
         if ',' in argv[0]:
@@ -57,8 +54,8 @@ class Minimizer:
         if self.expected_result == 'safe':
             clauses, self.core = self.separate_unsat_core(clauses,logic)
 
-        clauses = self.drop_batches(clauses)            
-        clauses = self.drop_individual(clauses)
+        self.drop_batches(clauses)            
+        self.drop_individual(clauses)
 
         self.set_seed(seed,clauses)
         if self.gen == 'container':
@@ -67,13 +64,9 @@ class Minimizer:
             maze_gen.generate_maze(self.params, self.outdir) 
 
     def separate_unsat_core(self,clauses: list,logic: str):
-        print('NOTE: Finding unsat core')
-        solver = Z3Solver(get_env(),logic,unsat_cores_mode='all')
-        solver.add_assertions(clauses)
-        solver.solve()
-        core = set(solver.get_unsat_core())
-        print('Done.')
+        core = min(sp.get_unsat_cores(clauses, logic), key=lambda core: len(core.args()))
         return list(filter(lambda c : c not in core, clauses)), core
+
 
     def minimize_maze(self):
         if not 'u' in self.params.keys():
@@ -105,7 +98,6 @@ class Minimizer:
                 keep_first_half = True
             else:
                 keep_first_half = not(keep_first_half)
-        return clauses   
 
     def drop_individual(self, clauses: list):
         empty_clauses = 0
@@ -165,4 +157,5 @@ class Minimizer:
 
 def read_mutant(mutant: str):
     file_data = sp.read_file(mutant)
+    print(file_data)
     return list(file_data.clauses), file_data.logic

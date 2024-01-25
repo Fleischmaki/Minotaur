@@ -11,6 +11,8 @@ from pysmt.smtlib.commands import SET_LOGIC
 from pysmt.fnode import FNode
 from pysmt.typing import PySMTType as node_type
 
+from pysmt.solvers.z3 import Z3Solver
+
 import math
 import typing as t
 
@@ -428,6 +430,16 @@ def conjunction_to_clauses(formula: FNode):
         clauses = set([formula])
     return clauses
 
+def get_unsat_cores(clauses, logic):
+    print('NOTE: Finding unsat core')
+    print(clauses)
+    solver = Z3Solver(get_env(),logic,unsat_cores_mode='all')
+    solver.add_assertions(clauses)
+    print(solver.solve())
+    core = set(solver.get_unsat_core())
+    print("Done")
+    return core
+
 def clean_string(s: str):
     s = str(s)
     return re.sub('[^A-Za-z0-9_]+','_',s)
@@ -712,9 +724,9 @@ def get_negated(conds, group, vars, numb):
             new_vars.append(new_var)
     return negated_groups, new_vars
 
-def get_subgroup(groups: list, vars_by_groups: t.List[t.Dict[str,str]], seed: int):
+def get_subgroup(groups: t.List[set], vars_by_groups: t.List[t.Dict[str,str]], seed: int):
     if len(groups) == 0:
-        return list(), set()
+        return set(), set()
     # get a subset of a randomly selected independent group
     random.seed(seed)
     rand = random.randint(0, len(groups)-1)
@@ -764,6 +776,7 @@ def constrain_array_size(formula: FNode):
         array_size *= 2
 
     while not sat:
+        print("Checking size: %d" % array_size)
         if (math.pow(array_size,max_dim)) > MAXIMUM_ARRAY_SIZE:  
             raise ValueError("Minimum array size too large")
         assertions = {And(i < array_size, i >= 0) for i in map(lambda x: x.args()[1], array_ops)}
