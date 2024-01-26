@@ -89,7 +89,7 @@ class Minimizer:
             half = len(clauses) // 2
             new_clauses = clauses[:half] if keep_first_half else clauses[half+1:]
 
-            seed = os.path.join(self.outdir, 'seeds', str(half) + ('-first' if keep_first_half else '-second'))
+            seed = str(half) + ('-first' if keep_first_half else '-second')
             self.set_seed(seed,new_clauses)
             misses_bug = self.result_is_err()
             if misses_bug:
@@ -106,7 +106,7 @@ class Minimizer:
                 break
             commands.run_cmd('mkdir -p %s' % os.path.join(self.outdir,'seeds'))
             pos = i - empty_clauses
-            seed = os.path.join(self.outdir, 'seeds', str(len(clauses)) + '-' + str(pos+1))
+            seed = str(len(clauses)) + '-' + str(pos+1)
             clause = clauses.pop(pos)
         
             self.set_seed(seed,clauses)
@@ -125,6 +125,7 @@ class Minimizer:
         return sat
 
     def set_seed(self, seed: str, clauses: list):
+        seed = os.path.join(self.outdir, 'seeds', seed)
         constraints = self.core.union(clauses)
         if not seed.endswith('.smt2'):
             seed += '.smt2'
