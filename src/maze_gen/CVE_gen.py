@@ -15,10 +15,10 @@ class Generator:
         self.transformations = transformations
 
         try:
-            self.constraints, self.vars_all, self.array_size = smt2_parser.parse(smt_file, check_neg = False, generate_well_defined=transformations['wd'])
+            self.constraints, self.vars_all, self.array_size = smt2_parser.parse(smt_file, check_neg = False, generate_well_defined=transformations['wd'], generate_sat=transformations['sat'])
         except ValueError as e:
             print('Error while parsing smt file %s' % str(e))
-            self.constraints = {}
+            self.constraints = {} if transformations['sat'] else '(1==0)'
             self.vars_all = {}
             self.array_size = 0
 
