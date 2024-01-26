@@ -34,6 +34,7 @@ def parse_transformations(t_type: str) -> dict:
     transformations = t_type.split('_')
     shuffle = False
     storm = False
+    sat = True
     well_defined = False
     make_const = 0
     keepId = t_type == 'id'
@@ -41,8 +42,8 @@ def parse_transformations(t_type: str) -> dict:
     for t in transformations:
         if t == 'sh':
             shuffle = True
-        elif t.startswith('storm'):
-            storm = t[5:]
+        elif t == 'storm':
+            storm = True
         elif t == 'wd':
             well_defined = True
         elif t.startswith('dc'):
@@ -51,7 +52,9 @@ def parse_transformations(t_type: str) -> dict:
             keepId = True
         elif t.startswith('mc'):
             make_const = int(t[2:])
-    return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keepId, 'wd' : well_defined, 'mc' : make_const}
+        elif t == 'unsat':
+            sat = False
+    return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keepId, 'wd' : well_defined, 'mc' : make_const, 'sat' : sat}
 
 def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: bool = True) -> list:
     print("NOTE: Running Storm.")
@@ -72,11 +75,11 @@ def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: 
     # Find the logic of the formula
     file_data = s2.read_file(smt_file)
     logic = file_data.logic
-    cores = list(s2.get_unsat_cores(file_data.clauses, file_data.logic))
+    core = s2.get_unsat_core(file_data.clauses, file_data.logic)
     
     generate_mutants(smt_obj, mutant_path, fpars['max_depth'],fpars['max_assert'],seed, logic,fpars)
     mutants = [mutant_path + '/mutant_%s.smt2' % i for i in range(n)]
     if not generate_sat:
         for mutant in mutants:
-            s2.write_to_file(And(random.choice(cores), *s2.read_file(mutant).clauses), mutant)
+            s2.write_to_file(And(*core, *s2.read_file(mutant).clauses), mutant)
     return mutants 

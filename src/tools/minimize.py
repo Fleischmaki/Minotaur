@@ -57,14 +57,14 @@ class Minimizer:
         self.drop_batches(clauses)            
         self.drop_individual(clauses)
 
-        self.set_seed(seed,clauses)
+        self.set_seed('min',clauses)
         if self.gen == 'container':
             maze_gen.generate_mazes([self.params],self.outdir)
         else:
             maze_gen.generate_maze(self.params, self.outdir) 
 
     def separate_unsat_core(self,clauses: list,logic: str):
-        core = min(sp.get_unsat_cores(clauses, logic), key=lambda core: len(core.args()))
+        core = sp.get_unsat_core(clauses, logic)
         return list(filter(lambda c : c not in core, clauses)), core
 
 
@@ -124,7 +124,7 @@ class Minimizer:
         commands.run_cmd('rm -r %s' % os.path.join(self.outdir, 'src'))
         return sat
 
-    def set_seed(self, seed, clauses):
+    def set_seed(self, seed: str, clauses: list):
         constraints = self.core.union(clauses)
         if not seed.endswith('.smt2'):
             seed += '.smt2'
@@ -157,5 +157,4 @@ class Minimizer:
 
 def read_mutant(mutant: str):
     file_data = sp.read_file(mutant)
-    print(file_data)
     return list(file_data.clauses), file_data.logic

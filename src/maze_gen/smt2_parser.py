@@ -430,9 +430,8 @@ def conjunction_to_clauses(formula: FNode):
         clauses = set([formula])
     return clauses
 
-def get_unsat_cores(clauses, logic):
+def get_unsat_core(clauses, logic):
     print('NOTE: Finding unsat core')
-    print(clauses)
     solver = Z3Solver(get_env(),logic,unsat_cores_mode='all')
     solver.add_assertions(clauses)
     print(solver.solve())
@@ -479,7 +478,7 @@ def get_logic_from_script(script):
 
 def get_division_constraints(formula: FNode):
     divisions = get_nodes(formula, (lambda f : f.is_div() or f.is_bv_udiv() or f.is_bv_sdiv() or f.is_bv_urem() or f.is_bv_srem()))
-    return [Not(Equals(BV(0,get_bv_width(div)),div)) for div in map(lambda division : division.args[1], divisions)]
+    return [Not(Equals(BV(0,get_bv_width(div)),div)) for div in map(lambda division : division.args()[1], divisions)]
 
 def get_nodes(formula: FNode, cond: t.Callable[[FNode], bool]):
     return get_nodes_helper(formula,cond,set())
@@ -495,13 +494,13 @@ def get_nodes_helper(node: FNode,cond: t.Callable[[FNode], bool],visited_nodes: 
     return matching
     
 
-def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well_defined=True):
+def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well_defined=True, generate_sat = True):
     set_well_defined(generate_well_defined)
     print("Converting %s: " % file_path)
 
     decl_arr, variables, formula, logic, formula_clauses = read_file(file_path)  
-
-    clauses, array_size = run_checks(formula, logic, formula_clauses)
+    clauses, array_size, is_sat = run_checks(formula, logic, formula_clauses)
+    core = set() if not is_sat else get_unsat_core(clauses, logic)
 
     parsed_cons = OrderedDict()
     for c, clause in enumerate(clauses,start=1):
@@ -522,7 +521,9 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
         except Exception as e:
             print("Could not convert clause: ", e)
             if continue_on_error:
-                continue
+                if clause not in core:
+                    continue
+                parsed_cons['(1==0)'] = True if check_neg else "" # Make sure condition remains unsat
             else:
                 raise Exception(e)
         print("Done.")
@@ -563,8 +564,9 @@ def set_well_defined(generate_well_defined: bool):
     GENERATE_WELL_DEFINED = generate_well_defined
 
 def run_checks(formula: FNode, logic: str, clauses: t.Set[FNode]):
-    if not is_sat(formula,'z3'):
-        return clauses, MAXIMUM_ARRAY_SIZE
+    sat = is_sat(formula,'z3')
+    if not sat:
+        return clauses, MAXIMUM_ARRAY_SIZE, sat
     
     clauses =  []
     constraints = set()
@@ -598,7 +600,7 @@ def run_checks(formula: FNode, logic: str, clauses: t.Set[FNode]):
     if len(clauses) > 256:
         print("WARNING: Original number of clauses (%d) too large, dropping some" % len(clauses))
         clauses = clauses[:255]
-    return clauses,array_size
+    return clauses,array_size,sat
 
 def read_file(file_path: str):
     parser = SmtLibParser()
@@ -629,7 +631,7 @@ def get_integer_constraints(formula: FNode):
     integer_operations = get_nodes(formula, lambda f: f.get_type() is INT)
     return {(GT(i, Int(-(2**63)))) for i in integer_operations}.union((LT(i, Int(2**63 - 1))) for i in integer_operations)
 
-def extract_vars(cond: t.List[str], variables: 'dict[str,str]'):    
+def extract_vars(cond: t.List[str], variables: t.Dict[str,str]):    
     vars = dict()
     for var, vartype in variables.items():
         if var + " " in cond or var + ")" in cond or var.split('[')[0] in cond:
@@ -646,7 +648,7 @@ class Graph:
     def get_edges(self, node):
         return self.graph[node]
 
-    def separate_helper(self, node, visited):
+    def separate_helper(self, node, visited: set):
         group = {node}
         current = {node}
         while len(current) != 0:
@@ -687,7 +689,7 @@ def independent_formulas(conds: OrderedDict, variables: 'dict[str,str]'):
         vars_by_groups.append(used_vars)
     return groups, vars_by_groups
 
-def get_negated(conds, group, vars, numb):
+def get_negated(conds: dict, group: t.Set[str], vars: t.Dict[str,str], numb: int):
     negated_groups = list()
     new_vars = list()
     n = 0
@@ -709,6 +711,7 @@ def get_negated(conds, group, vars, numb):
         for i in range(numb):
             new_group = set()
             new_var = "c" + str(i)
+            cond_neg = "(1==0)"
             # negate one of the original and add same conds for new var
             for cond in group:
                 if conds[cond] == True:
@@ -726,11 +729,11 @@ def get_negated(conds, group, vars, numb):
 
 def get_subgroup(groups: t.List[set], vars_by_groups: t.List[t.Dict[str,str]], seed: int):
     if len(groups) == 0:
-        return set(), set()
+        return set(),dict()
     # get a subset of a randomly selected independent group
     random.seed(seed)
     rand = random.randint(0, len(groups)-1)
-    vars = set()
+    vars = dict()
     subgroup = groups[rand]
     for cond in subgroup:
         vars.update(extract_vars(cond, vars_by_groups[rand]))
