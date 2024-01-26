@@ -499,8 +499,13 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
     print("Converting %s: " % file_path)
 
     decl_arr, variables, formula, logic, formula_clauses = read_file(file_path)  
-    clauses, array_size, is_sat = run_checks(formula, logic, formula_clauses)
-    core = set() if not is_sat else get_unsat_core(clauses, logic)
+    if generate_sat:
+        clauses, array_size = run_checks(formula, logic, formula_clauses)
+    else:
+        clauses = formula_clauses
+        array_size = MAXIMUM_ARRAY_SIZE
+
+    core = set() if not generate_sat else get_unsat_core(clauses, logic)
 
     parsed_cons = OrderedDict()
     for c, clause in enumerate(clauses,start=1):
@@ -564,10 +569,7 @@ def set_well_defined(generate_well_defined: bool):
     GENERATE_WELL_DEFINED = generate_well_defined
 
 def run_checks(formula: FNode, logic: str, clauses: t.Set[FNode]):
-    sat = is_sat(formula,'z3')
-    if not sat:
-        return clauses, MAXIMUM_ARRAY_SIZE, sat
-    
+
     clauses =  []
     constraints = set()
 
@@ -600,7 +602,7 @@ def run_checks(formula: FNode, logic: str, clauses: t.Set[FNode]):
     if len(clauses) > 256:
         print("WARNING: Original number of clauses (%d) too large, dropping some" % len(clauses))
         clauses = clauses[:255]
-    return clauses,array_size,sat
+    return clauses,array_size
 
 def read_file(file_path: str):
     parser = SmtLibParser()
