@@ -36,7 +36,7 @@ Ultimate Automizer/Gemcutter | [fixed](https://github.com/ultimate-pa/ultimate/i
 ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1363) | Type Casts
 ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1392) | Type Casts
 CPA -InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1194) | Modulo Operator
-ESBMC --interval-analysis | [confirmed](https://github.com/esbmc/esbmc/issues/1565) | Boolean Intervals
+ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1565) | Boolean Intervals
 ### Other bugs / Issues
 Tool | Status | Type
  -- | -- | --
