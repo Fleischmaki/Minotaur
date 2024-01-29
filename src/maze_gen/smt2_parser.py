@@ -64,9 +64,10 @@ def bits_to_utype(num_bits: int) -> str:
 def signed(node: FNode,converted_node: str) -> str:
     width = get_bv_width(node)
     scast = bits_to_stype(width)  
-    if width in (1,8,16,32,64):
+#    if width in (1,8,16,32,64):
+    if width == 64:
         return '((%s) %s)' % (scast, converted_node)  
-    return ('scast_helper(%s,%s)' % (converted_node,width))
+    return ('(%s) scast_helper(%s,%s)' % (scast,converted_node,width))
 
 def unsigned(node: FNode,converted_node: str) -> str:
     return '(%s %s)' % (get_unsigned_cast(node), converted_node)  
@@ -503,7 +504,7 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
         clauses, array_size = run_checks(formula, logic, formula_clauses)
     else:
         clauses = formula_clauses
-        array_size = MAXIMUM_ARRAY_SIZE
+        array_size = 16
 
     core = set() if not generate_sat else get_unsat_core(clauses, logic)
 
