@@ -85,10 +85,10 @@ class Minimizer:
     def drop_batches(self, clauses: list):
         keep_first_half = True
         misses_bug = True 
-        while len(clauses) > 1 and (misses_bug or not keep_first_half):
+        min_clauses = 1 if self.expected_result == 'unsafe' else 0
+        while (len(clauses) > min_clauses) and (misses_bug or not keep_first_half):
             half = len(clauses) // 2
             new_clauses = clauses[:half] if keep_first_half else clauses[half+1:]
-
             seed = str(half) + ('-first' if keep_first_half else '-second')
             self.set_seed(seed,new_clauses)
             misses_bug = self.result_is_err()
@@ -102,7 +102,7 @@ class Minimizer:
     def drop_individual(self, clauses: list):
         empty_clauses = 0
         for i in range(len(clauses)):
-            if len(clauses) == 1:
+            if len(clauses) == 1 and self.expected_result == 'unsafe':
                 break
             commands.run_cmd('mkdir -p %s' % os.path.join(self.outdir,'seeds'))
             pos = i - empty_clauses
