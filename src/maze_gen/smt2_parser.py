@@ -18,8 +18,8 @@ import typing as t
 
 
 T = t.TypeVar('T')
-SmtFileData = namedtuple('SmtFileData',['decl_arr','variables','formula', 'logic', 'clauses'])
-MAXIMUM_ARRAY_SIZE = 2**9
+SmtFileData = namedtuple('SmtFileData',['decl_arr','formula', 'logic', 'clauses'])
+MAXIMUM_ARRAY_SIZE = 2**10 - 1 
 
 def deflatten(args: t.List[T], op: t.Callable[[T,T],T]) -> T:
     x = args[0]
@@ -498,17 +498,19 @@ def get_nodes_helper(node: FNode,cond: t.Callable[[FNode], bool],visited_nodes: 
 def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well_defined=True, generate_sat = True):
     set_well_defined(generate_well_defined)
     print("Converting %s: " % file_path)
-
-    decl_arr, variables, formula, logic, formula_clauses = read_file(file_path)  
+    decl_arr, formula, logic, formula_clauses = read_file(file_path)
     if generate_sat:
         clauses, array_size = run_checks(formula, logic, formula_clauses)
     else:
         clauses = formula_clauses
-        array_size = 16
+        array_size = MAXIMUM_ARRAY_SIZE
 
-    core = set() if not generate_sat else get_unsat_core(clauses, logic)
+    core = set() if generate_sat else get_unsat_core(clauses, logic)
 
     parsed_cons = OrderedDict()
+    variables = dict()
+
+
     for c, clause in enumerate(clauses,start=1):
         ldecl_arr = decl_arr
 
@@ -540,12 +542,12 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
     return parsed_cons, variables, array_size
 
 def add_parsed_cons(check_neg:bool, clauses:list, parsed_cons:OrderedDict, clause:FNode, cons_in_c: str):
-    if "model_version" not in cons_in_c:
-        if check_neg == True:
-            neg_sat = is_neg_sat(clause, clauses)
-            parsed_cons[cons_in_c] = neg_sat
-        else:
-            parsed_cons[cons_in_c] = ""
+    # if "model_version" not in cons_in_c:
+    if check_neg == True:
+        neg_sat = is_neg_sat(clause, clauses)
+        parsed_cons[cons_in_c] = neg_sat
+    else:
+        parsed_cons[cons_in_c] = ""
 
 def add_used_variables(variables: set, ldecl_arr: t.List[FNode], symbs: t.Set[str]):
     for symb in symbs:
@@ -569,10 +571,9 @@ def set_well_defined(generate_well_defined: bool):
     global GENERATE_WELL_DEFINED
     GENERATE_WELL_DEFINED = generate_well_defined
 
-def run_checks(formula: FNode, logic: str, clauses: t.Set[FNode]):
-
-    clauses =  []
+def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
     constraints = set()
+    clauses = []
 
     if 'BV' not in logic and GENERATE_WELL_DEFINED:
         print("WARNING: Can only guarantee well-definedness on bitvectors")
@@ -584,6 +585,7 @@ def run_checks(formula: FNode, logic: str, clauses: t.Set[FNode]):
         constraints.update(array_constraints)
     else:
         array_size = -1
+        array_constraints = []
     
     if 'IA' in logic:
         print("NOTE: Generating integer constraints")
@@ -593,33 +595,35 @@ def run_checks(formula: FNode, logic: str, clauses: t.Set[FNode]):
         print("NOTE: Generating divsion constraints")
         constraints.update(get_division_constraints(formula))
     
-    if len(constraints) > 0:
+    if len(constraints) > len(array_constraints):
         print("NOTE: Checking satisfiability with global constraints")
-        if not is_sat(And(formula, *constraints), solver_name='z3'):
+        if not is_sat(And(*constraints, formula), solver_name='z3'):
             raise ValueError("Cannot guarantee a valid solution")
         print("Done.")
     
-    clauses.extend(clauses)
+    clauses.extend(formula_clauses)
     if len(clauses) > 256:
         print("WARNING: Original number of clauses (%d) too large, dropping some" % len(clauses))
         clauses = clauses[:255]
     return clauses,array_size
 
-def read_file(file_path: str):
+def read_file(file_path: str, make_dag = True) -> SmtFileData:
     parser = SmtLibParser()
     script = parser.get_script_fname(file_path)
     decl_arr = list()
-    variables = dict()
     decls = script.filter_by_command_name("declare-fun")
     for d in decls:
         for arg in d.args:
-            if (str)(arg) != "model_version":
-                decl_arr.append(arg)
-    formula = script.get_strict_formula()
+            # if (str)(arg) != "model_version":
+            decl_arr.append(arg)
+    if make_dag:
+        formula, new_decls = daggify(script.get_strict_formula())
+        decl_arr.extend(new_decls)
+    
     logic = get_logic_from_script(script)  
     clauses = conjunction_to_clauses(formula) 
 
-    return SmtFileData(decl_arr,variables,formula, logic, clauses)
+    return SmtFileData(decl_arr,formula,logic,clauses)
 
 def check_indices(symbol: str,maxArity: int,maxId :int, cons_in_c: str):
     if maxArity == 0:
@@ -640,6 +644,25 @@ def extract_vars(cond: t.List[str], variables: t.Dict[str,str]):
         if var + " " in cond or var + ")" in cond or var.split('[')[0] in cond:
             vars[var] = vartype
     return vars
+
+def daggify(formula: FNode):
+    next = [formula]
+    seen = set()
+    replaced = set()
+    vars = set()
+    while len(next) > 0:
+        node = next.pop()
+        seen.add(node.node_id())
+        for sub in node.args():
+            if sub.node_id() in seen and not sub.node_id() in replaced and not (sub.is_constant() or sub.is_symbol() or sub.is_function_application()):
+                var = FreshSymbol(sub.get_type())
+                formula = And(EqualsOrIff(sub,var),formula.substitute({sub:var}))
+                replaced.add(sub.node_id())
+                vars.add(var)
+            elif sub not in replaced:
+                next.append(sub)
+    return formula, vars
+
 
 class Graph:
     def __init__(self):
@@ -752,7 +775,8 @@ def get_array_calls_helper(formula: FNode, visited_nodes: set):
     if formula.is_store() or formula.is_select():
         if formula.args()[1].is_constant():
             min_size = max(min_size, formula.args()[1].constant_value())
-        calls = [formula]
+        else:
+            calls = [formula]
     for subformula in formula.args():
         if not (subformula.is_constant() or subformula.is_literal() or subformula.node_id() in visited_nodes):
             sub_min, sub_calls = get_array_calls_helper(subformula, visited_nodes)
@@ -776,11 +800,8 @@ def constrain_array_size(formula: FNode):
     max_dim = max(map(lambda op : get_array_dim(op.args()[0]),array_ops))
     sat = False
     assertions = set()
-    array_size = 2
+    array_size = max(min_index,2)
     
-    while array_size < min_index:
-        array_size *= 2
-
     while not sat:
         print("Checking size: %d" % array_size)
         if (math.pow(array_size,max_dim)) > MAXIMUM_ARRAY_SIZE:  
