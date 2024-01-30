@@ -70,11 +70,11 @@ class Minimizer:
 
     def minimize_maze(self):
         if not 'u' in self.params.keys():
-            self.params.update({'u':''})
+            w, h = self.params['w'], self.params['h']
+            self.params.update({'u':'', 'w':1, 'h':1})
             if not self.result_is_err():
-                self.params.pop('u', None) 
-            else:
-                self.params.update({'w':1,'h':1})
+                self.params.pop('u') 
+                self.params.update({'w':w,'h':h})
         
     def get_seed(self):
         if 'storm' in self.params['t']:
