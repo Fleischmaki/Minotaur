@@ -24,7 +24,7 @@ Run `python3 Minotaur --m report seed-dir out-dir {local,container}`, where 'rep
 Alternatively, first generate the maze and then run `python3 Minotaur --m maze.c seed-dir out-dir timeout {container,local} {fn,fp,er,...} tool [variant] [params]`
 
 ## Bugs found by Minotaur
-### Critical Bugs
+### Soundness Bugs
  Tool | Status | Type
  -- | -- | --
  CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1114) | Overflow
@@ -37,13 +37,18 @@ ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1363) 
 ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1392) | Type Casts
 CPA -InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1194) | Modulo Operator
 ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1565) | Boolean Intervals
-### Other bugs / Issues
+### Precision Issues
+Tool | Status | Type
+ -- | -- | --
+ MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/150) | Type Casts
+ MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/157) | ITE value propagation
+### Other
 Tool | Status | Type
  -- | -- | --
  Symbiotic | [open](https://github.com/staticafi/symbiotic/issues/246) | Arrays
  Ultimate Kojak | [fixed](https://github.com/ultimate-pa/ultimate/issues/647#event-10423593364) |
- MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/150) | Type Casts
- MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/157) | ITE value propagation
+
+
 ## About
 ```mermaid
 flowchart BT
