@@ -39,6 +39,7 @@ def parse_transformations(t_type: str) -> dict:
     make_const = 0
     keepId = t_type == 'id'
     dc = 0
+    dag = 0
     for t in transformations:
         if t == 'sh':
             shuffle = True
@@ -54,7 +55,9 @@ def parse_transformations(t_type: str) -> dict:
             make_const = int(t[2:])
         elif t == 'unsat':
             sat = False
-    return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keepId, 'wd' : well_defined, 'mc' : make_const, 'sat' : sat}
+        elif t.startswith('dag'):
+            dag = int(t[3:])
+    return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keepId, 'wd' : well_defined, 'mc' : make_const, 'sat' : sat, 'dag': dag}
 
 def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: bool = True) -> list:
     print("NOTE: Running Storm.")

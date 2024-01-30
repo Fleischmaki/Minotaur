@@ -423,12 +423,12 @@ def is_neg_sat(c, clauses):
     return sat
 
 def conjunction_to_clauses(formula: FNode):
+    clauses = set()
     if formula.is_and():
-        clauses = set()
         for node in formula.args():
             clauses = clauses.union(conjunction_to_clauses(node))
     else:
-        clauses = set([formula])
+        clauses.add(formula)
     return clauses
 
 def get_unsat_core(clauses, logic):
@@ -495,10 +495,10 @@ def get_nodes_helper(node: FNode,cond: t.Callable[[FNode], bool],visited_nodes: 
     return matching
     
 
-def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well_defined=True, generate_sat = True):
+def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well_defined=True, generate_sat = True, limit=0):
     set_well_defined(generate_well_defined)
     print("Converting %s: " % file_path)
-    decl_arr, formula, logic, formula_clauses = read_file(file_path)
+    decl_arr, formula, logic, formula_clauses = read_file(file_path, limit)
     if generate_sat:
         clauses, array_size = run_checks(formula, logic, formula_clauses)
     else:
@@ -607,7 +607,7 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
         clauses = clauses[:255]
     return clauses,array_size
 
-def read_file(file_path: str, make_dag = True) -> SmtFileData:
+def read_file(file_path: str, limit = 0) -> SmtFileData:
     parser = SmtLibParser()
     script = parser.get_script_fname(file_path)
     decl_arr = list()
@@ -616,12 +616,13 @@ def read_file(file_path: str, make_dag = True) -> SmtFileData:
         for arg in d.args:
             # if (str)(arg) != "model_version":
             decl_arr.append(arg)
-    if make_dag:
-        formula, new_decls = daggify(script.get_strict_formula())
+    formula = script.get_strict_formula()
+    if limit > 0:
+        formula, new_decls = daggify(formula, limit)
         decl_arr.extend(new_decls)
     
     logic = get_logic_from_script(script)  
-    clauses = conjunction_to_clauses(formula) 
+    clauses = conjunction_to_clauses(formula)
 
     return SmtFileData(decl_arr,formula,logic,clauses)
 
@@ -645,23 +646,27 @@ def extract_vars(cond: t.List[str], variables: t.Dict[str,str]):
             vars[var] = vartype
     return vars
 
-def daggify(formula: FNode):
+def daggify(formula: FNode, limit: int):
     next = [formula]
-    seen = set()
-    replaced = set()
-    vars = set()
+    seen = dict()
+    subs = dict()
     while len(next) > 0:
         node = next.pop()
-        seen.add(node.node_id())
         for sub in node.args():
-            if sub.node_id() in seen and not sub.node_id() in replaced and not (sub.is_constant() or sub.is_symbol() or sub.is_function_application()):
-                var = FreshSymbol(sub.get_type())
-                formula = And(EqualsOrIff(sub,var),formula.substitute({sub:var}))
-                replaced.add(sub.node_id())
-                vars.add(var)
-            elif sub not in replaced:
+            if sub.node_id() in seen.keys(): 
+                seen[sub.node_id()] += 1
+                if seen[sub.node_id()] == limit:
+                    if not (sub.is_constant() or sub.is_symbol() or sub.is_function_application() or sub.is_not()):
+                        var = FreshSymbol(sub.get_type())
+                        # Compute fixpoint over substitution 
+                        for _ in subs: # Every substitution need only applied at most once
+                            sub = sub.substitute(subs) 
+                        subs.update({sub: var})
+                        formula = And(EqualsOrIff(sub,var),formula.substitute(subs))
+            else:
+                seen[sub.node_id()] = 0
                 next.append(sub)
-    return formula, vars
+    return formula, set(subs.values())
 
 
 class Graph:
