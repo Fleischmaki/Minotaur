@@ -11,6 +11,8 @@ from pysmt.smtlib.commands import SET_LOGIC
 from pysmt.fnode import FNode
 from pysmt.typing import PySMTType as node_type
 
+import pysmt.exceptions
+
 from pysmt.solvers.z3 import Z3Solver
 
 import math
@@ -463,7 +465,7 @@ def rename_arrays(formula: FNode):
     formula = formula.substitute(subs)
     return formula, constraints
 
-def write_to_file(formula, file):
+def write_to_file(formula : FNode, file: str):
     if isinstance(formula,t.Iterable):
         formula = And(*formula)
     return write_smtlib(formula, file)
@@ -493,7 +495,6 @@ def get_nodes_helper(node: FNode,cond: t.Callable[[FNode], bool],visited_nodes: 
         if sub.node_id() not in visited_nodes:
             matching.update(get_nodes_helper(sub, cond, visited_nodes))
     return matching
-    
 
 def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well_defined=True, generate_sat = True, limit=0):
     set_well_defined(generate_well_defined)
@@ -505,11 +506,13 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
         clauses = formula_clauses
         array_size = MAXIMUM_ARRAY_SIZE
 
-    core = set() if generate_sat else get_unsat_core(clauses, logic)
+    try:
+        core = set() if generate_sat else get_unsat_core(clauses, logic)
+    except pysmt.exceptions.SolverStatusError as e:
+        print("WARNING: Could not find core, will abort if any clause fails")
 
     parsed_cons = OrderedDict()
     variables = dict()
-
 
     for c, clause in enumerate(clauses,start=1):
         ldecl_arr = decl_arr
@@ -659,7 +662,10 @@ def daggify(formula: FNode, limit: int):
                     if not (sub.is_constant() or sub.is_symbol() or sub.is_function_application() or sub.is_not()):
                         var = FreshSymbol(sub.get_type())
                         # Compute fixpoint over substitution 
-                        for _ in subs: # Every substitution need only applied at most once
+                        old = sub
+                        sub = old.substitute(subs)
+                        while old != sub:
+                            old = sub
                             sub = sub.substitute(subs) 
                         subs.update({sub: var})
                         formula = And(EqualsOrIff(sub,var),formula.substitute(subs))

@@ -78,11 +78,12 @@ def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: 
     # Find the logic of the formula
     file_data = s2.read_file(smt_file)
     logic = file_data.logic
-    core = s2.get_unsat_core(file_data.clauses, file_data.logic)
+    core = And(*s2.get_unsat_core(file_data.clauses, file_data.logic))
     
     generate_mutants(smt_obj, mutant_path, fpars['max_depth'],fpars['max_assert'],seed, logic,fpars)
     mutants = [mutant_path + '/mutant_%s.smt2' % i for i in range(n)]
     if not generate_sat:
         for mutant in mutants:
-            s2.write_to_file(And(*core, *s2.read_file(mutant).clauses), mutant)
+            assertions = s2.read_file(mutant).formula
+            s2.write_to_file(And(core,assertions), mutant)
     return mutants 
