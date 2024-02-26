@@ -82,6 +82,8 @@ def get_unsigned_cast(node: FNode) -> str:
 
 def get_bv_width(node: FNode) -> int:
     res = 0
+    if node.get_type().is_bool_type():
+        return 1
     if node.is_bv_constant() or node.is_symbol or node.is_function_application() or node.is_ite() or node.is_select():
         res = node.bv_width()
     elif len(node.args()) == 1:
@@ -351,11 +353,9 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
     elif node.is_symbol():
         dim = get_array_dim(node)
         cons.write("*"*(dim-1))
-        if str(node) == 'c':
-            node = '__original_smt_name_was_c__'
-        node = clean_string(node)
-        cons.write(node)
-        symbs.add(node)
+        var = clean_string(str(node))
+        cons.write(unsigned(node,var) if dim == 0 else var)
+        symbs.add(var)
     elif node.is_select():
         (a, p) = node.args()
         if 'BV' in str(node.get_type()): 
@@ -437,12 +437,14 @@ def get_unsat_core(clauses, logic):
     print('NOTE: Finding unsat core')
     solver = Z3Solver(get_env(),logic,unsat_cores_mode='all')
     solver.add_assertions(clauses)
-    print(solver.solve())
+    solver.solve()
     core = set(solver.get_unsat_core())
     print("Done")
     return core
 
 def clean_string(s: str):
+    if s == 'c':
+        return '__original_smt_name_was_c__'
     s = str(s)
     return re.sub('[^A-Za-z0-9_]+','_',s)
 
@@ -510,6 +512,7 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
         core = set() if generate_sat else get_unsat_core(clauses, logic)
     except pysmt.exceptions.SolverStatusError as e:
         print("WARNING: Could not find core, will abort if any clause fails")
+        continue_on_error = False
 
     parsed_cons = OrderedDict()
     variables = dict()
@@ -536,7 +539,7 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
                     continue
                 parsed_cons['(1==0)'] = True if check_neg else "" # Make sure condition remains unsat
             else:
-                raise Exception(e)
+                raise e
         print("Done.")
 
         add_parsed_cons(check_neg, clauses, parsed_cons, clause, result)
@@ -668,7 +671,7 @@ def daggify(formula: FNode, limit: int):
                             old = sub
                             sub = sub.substitute(subs) 
                         subs.update({sub: var})
-                        formula = And(EqualsOrIff(sub,var),formula.substitute(subs))
+                        formula = And(EqualsOrIff(sub,var),formula.substitute({sub: var}))
             else:
                 seen[sub.node_id()] = 0
                 next.append(sub)
