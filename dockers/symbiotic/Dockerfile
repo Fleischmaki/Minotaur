@@ -1,4 +1,4 @@
-FROM maze-base
+FROM minotaur-base
 
 WORKDIR /home/maze/tools
 

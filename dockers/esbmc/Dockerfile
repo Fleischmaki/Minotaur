@@ -1,4 +1,4 @@
-FROM maze-base
+FROM minotaur-base
 
 ### Install Dependencies
 ENV DEBIAN_FRONTEND="noninteractive"

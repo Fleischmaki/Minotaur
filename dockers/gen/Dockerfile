@@ -1,4 +1,4 @@
-FROM maze-base
+FROM minotaur-base
 
 USER maze
 WORKDIR /home/maze/workspace

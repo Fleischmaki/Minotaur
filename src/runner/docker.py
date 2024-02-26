@@ -9,6 +9,7 @@ CP_SEED_CMD = 'docker cp %s %s:/home/%s/%s'
 CP_CMD = 'docker cp %s:/home/%s/workspace/%s %s'
 KILL_CMD = 'docker kill %s'
 REMOVE_CMD = 'docker rm %s'
+DOCKER_PREFIX = 'minotaur-'
 
 def spawn_cmd_in_docker(container, cmd_str):
     print('[*] Executing (in container %s): %s' % (container, cmd_str))
@@ -38,9 +39,9 @@ def clean_name(name):
 
 def spawn_docker(memory, name, tool, cpu = -1, variant='', flags=''):
     if cpu > 0:
-        cmd = SPAWN_CMD_CPU % (memory, cpu, get_container(tool,variant,flags,name), 'maze-' + tool)
+        cmd = SPAWN_CMD_CPU % (memory, cpu, get_container(tool,variant,flags,name), DOCKER_PREFIX + tool)
     else:
-        cmd = SPAWN_CMD_NOCPU % (memory, get_container(tool,variant,flags,name), 'maze-' + tool)
+        cmd = SPAWN_CMD_NOCPU % (memory, get_container(tool,variant,flags,name), DOCKER_PREFIX + tool)
     return commands.spawn_cmd(cmd)
 
 def set_docker_maze(path, name, tool, variant='', flags=''):
