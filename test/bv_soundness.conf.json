@@ -21,7 +21,12 @@
 			"variant" : ["Automizer Default","Taipan Default","Kojak Default","GemCutter Default", "Automizer Bitvector","Taipan Bitvector","Kojak Bitvector","GemCutter Bitvector"]
 		},
 		"cbmc": {
-			"variant" : [""]
+			"variant" : ["--boolector","--mathsat","--cvc4","--yices","--z3"],
+			"choose" : {
+				"--paths= " : [0,"fifo","lifo"],
+				"--" : [0,"full-slice","reachability-slice","reachability-slice-fb"]
+			},
+			"toggle" : ["--refine"]
 		},
 		"symbiotic": {
 			"variant" : [""]
@@ -45,7 +50,7 @@
 			}
 		},
 		"mopsa": {
-			"variant" : ["default", "cell-itv", "cell-itv-congr", "cell-pack-rel-itv", "cell-itv-powerset", "cell-itv-zero", "cell-itv-congr"]
+			"variant" : ["default", "cell-itv", "cell-itv-congr", "cell-pack-rel-itv", "cell-itv-powerset", "cell-itv-excluded-powerset", "cell-itv-zero", "cell-itv-congr"]
 		}
 	},
 	"parameters" : {
@@ -66,7 +71,8 @@
 		"t" : {
 			"storm": [1],
 			"wd": [0,1],
-			"keepId": [0]
+			"mc": [0,25,50,75,100],
+			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
 		"s": "/home/mfleischmann/seeds",

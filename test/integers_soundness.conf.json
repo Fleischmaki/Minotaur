@@ -6,6 +6,7 @@
 	"memory" : 4,
 	"transforms" : 15,
 	"maze_gen" : "container",
+	"expected_result": "error",
 	"tool" : { 
 		"cpa" : {
 			"variant" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution", "invariantGeneration", "smg2","bmc","ldv"]
@@ -23,7 +24,12 @@
 			"variant" : ["Automizer Default","Taipan Default","Kojak Default","GemCutter Default"]
 		},
 		"cbmc": {
-			"variant" : [""]
+			"variant" : ["--boolector","--mathsat","--cvc4","--yices","--z3"],
+			"choose" : {
+				"--paths= " : [0,"fifo","lifo"],
+				"--" : [0,"full-slice","reachability-slice","reachability-slice-fb"]
+			},
+			"toggle" : ["--refine"]
 		},
 		"symbiotic": {
 			"variant" : [""]
@@ -67,7 +73,9 @@
 		},
 		"t" : {
 			"storm": [1],
-			"keepId": [0]
+			"wd": [0,1],
+			"mc": [0,25,50,75,100],
+			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
 		"s": "/home/mfleischmann/Integers",
