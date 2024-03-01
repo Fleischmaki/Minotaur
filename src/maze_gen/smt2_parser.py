@@ -759,6 +759,7 @@ def get_negated(conds: dict, group: t.Set[str], vars: t.Dict[str,str], numb: int
             for cond in group:
                 cond_vars = extract_vars(cond, vars)
                 for v in cond_vars:
+                    cond_new = "(1==0)"
                     cond_new = cond.replace(v, new_var)
                 new_group.add(cond_new)
             negated_groups.append(new_group)
