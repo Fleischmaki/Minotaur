@@ -505,7 +505,7 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
     if generate_sat:
         clauses, array_size = run_checks(formula, logic, formula_clauses)
     else:
-        clauses = formula_clauses
+        clauses = list(formula_clauses)
         array_size = MAXIMUM_ARRAY_SIZE
 
     try:
@@ -516,6 +516,9 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
 
     parsed_cons = OrderedDict()
     variables = dict()
+    
+    if GENERATE_WELL_DEFINED:
+        clauses.sort(key=lambda c: len(get_array_calls(c)[1]))
 
     for c, clause in enumerate(clauses,start=1):
         ldecl_arr = decl_arr
@@ -579,7 +582,7 @@ def set_well_defined(generate_well_defined: bool):
 
 def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
     constraints = set()
-    clauses = []
+    clauses = list(formula_clauses)
 
     if 'BV' not in logic and GENERATE_WELL_DEFINED:
         print("WARNING: Can only guarantee well-definedness on bitvectors")
@@ -587,7 +590,7 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
     if logic.split('_')[-1].startswith('A'):
         array_size, array_constraints = constrain_array_size(formula)
         if GENERATE_WELL_DEFINED:
-            clauses.extend(array_constraints)# Make sure to render constraints first
+            clauses.extend(array_constraints)
         constraints.update(array_constraints)
     else:
         array_size = -1
@@ -607,10 +610,6 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
             raise ValueError("Cannot guarantee a valid solution")
         print("Done.")
     
-    clauses.extend(formula_clauses)
-    if len(clauses) > 256:
-        print("WARNING: Original number of clauses (%d) too large, dropping some" % len(clauses))
-        clauses = clauses[:255]
     return clauses,array_size
 
 def read_file(file_path: str, limit = 0) -> SmtFileData:
@@ -629,7 +628,6 @@ def read_file(file_path: str, limit = 0) -> SmtFileData:
     
     logic = get_logic_from_script(script)  
     clauses = conjunction_to_clauses(formula)
-
     return SmtFileData(decl_arr,formula,logic,clauses)
 
 def check_indices(symbol: str,maxArity: int,maxId :int, cons_in_c: str):
@@ -789,8 +787,7 @@ def get_array_calls_helper(formula: FNode, visited_nodes: set):
     if formula.is_store() or formula.is_select():
         if formula.args()[1].is_constant():
             min_size = max(min_size, formula.args()[1].constant_value())
-        else:
-            calls = [formula]
+        calls = [formula]
     for subformula in formula.args():
         if not (subformula.is_constant() or subformula.is_literal() or subformula.node_id() in visited_nodes):
             sub_min, sub_calls = get_array_calls_helper(subformula, visited_nodes)
@@ -808,7 +805,6 @@ def constrain_array_size(formula: FNode):
     if len(array_ops) == 0:
         print("No arrays found")
         return 0, set()
-
     if not is_sat(formula, solver_name = "z3"):
         formula = Not(formula)
     max_dim = max(map(lambda op : get_array_dim(op.args()[0]),array_ops))
@@ -832,6 +828,7 @@ def main(file_path, resfile):
     return check_files(file_path, resfile)
 
 def check_files(file_path, resfile):
+    set_well_defined(True)
     if os.path.isdir(file_path):
         print("Going into dir %s\n" % file_path)
         for file in sorted(os.listdir(file_path)):
@@ -855,7 +852,7 @@ def check_files(file_path, resfile):
         env.enable_infix_notation = True
         #Check number of atoms
         print("[*] Check atoms:")
-        filedata = read_file(file_path).formula
+        filedata = read_file(file_path)
         formula = filedata.formula
         logic = filedata.logic
         clauses = filedata.clauses 
