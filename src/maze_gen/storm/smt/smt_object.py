@@ -20,18 +20,18 @@ from termcolor import colored
 import copy
 
 class smtObject(object):
-    def __init__(self, file_path, path_to_mutant_folder):
+    def __init__(self, file_path, path_to_mutant_folder, track_truth_values=True):
         self.path_to_orig_smt_file = file_path
         self.path_to_mutant_folder = path_to_mutant_folder
         self.orig_satisfiability = None
         self.valid = True
         self.orig_ast = None
-        self.true_nodes = list()
-        self.false_nodes = list()
         self.all_nodes = list()
+        self.true_nodes = list() 
+        self.false_nodes = list() if track_truth_values else self.true_nodes
         self.dummy_ast = None
-        self.true_constructed_nodes = list()
-        self.false_constructed_nodes = list()
+        self.true_constructed_nodes = list()  
+        self.false_constructed_nodes = list() if track_truth_values else self.true_constructed_nodes
         self.total_number_of_assertions = 0
 
 

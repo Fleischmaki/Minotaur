@@ -62,8 +62,8 @@ def parse_transformations(t_type: str) -> dict:
 def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: bool = True) -> list:
     print("NOTE: Running Storm.")
     if n <= 0:
-        return
-    smt_obj = smtObject(smt_file, mutant_path)
+        return   
+    smt_obj = smtObject(smt_file, mutant_path, generate_sat)
     smt_obj.check_satisfiability(10*60)
     if smt_obj.orig_satisfiability == "timeout":
         print("WARNING: Could not fuzz file: timeout")
@@ -78,7 +78,7 @@ def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: 
     # Find the logic of the formula
     file_data = s2.read_file(smt_file)
     logic = file_data.logic
-    core = And(*s2.get_unsat_core(file_data.clauses, file_data.logic))
+    core = TRUE if generate_sat else And(*s2.get_unsat_core(file_data.clauses, file_data.logic))
     
     generate_mutants(smt_obj, mutant_path, fpars['max_depth'],fpars['max_assert'],seed, logic,fpars)
     mutants = [mutant_path + '/mutant_%s.smt2' % i for i in range(n)]
