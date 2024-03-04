@@ -505,20 +505,19 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
     if generate_sat:
         clauses, array_size = run_checks(formula, logic, formula_clauses)
     else:
-        clauses = list(formula_clauses)
-        array_size = MAXIMUM_ARRAY_SIZE
-
+        array_size, array_calls = get_array_index_calls(formula)
+        array_size += 1
+        clauses = list(get_array_constraints(array_calls, array_size)) + list(formula_clauses)
     try:
         core = set() if generate_sat else get_unsat_core(clauses, logic)
     except pysmt.exceptions.SolverStatusError as e:
         print("WARNING: Could not find core, will abort if any clause fails")
         continue_on_error = False
-
     parsed_cons = OrderedDict()
     variables = dict()
     
     if GENERATE_WELL_DEFINED:
-        clauses.sort(key=lambda c: len(get_array_calls(c)[1]))
+        clauses.sort(key=lambda c: len(get_array_index_calls(c)[1]))
 
     for c, clause in enumerate(clauses,start=1):
         ldecl_arr = decl_arr
@@ -778,7 +777,7 @@ def get_subgroup(groups: t.List[set], vars_by_groups: t.List[t.Dict[str,str]], s
         vars.update(extract_vars(cond, vars_by_groups[rand]))
     return subgroup, vars
 
-def get_array_calls(formula: FNode):
+def get_array_index_calls(formula: FNode):
     return get_array_calls_helper(formula, set())
 
 def get_array_calls_helper(formula: FNode, visited_nodes: set):
@@ -802,7 +801,7 @@ def get_minimum_array_size_from_file(smt_file: str):
 
 def constrain_array_size(formula: FNode):
     print("NOTE: Calculating array size.")
-    min_index, array_ops = get_array_calls(formula)
+    min_index, array_ops = get_array_index_calls(formula)
     if len(array_ops) == 0:
         print("No arrays found")
         return 0, set()
@@ -817,13 +816,16 @@ def constrain_array_size(formula: FNode):
         print("Checking size: %d" % array_size)
         if (math.pow(array_size,max_dim)) > MAXIMUM_ARRAY_SIZE:  
             raise ValueError("Minimum array size too large")
-        assertions = {And(i < array_size, i >= 0) for i in map(lambda x: x.args()[1], array_ops)}
+        assertions = get_array_constraints(array_ops, array_size)
         new_formula = And(*assertions, formula)
         sat = is_sat(new_formula, solver_name = "z3")
         array_size *= 2
     array_size //= 2
     print("Sat on size %d."  % array_size)
     return array_size, assertions
+
+def get_array_constraints(array_ops, array_size):
+    return {And(i < array_size, i >= 0) for i in map(lambda x: x.args()[1], array_ops)}
 
 def main(file_path, resfile):    
     return check_files(file_path, resfile)
