@@ -42,6 +42,8 @@ Tool | Status | Type
  -- | -- | --
  MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/150) | Type Casts
  MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/157) | ITE value propagation
+ SeaHorn | [open](https://github.com/seahorn/seahorn/issues/546) |
+ SeaHorn | [open](https://github.com/seahorn/seahorn/issues/550) |
 ### Other
 Tool | Status | Type
  -- | -- | --
