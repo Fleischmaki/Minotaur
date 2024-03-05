@@ -103,7 +103,7 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
         logic_c = list()
         group_idx = 0
         for idx in range(self.size):
-            if self.insert[idx] == 0:
+            if self.insert[idx] == 0 and len(self.edges[idx]) > 1:
                 logic_c.append("\t\tchar c = __VERIFIER_nondet_char();")
             else:
                 tab_cnt = 0
@@ -115,7 +115,9 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
                 for var in vars:
                     buggy_constraints += self.get_initialisation(var)
                     
-                buggy_constraints += "\tchar c = __VERIFIER_nondet_char();\n".format(len(vars))
+
+                if len(self.edges[idx]) > 1:
+                    buggy_constraints += "\tchar c = __VERIFIER_nondet_char();\n"
                 buggy_constraints += "\tint flag = 0;\n"
                 for constraint in constraints:
                     buggy_constraints += "\t"*tab_cnt + "\tif{}{{\n".format(constraint)

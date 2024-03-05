@@ -728,11 +728,12 @@ def independent_formulas(conds: OrderedDict, variables: 'dict[str,str]'):
 
 def get_negated(conds: dict, group: t.Set[str], vars: t.Dict[str,str], numb: int):
     negated_groups = list()
-    new_vars = list()
+    new_vars = dict()
     n = 0
     for cond in group:
         if conds[cond] == True:
             n = n + 1
+   
     if n >= numb:
         negated = set()
         for i in range(numb):
@@ -744,11 +745,16 @@ def get_negated(conds: dict, group: t.Set[str], vars: t.Dict[str,str], numb: int
                 else:
                     negated_group.add(cond)
             negated_groups.append(negated_group)
-    else:
+    elif n == 0:
+        new_vars['c'] = 'unsigned char' # If we don't have any clauses to negate, revert to choice
+        for i in range(numb):
+            cond_neg = '(c %s %d)' % ('>=' if i == numb-1 else '==', i)
+            negated_groups.append([cond_neg])
+        return negated_groups, new_vars
+
+    else: 
         for i in range(numb):
             new_group = set()
-            new_var = "c" + str(i)
-            cond_neg = "(1==0)"
             # negate one of the original and add same conds for new var
             for cond in group:
                 if conds[cond] == True:
@@ -758,12 +764,13 @@ def get_negated(conds: dict, group: t.Set[str], vars: t.Dict[str,str], numb: int
             for cond in group:
                 cond_vars = extract_vars(cond, vars)
                 for v in cond_vars:
-                    cond_new = "(1==0)"
+                    new_var = '_' + v
                     cond_new = cond.replace(v, new_var)
-                new_group.add(cond_new)
+                    new_vars[new_var] = vars[v]
+                    new_group.add(cond_new)
             negated_groups.append(new_group)
-            new_vars.append(new_var)
-    return negated_groups, new_vars
+    vars.update(new_vars)
+    return negated_groups, vars 
 
 def get_subgroup(groups: t.List[set], vars_by_groups: t.List[t.Dict[str,str]], seed: int):
     if len(groups) == 0:
