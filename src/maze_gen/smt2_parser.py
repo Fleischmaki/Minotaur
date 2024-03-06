@@ -282,7 +282,11 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
     elif node.is_bv_sext():
         (l,) = node.args()
         res = convert_to_string(symbs,l)
-        cons.write(signed(node,res))
+        cons.write('((')
+        cons.write(bits_to_stype(get_bv_width(node)))
+        cons.write(')')
+        cons.write(signed(l,res))
+        cons.write(')')
     elif node.is_bv_zext():
         (l,) = node.args()
         cons.write('(')
