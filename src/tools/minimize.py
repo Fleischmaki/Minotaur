@@ -157,6 +157,8 @@ class Minimizer:
         if self.params['t'] == '':
             self.params['t'] = 'keepId'
             self.params['m'] = 0
+        elif 'wd' in self.params['t'] or 'unsat' in self.params['t']:
+            self.params['m'] = 1
 
 def read_mutant(mutant: str):
     file_data = sp.read_file(mutant)

@@ -81,9 +81,7 @@ def unsigned(node: FNode,converted_node: str, always=True) -> str:
     return '%s %s' % (get_unsigned_cast(node), converted_node)  
 
 def cast(node: FNode, converted_node: str,always=False) -> str:
-    if node.get_type().is_bv_type() or (node.get_type().is_array_type() and node.get_type().get_elem_type().is_bv_type()):
-        return signed(node, converted_node,always) if is_signed(node) else unsigned(node, converted_node, always)
-    return converted_node
+    return signed(node, converted_node,always) if is_signed(node) else unsigned(node, converted_node, always)
     
 def get_unsigned_cast(node: FNode) -> str:
     width = get_bv_width(node)
@@ -94,8 +92,11 @@ def get_unsigned_cast(node: FNode) -> str:
 def get_bv_width(node: FNode) -> int:
     res = 0
     if node.get_type().is_bool_type():
-        return 1
-    if node.is_bv_constant() or node.is_symbol or node.is_function_application() or node.is_ite() or node.is_select():
+        if node.is_bool_constant():
+            res = 1
+        else:
+            res = get_bv_width(node.args()[0])
+    elif node.is_bv_constant() or node.is_symbol or node.is_function_application() or node.is_ite() or node.is_select():
         res = node.bv_width()
     elif len(node.args()) == 1:
         (r,) = node.args()
@@ -108,7 +109,7 @@ def get_bv_width(node: FNode) -> int:
         (l,r) = node.args() 
         if node.is_bv_concat():
             res = get_bv_width(l) + get_bv_width(r)
-        if l.is_bv_constant() or l.is_symbol or l.is_function_application() or l.is_ite() or l.is_select():
+        elif l.is_bv_constant() or l.is_symbol or l.is_function_application() or l.is_ite() or l.is_select():
             res =  l.bv_width()
         elif r.is_bv_constant() or r.is_symbol or r.is_function_application() or r.is_ite() or r.is_select():
             res = r.bv_width()
@@ -472,7 +473,7 @@ def get_logic_from_script(script):
     else:
         formula = script.get_strict_formula()
         logic = str(get_logic(formula))
-        print('NOTE: Logic not found in script. Using logic from formula: ' % (logic))
+        print('NOTE: Logic not found in script. Using logic from formula: '  + logic)
     return logic
 
 def get_division_constraints(formula: FNode):
@@ -493,6 +494,7 @@ def get_nodes_helper(node: FNode,cond: t.Callable[[FNode], bool],visited_nodes: 
     return matching
 
 def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well_defined=True, generate_sat = True, limit=0):
+    sys.setrecursionlimit(10000)
     set_well_defined(generate_well_defined)
     print("Converting %s: " % file_path)
     decl_arr, formula, logic, formula_clauses = read_file(file_path, limit)
