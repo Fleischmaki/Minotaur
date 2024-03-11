@@ -8,16 +8,16 @@ class Minimizer:
             run = argv[0][:-1] if argv[0].endswith(',') else argv[0]
             args = run.split(',')
             if len(args) == 16:
-                self.tool,self.variant,self.flags,id,u,a,w,h,c,t,g,_,_,r,self.timeout,self.err = args
+                self.tool,self.variant,self.flags,id,u,a,w,h,c,t,s,g,_,r,self.timeout,self.err = args
             else:
-                self.tool,self.variant,self.flags,id,a,w,h,c,t,g,_,_,r,self.timeout,self.err = args
+                self.tool,self.variant,self.flags,id,a,w,h,c,t,s,g,_,r,self.timeout,self.err = args
                 u = 0
 
             self.timeout = ceil(float(self.timeout)) + 60 # Add a minute for buffer
             self.seeddir = argv[1]
             self.outdir = argv[2]
             self.gen = argv[3]
-            self.params= {'m':int(id),'a':a,'w':int(w),'h':int(h),'c':int(c),'t':t,'g':'CVE_gen','s':os.path.join(self.seeddir,g+'.smt2'),'r':int(r)}
+            self.params= {'m':int(id),'a':a,'w':int(w),'h':int(h),'c':int(c),'t':t,'g':g,'s':os.path.join(self.seeddir,s+'.smt2'),'r':int(r)}
             if u == '1':
                 self.params['u'] = ''
         else:
@@ -42,7 +42,7 @@ class Minimizer:
         commands.run_cmd("mkdir -p %s" % os.path.join(self.outdir,'seeds'))
         commands.run_cmd("mkdir -p %s" % os.path.join(self.outdir,'runs'))
 
-        if not self.result_is_err():
+        if not self.result_is_err(False):
             print('ERROR: Original maze not a %s' % self.err)
             return
 
@@ -54,8 +54,8 @@ class Minimizer:
         if self.expected_result == 'safe':
             clauses, self.core = self.separate_unsat_core(clauses,logic)
 
-        self.drop_batches(clauses)            
-        self.drop_individual(clauses)
+        clauses = self.drop_batches(clauses)            
+        clauses = self.drop_individual(clauses)
 
         self.set_seed('min',clauses)
         if self.gen == 'container':
@@ -98,6 +98,7 @@ class Minimizer:
                 keep_first_half = True
             else:
                 keep_first_half = not(keep_first_half)
+        return clauses
 
     def drop_individual(self, clauses: list):
         empty_clauses = 0
@@ -116,12 +117,13 @@ class Minimizer:
                 empty_clauses += 1
             else: 
                 clauses.insert(pos, clause) # Reinsert clause if no longer 'fn'
+        return clauses
 
-
-    def result_is_err(self):
+    def result_is_err(self, rm=True):
         docker.run_mc(self.tool,self.variant,self.flags, 'min', self.params, self.outdir,timeout=self.timeout, gen=self.gen, expected_result=self.expected_result)
         sat = self.is_err()
-        commands.run_cmd('rm -r %s' % os.path.join(self.outdir, 'src'))
+        if rm:
+            commands.run_cmd('rm -r %s' % os.path.join(self.outdir, 'src'))
         return sat
 
     def set_seed(self, seed: str, clauses: list):
@@ -152,8 +154,8 @@ class Minimizer:
         self.params['t'] = self.params['t'].replace('storm', '')
         self.params['t'] = self.params['t'].replace('__', '_')
         self.params['t'] = self.params['t'].strip('_')
-        if self.params['t'] == ['']:
-            self.params['t'] = ('keepId_' + self.params['t']).strip('_')
+        if self.params['t'] == '':
+            self.params['t'] = 'keepId'
             self.params['m'] = 0
 
 def read_mutant(mutant: str):
