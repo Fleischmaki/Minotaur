@@ -24,7 +24,7 @@ def get_params_from_maze(maze,smt_path = ''):
 
 
 def get_maze_names(params):
-    if params['g'] == 'CVE_gen':
+    if params['g'] in ('CVE_gen', 'CVE-neg_gen'):
         generator = '%s_gen' % params['s'].split('/')[-1][0:-5]
     else:
         generator = params['g']
