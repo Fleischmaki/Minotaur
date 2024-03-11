@@ -73,7 +73,7 @@ def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: 
         return [smt_file] * n
     fpars = get_parameters_dict(False, 0)
     fpars['number_of_mutants'] = n
-    fpars['max_depth'] = 5 # Reduce the depth, we want simpler formulas
+    fpars['max_depth'] = 10 # Reduce the depth, we want simpler formulas
 
     # Find the logic of the formula
     file_data = s2.read_file(smt_file)
