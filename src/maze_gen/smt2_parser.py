@@ -587,7 +587,7 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
     if logic.split('_')[-1].startswith('A'):
         array_size, array_constraints = constrain_array_size(formula)
         if GENERATE_WELL_DEFINED:
-            clauses.extend(array_constraints)
+            clauses.extend(filter(lambda c: len(c.get_free_variables()) > 0, array_constraints))
         constraints.update(array_constraints)
     else:
         array_size = -1
