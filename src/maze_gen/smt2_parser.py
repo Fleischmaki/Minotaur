@@ -78,7 +78,7 @@ def signed(node: FNode,converted_node: str, always=True) -> str:
 def unsigned(node: FNode,converted_node: str, always=True) -> str:
     if not always and (get_bv_width(node) not in (32,64) and not all(map(is_signed, node.args()))):
         return converted_node
-    return '%s %s' % (get_unsigned_cast(node), converted_node)  
+    return '%s %s)' % (get_unsigned_cast(node), converted_node)  
 
 def cast(node: FNode, converted_node: str,always=False) -> str:
     return signed(node, converted_node,always) if is_signed(node) else unsigned(node, converted_node, always)
@@ -86,8 +86,8 @@ def cast(node: FNode, converted_node: str,always=False) -> str:
 def get_unsigned_cast(node: FNode) -> str:
     width = get_bv_width(node)
     if width in (8,16,32,64):
-        return '(' + bits_to_utype(width) + ') '
-    return '(%s)%s&' % (bits_to_utype(width),binary_to_decimal('1'*width))
+        return '((' + bits_to_utype(width) + ') '
+    return '(%s) (%s & ' % (bits_to_utype(width),binary_to_decimal('1'*width))
 
 def get_bv_width(node: FNode) -> int:
     res = 0
@@ -283,7 +283,7 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         cons.write('(')
         cons.write(get_unsigned_cast(node))
         convert(symbs,l, cons)
-        cons.write(')')
+        cons.write('))')
     elif node.is_bv_concat():
         (l,r) = node.args()
         cons.write(unsigned(node,convert_to_string(symbs,l)))
@@ -330,9 +330,9 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         (s,) = node.args()
         cast = get_unsigned_cast(node)
         base = binary_to_decimal("1" + "0" * (get_bv_width(s)))
-        cons.write('(' + cast + base + ') - ' + '(' + cast)
+        cons.write('(' + cast + base + ')) - ' + '(' + cast)
         convert(symbs,s,cons)
-        cons.write(')')
+        cons.write('))')
     elif node.is_bv_rol():
         rotate_helper(symbs, node, cons, "<<")
     elif node.is_bv_ror():
@@ -367,6 +367,8 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
             cons.write("+(%s*" % size)
             convert(symbs,p,cons)
             cons.write(")")
+        if 'BV' in str(node.get_type()): 
+            cons.write(')')
     elif node.is_store():
         (a, p, v) = node.args()
         a_dim = get_array_dim(a)
