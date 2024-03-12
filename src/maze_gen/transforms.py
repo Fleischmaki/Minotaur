@@ -40,6 +40,7 @@ def parse_transformations(t_type: str) -> dict:
     keepId = t_type == 'id'
     dc = 0
     dag = 0
+    last = False
     for t in transformations:
         if t == 'sh':
             shuffle = True
@@ -57,7 +58,9 @@ def parse_transformations(t_type: str) -> dict:
             sat = False
         elif t.startswith('dag'):
             dag = int(t[3:])
-    return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keepId, 'wd' : well_defined, 'mc' : make_const, 'sat' : sat, 'dag': dag}
+        elif t == 'last':
+            last = True
+    return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keepId, 'wd' : well_defined, 'mc' : make_const, 'sat' : sat, 'dag': dag, 'last': last}
 
 def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: bool = True) -> list:
     print("NOTE: Running Storm.")
@@ -73,7 +76,7 @@ def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: 
         return [smt_file] * n
     fpars = get_parameters_dict(False, 0)
     fpars['number_of_mutants'] = n
-    fpars['max_depth'] = 10 # Reduce the depth, we want simpler formulas
+    fpars['max_depth'] = 20 # Reduce the depth, we want simpler formulas
 
     # Find the logic of the formula
     file_data = s2.read_file(smt_file)

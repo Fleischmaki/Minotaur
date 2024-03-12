@@ -243,7 +243,7 @@ def generate_maze_chain(mazes, cycle, t_index, unit):
 def main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, unit, smt_file, CVE_name):
     random.seed(seed)
     transformations = transforms.parse_transformations(t_type)
-    min = 0 if transformations['keepId'] == 1 else 1
+    min = 0 if transformations['keepId'] == 1 else t_numb if transformations['last'] else 1
     if transformations["storm"]:
         smt_files = [smt_file] + transforms.run_storm(smt_file, os.path.join(output_dir,'smt'), seed, t_numb, transformations['sat'])
     else:

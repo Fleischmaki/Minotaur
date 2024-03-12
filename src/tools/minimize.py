@@ -17,7 +17,7 @@ class Minimizer:
             self.seeddir = argv[1]
             self.outdir = argv[2]
             self.gen = argv[3]
-            self.params= {'m':int(id),'a':a,'w':int(w),'h':int(h),'c':int(c),'t':t,'g':g,'s':os.path.join(self.seeddir,s+'.smt2'),'r':int(r)}
+            self.params= {'m':int(id),'a':a,'w':int(w),'h':int(h),'c':int(c),'t':('last_' + t).strip('_'),'g':g,'s':os.path.join(self.seeddir,s+'.smt2'),'r':int(r)}
             if u == '1':
                 self.params['u'] = ''
         else:
@@ -152,6 +152,7 @@ class Minimizer:
 
     def set_fake_params(self):
         self.params['t'] = self.params['t'].replace('storm', '')
+        self.params['t'] = self.params['t'].replace('last', '')
         self.params['t'] = self.params['t'].replace('__', '_')
         self.params['t'] = self.params['t'].strip('_')
         if self.params['t'] == '':
