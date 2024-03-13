@@ -68,7 +68,7 @@ def is_signed(node: FNode) -> str:
 
 def signed(node: FNode,converted_node: str, always=True) -> str:
     width = get_bv_width(node)
-    if not always and (width in (32,64) and all(map(is_signed, node.args()))):
+    if not always and width in (32,64) and all(map(is_signed, node.args())):
         return converted_node
     scast = bits_to_stype(width)  
     if not GENERATE_WELL_DEFINED or width == 64:
@@ -76,17 +76,20 @@ def signed(node: FNode,converted_node: str, always=True) -> str:
     return ('(%s) scast_helper(%s,%s)' % (scast,converted_node,width))
 
 def unsigned(node: FNode,converted_node: str, always=True) -> str:
-    if not always and (get_bv_width(node) not in (32,64) and not all(map(is_signed, node.args()))):
+    width = get_bv_width(node)
+    if not always and width in (32,64) and not all(map(is_signed, node.args())):
         return converted_node
-    return '%s %s)' % (get_unsigned_cast(node), converted_node)  
+    return '%s %s' % (get_unsigned_cast(node), converted_node) + (')' if width not in (8,16,32,64) else '')
 
 def cast(node: FNode, converted_node: str,always=False) -> str:
-    return signed(node, converted_node,always) if is_signed(node) else unsigned(node, converted_node, always)
+    if node.get_type().is_bv_type() or (node.get_type().is_array_type() and node.get_type().elem.type().is_bv_type()) or node.is_theory_relation() and node.arg(0).get_type().is_bv_type():
+        return signed(node, converted_node,always) if is_signed(node) else unsigned(node, converted_node, always)
+    return converted_node
     
 def get_unsigned_cast(node: FNode) -> str:
     width = get_bv_width(node)
     if width in (8,16,32,64):
-        return '((' + bits_to_utype(width) + ') '
+        return '(' + bits_to_utype(width) + ') '
     return '(%s) (%s & ' % (bits_to_utype(width),binary_to_decimal('1'*width))
 
 def get_bv_width(node: FNode) -> int:
@@ -138,12 +141,12 @@ def type_to_c(ntype: node_type) -> str:
     else:
         error(0, ntype)
 
-def convert_helper(symbs: t.Set[str],node: FNode, cons: io.TextIOBase, op: str, recast_result=False):
+def convert_helper(symbs: t.Set[str],node: FNode, cons: io.TextIOBase, op: str):
     (l, r) = node.args()
     l_string = cast(node,convert_to_string(symbs,l))
     r_string = cast(node,convert_to_string(symbs,r))
     res = l_string + op + r_string
-    cons.write(cast(node,'(%s)' % res, always=True) if recast_result else res)
+    cons.write(res)
 
 def check_shift_size(node: FNode) -> None:
     global GENERATE_WELL_DEFINED
@@ -156,8 +159,8 @@ def div_helper(symbs: t.Set[str],node: FNode, cons: io.TextIOBase):
     (l,r) = node.args()
     width = get_bv_width(node)
 
-    lString = cast(l,convert_to_string(symbs, l))
-    rString = cast(r,convert_to_string(symbs, r))
+    lString = cast(node,convert_to_string(symbs, l))
+    rString = cast(node,convert_to_string(symbs, r))
 
     if GENERATE_WELL_DEFINED:
         if node.is_bv_srem():
@@ -224,18 +227,18 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         cons.write(value)
     elif node.is_plus():
         node = deflatten(node.args(),Plus)
-        convert_helper(symbs,node,cons,'+')
+        convert_helper(symbs,node,cons,' + ')
     elif node.is_minus():
-        convert_helper(symbs,node,cons,'-')
+        convert_helper(symbs,node,cons,' - ')
     elif node.is_times():
         node = deflatten(node.args(),Times)
-        convert_helper(symbs,node,cons,'*')
+        convert_helper(symbs,node,cons,' * ')
     elif node.is_div():
-        convert_helper(symbs,node,cons,'/')
+        convert_helper(symbs,node,cons,' / ')
     elif node.is_le():
-        convert_helper(symbs,node,cons,'<=')
+        convert_helper(symbs,node,cons,' <= ')
     elif node.is_lt():
-        convert_helper(symbs,node,cons,'<')
+        convert_helper(symbs,node,cons,' < ')
     elif node.is_bv_sle():
         convert_helper(symbs,node, cons, " <= ")
     elif node.is_bv_ule():
@@ -251,11 +254,11 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         check_shift_size(node)
         convert_helper(symbs,node, cons, " >> ")
     elif node.is_bv_add():
-        convert_helper(symbs,node, cons, " + ", True) # Recast result on all operations that can exceed value ranges
+        convert_helper(symbs,node, cons, " + ") # Recast result on all operations that can exceed value ranges
     elif node.is_bv_sub():
-        convert_helper(symbs,node, cons, " - ", True)
+        convert_helper(symbs,node, cons, " - ")
     elif node.is_bv_mul():
-        convert_helper(symbs,node, cons, " * ", True)# Recast result on all operations that can exceed value ranges
+        convert_helper(symbs,node, cons, " * ")# Recast result on all operations that can exceed value ranges
     elif node.is_bv_udiv() or node.is_bv_sdiv() or node.is_bv_urem() or node.is_bv_srem():
         div_helper(symbs,node, cons)
     elif node.is_bv_xor():
@@ -266,7 +269,7 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         convert_helper(symbs,node, cons, " & ")
     elif node.is_bv_lshl():
         check_shift_size(node)
-        convert_helper(symbs,node, cons, " << ", True)
+        convert_helper(symbs,node, cons, " << ")
     elif node.is_bv_not():
         (b,) = node.args()
         cons.write(unsigned(node,"(~%s)" % convert_to_string(symbs,b)))
@@ -283,7 +286,9 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         cons.write('(')
         cons.write(get_unsigned_cast(node))
         convert(symbs,l, cons)
-        cons.write('))')
+        cons.write(')')
+        if get_bv_width(node) not in (8,16,32,64):
+            cons.write(')')
     elif node.is_bv_concat():
         (l,r) = node.args()
         cons.write(unsigned(node,convert_to_string(symbs,l)))
@@ -328,11 +333,13 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         convert(symbs,n, cons)
     elif node.is_bv_neg():
         (s,) = node.args()
-        cast = get_unsigned_cast(node)
+        ucast = get_unsigned_cast(node)
         base = binary_to_decimal("1" + "0" * (get_bv_width(s)))
-        cons.write('(' + cast + base + ')) - ' + '(' + cast)
+        cons.write(unsigned(node,base) + ' - ' + '(' + ucast)
         convert(symbs,s,cons)
-        cons.write('))')
+        cons.write(')')
+        if get_bv_width(node) not in (8,16,32,64):
+            cons.write(')')
     elif node.is_bv_rol():
         rotate_helper(symbs, node, cons, "<<")
     elif node.is_bv_ror():
@@ -349,13 +356,13 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         dim = get_array_dim(node)
         cons.write("*"*(dim-1))
         var = clean_string(str(node))
-        cons.write(unsigned(node,var) if dim == 0 else var)
+        cons.write(cast(node,var) if dim == 0 else var)
         symbs.add(var)
     elif node.is_select():
         (a, p) = node.args()
         if 'BV' in str(node.get_type()): 
-            cast = get_unsigned_cast(node)
-            cons.write(cast)
+            ucast = get_unsigned_cast(node)
+            cons.write(ucast)
         dim = get_array_dim(a)
         convert(symbs, a, cons)
         if dim == 1:
@@ -367,7 +374,7 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
             cons.write("+(%s*" % size)
             convert(symbs,p,cons)
             cons.write(")")
-        if 'BV' in str(node.get_type()): 
+        if 'BV' in str(node.get_type()) and get_bv_width(node) not in (8,16,32,64): 
             cons.write(')')
     elif node.is_store():
         (a, p, v) = node.args()
