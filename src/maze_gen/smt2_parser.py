@@ -92,11 +92,11 @@ def get_unsigned_cast(node: FNode) -> str:
 def get_bv_width(node: FNode) -> int:
     res = 0
     if node.get_type().is_bool_type():
-        if node.is_bool_constant():
+        if node.is_bool_constant() or node.is_symbol():
             res = 1
         else:
             res = get_bv_width(node.args()[0])
-    elif node.is_bv_constant() or node.is_symbol or node.is_function_application() or node.is_ite() or node.is_select():
+    elif node.is_bv_constant() or node.is_symbol() or node.is_function_application() or node.is_ite() or node.is_select():
         res = node.bv_width()
     elif len(node.args()) == 1:
         (r,) = node.args()
