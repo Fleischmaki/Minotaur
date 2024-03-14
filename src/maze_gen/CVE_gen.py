@@ -35,7 +35,7 @@ class Generator:
         self.insert = list()
         for _ in range(self.size):
             self.insert.append(0)
-        while sum(self.insert) < len(lambda g: len(g > 0),self.groups):
+        while sum(self.insert) < len(self.groups):
             for func in self.sln:
                 self.insert[func] += 1
                 if sum(self.insert) >= len(self.groups):
