@@ -158,6 +158,7 @@ def spawn_containers(conf, works):
     for i in range(len(works)):
         target = works[i]
         procs.append(docker.spawn_docker(conf['memory'], target.index, target.tool,i, target.variant, target.flags ))
+    time.sleep(10)
     commands.wait_for_procs(procs)
 
     procs = []
@@ -165,8 +166,8 @@ def spawn_containers(conf, works):
         target = works[i]
         # Copy maze in the container
         procs.append(docker.set_docker_maze(get_maze_dir(target.maze), target.index,target.tool, target.variant, target.flags ))
+    time.sleep(10)
     commands.wait_for_procs(procs)
-    time.sleep(5)
 
 def run_tools(conf,works):
     duration = conf['duration']
