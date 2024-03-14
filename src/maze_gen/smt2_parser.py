@@ -751,7 +751,7 @@ def get_negated(conds: dict, group: t.Set[str], vars: t.Dict[str,str], numb: int
                     negated_group.add(cond)
             negated_groups.append(negated_group)
     elif n == 0:
-        new_vars['c'] = 'unsigned char' # If we don't have any clauses to negate, revert to choice
+        new_vars['c'] = 'signed char' # If we don't have any clauses to negate, revert to choice
         for i in range(numb):
             cond_neg = '(c %s %d)' % ('>=' if i == numb-1 else '==', i)
             negated_groups.append([cond_neg])

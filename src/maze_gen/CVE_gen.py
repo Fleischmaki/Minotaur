@@ -35,7 +35,7 @@ class Generator:
         self.insert = list()
         for _ in range(self.size):
             self.insert.append(0)
-        while sum(self.insert) < len(self.groups):
+        while sum(self.insert) < len(lambda g: len(g > 0),self.groups):
             for func in self.sln:
                 self.insert[func] += 1
                 if sum(self.insert) >= len(self.groups):
@@ -106,7 +106,7 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
         group_idx = 0
         for idx in range(self.size):
             if self.insert[idx] == 0 and len(self.edges[idx]) > 1:
-                logic_c.append("\t\tchar c = __VERIFIER_nondet_char();")
+                logic_c.append("\t\tsigned char c = __VERIFIER_nondet_char();")
             else:
                 tab_cnt = 0
                 constraints, vars = list(), set()
