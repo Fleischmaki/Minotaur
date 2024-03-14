@@ -36,7 +36,7 @@ def main(dest_dir, expected_result):
 
     elif ('VERIFICATION INCONCLUSIVE' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'uk')
-    elif ('ERROR' in resfile):
+    elif ('ERROR' or '--- begin invariant violation report ---' in resfile):
         save_tc(dest_dir, respath, start_time, end_time, 'er')
     else:
         save_tc(dest_dir, respath, start_time, end_time, 'to')
