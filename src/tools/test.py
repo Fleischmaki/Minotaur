@@ -157,7 +157,8 @@ def spawn_containers(conf, works):
     procs = []
     for i in range(len(works)):
         target = works[i]
-        docker.spawn_docker(conf['memory'], target.index, target.tool,i, target.variant, target.flags ).wait()
+        procs.append(docker.spawn_docker(conf['memory'], target.index, target.tool,i, target.variant, target.flags ))
+    commands.wait_for_procs(procs)
 
     procs = []
     for i in range(len(works)):
