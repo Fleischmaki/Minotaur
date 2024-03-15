@@ -26,3 +26,6 @@ signed long __VERIFIER_nondet_long(){
 unsigned long __VERIFIER_nondet_ulong(){
   _mopsa_rand_u64();
 }
+__Bool __VERIFIER_nondet_bool(){
+  _mopsa_rand_s8() < 0;
+}
