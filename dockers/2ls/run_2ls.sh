@@ -14,5 +14,5 @@ mkdir -p $OUTDIR
 
 # Create dummy file to indicate running start
 touch $WORKDIR/.start
-timeout $2s /home/maze/tools/2ls/src/2ls/2ls ${@:3} --inline-partial 4 $1 &> $OUTDIR/res
+timeout $2s /home/maze/tools/2ls/src/2ls/2ls --inline ${@:3} $1 &> $OUTDIR/res
 touch $WORKDIR/.end
