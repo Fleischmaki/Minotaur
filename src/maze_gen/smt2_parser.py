@@ -771,15 +771,17 @@ def get_negated(conds: dict, group: t.Set[str], vars: t.Dict[str,str], numb: int
                     cond_neg = "(!" + cond + ")"
                     break
             new_group.add(cond_neg)
-            for cond in group:
+            for i, cond in enumerate(group):
                 cond_vars = extract_vars(cond, vars)
+                print(cond_vars)
                 for v in cond_vars:
-                    new_var = '_' + v
+                    new_var = "__neg%i_%s" % (i, v)
                     cond_new = cond.replace(v.split('[')[0], new_var.split('[')[0])
                     new_vars[new_var] = vars[v]
                     new_group.add(cond_new)
             negated_groups.append(new_group)
     vars.update(new_vars)
+    print(negated_groups, vars)
     return negated_groups, vars 
 
 def get_subgroup(groups: t.List[set], vars_by_groups: t.List[t.Dict[str,str]], seed: int):
