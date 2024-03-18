@@ -77,7 +77,7 @@ def signed(node: FNode,converted_node: str, always=True) -> str:
 
 def unsigned(node: FNode,converted_node: str, always=True) -> str:
     width = get_bv_width(node)
-    if not always and width in (32,64) and not all(map(is_signed, node.args())):
+    if not always and width in (32,64) and (len(node.args()) == 0 or not all(map(is_signed, node.args()))):
         return converted_node
     return '%s %s' % (get_unsigned_cast(node), converted_node) + (')' if width not in (8,16,32,64) else '')
 
@@ -282,13 +282,18 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         cons.write(signed(l,res))
         cons.write(')')
     elif node.is_bv_zext():
+        new_width = get_bv_width(node)
         (l,) = node.args()
-        cons.write('(')
-        cons.write(get_unsigned_cast(node))
-        convert(symbs,l, cons)
-        cons.write(')')
-        if get_bv_width(node) not in (8,16,32,64):
+        old_width = get_bv_width(l)
+        if not (old_width < 32 and new_width == 32) and not (old_width < 64 and new_width == 64):
+            cons.write('(')
+            cons.write(get_unsigned_cast(node))
+            convert(symbs,l, cons)
             cons.write(')')
+            if new_width not in (8,16,32,64):
+                cons.write(')')
+        else:
+            convert(symbs, l, cons)
     elif node.is_bv_concat():
         (l,r) = node.args()
         cons.write(unsigned(node,convert_to_string(symbs,l)))
@@ -673,10 +678,11 @@ def daggify(formula: FNode, limit: int):
                             old = sub
                             sub = sub.substitute(subs) 
                         subs.update({sub: var})
-                        formula = And(EqualsOrIff(sub,var),formula.substitute({sub: var}))
+                        formula = formula.substitute({sub: var})
             else:
                 seen[sub.node_id()] = 0
                 next.append(sub)
+    formula = And(*[EqualsOrIff(sub,var) for (sub,var) in subs.items()], formula)
     return formula, set(subs.values())
 
 
@@ -738,7 +744,7 @@ def get_negated(conds: dict, group: t.Set[str], vars: t.Dict[str,str], numb: int
     for cond in group:
         if conds[cond] == True:
             n = n + 1
-   
+    print(n,numb)
     if n >= numb:
         negated = set()
         for i in range(numb):
@@ -770,7 +776,7 @@ def get_negated(conds: dict, group: t.Set[str], vars: t.Dict[str,str], numb: int
                 cond_vars = extract_vars(cond, vars)
                 for v in cond_vars:
                     new_var = '_' + v
-                    cond_new = cond.replace(v, new_var)
+                    cond_new = cond.replace(v.split('[')[0], new_var.split('[')[0])
                     new_vars[new_var] = vars[v]
                     new_group.add(cond_new)
             negated_groups.append(new_group)
@@ -843,7 +849,7 @@ def main(file_path, resfile):
     return check_files(file_path, resfile)
 
 def check_files(file_path, resfile):
-    set_well_defined(True)
+    set_well_defined(False)
     if os.path.isdir(file_path):
         print("Going into dir %s\n" % file_path)
         for file in sorted(os.listdir(file_path)):
