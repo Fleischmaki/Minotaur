@@ -20,6 +20,9 @@ def load_config(path):
         conf['maze_gen'] = 'local'
     if 'expected_result' not in conf.keys():
         conf['maze_gen'] = 'error'
+    if 'abort_on_error' not in conf.keys():
+        conf['maze_gen'] = False
+
 
     assert conf['repeats'] > 0
     assert conf['duration'] > 0
@@ -62,9 +65,8 @@ def get_random_params(conf):
                 body += pick_values(tkey, tvalue, '_')
             body = body[:-1] # remove last _
         elif key == 's':
-            if value.endswith('.smt2'):
-                body = value
-            else:
+            body = value
+            while os.path.isdir(body):
                 body = os.path.join(value,random.choice(os.listdir(value)))
         else:
             body = pick_values('', value, '')
@@ -177,6 +179,7 @@ def run_tools(conf,works):
     time.sleep(duration + 15) 
 
 def store_outputs(conf, out_dir, works):
+    has_bug = False
     for i in range(len(works)):
         target = works[i]
         docker.collect_docker_results(target.tool, target.index, target.variant, target.flags, conf['expected_result'])
@@ -195,13 +198,15 @@ def store_outputs(conf, out_dir, works):
             if '_' in filename:
                 runtime, tag = filename.split('_')
                 if (tag == 'fn'):
+                    if conf['abort_on_error']:
+                        has_bug = True
                     commands.run_cmd(CP_CMD % (get_maze_dir(maze), out_path)) # Keep buggy mazes
                 write_summary(conf, out_dir, w, tag, runtime)
 
         if runtime == 'notFound' or tag == 'notFound':
             write_summary(conf, out_dir, w, tag, runtime)
-
     time.sleep(5)
+    return has_bug
 
 def write_summary(conf,out_dir, target,tag,runtime):
     maze, tool, id, params, variant, flags = target
@@ -254,26 +259,26 @@ def cleanup(completed):
 def get_minotaur_root():
     return os.path.dirname(os.path.realpath(sys.modules['__main__'].__file__))
 
-def main(conf_path, out_dir):
+def main(conf, out_dir):
     os.system('mkdir -p %s' % out_dir)
-
-    conf = load_config(conf_path)
-
     targets = get_targets(conf)
     write_summary_header(conf, out_dir)
     num_mazes = 0
-        
-    while len(targets) > 0:
+    done = False
+
+    while len(targets) > 0 and not done:
         num_mazes, works, to_remove = fetch_works(conf, targets, num_mazes)
         spawn_containers(conf, works)
         run_tools(conf, works)
-        store_outputs(conf, out_dir, works)
+        done = store_outputs(conf, out_dir, works)
         kill_containers(works)
         cleanup(to_remove) 
     
     commands.run_cmd(REMOVE_CMD % get_temp_dir())
+    return len(targets)
 
 def load(argv):
     conf_path = os.path.join(get_minotaur_root(),'test',argv[0] + '.conf.json')
     out_dir = argv[1]
-    main(conf_path, out_dir)
+    conf = load_config(conf_path)
+    main(conf, out_dir)

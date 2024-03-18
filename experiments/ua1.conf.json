@@ -1,0 +1,44 @@
+{
+	"verbosity": "all",
+	"repeats" : 10,
+	"mazes" : 100,
+	"duration" : 120,
+	"workers" : 6,
+	"memory" : 4,
+	"transforms" : 10,
+	"maze_gen" : "local",
+	"expected_result": "error",
+	"tool" : {
+		"ultimate-release": {
+			"variant" : ["ut", "ua", "ugc", "uk"]
+		}
+	},
+	"parameters" : {
+		"u" : [0,1],
+		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
+		"w" : {
+			"min" : 4,
+			"max" : 7
+		},
+		"h" : {
+			"min" : 5,
+			"max" : 7
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 0
+		},
+		"t" : {
+			"storm": [1],
+			"wd": [0],
+			"mc": [0,25,50,75,100],
+			"dag": [0,2,3,4]
+		},
+		"g": ["CVE_gen"],
+		"s": "/home/markus/MasterThesis/bug_seeds/bench_12285.smt2",
+		"r" : {
+			"min" : 0,
+			"max" : 65536
+		}
+	}
+}
