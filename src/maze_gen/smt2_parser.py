@@ -744,7 +744,6 @@ def get_negated(conds: dict, group: t.Set[str], vars: t.Dict[str,str], numb: int
     for cond in group:
         if conds[cond] == True:
             n = n + 1
-    print(n,numb)
     if n >= numb:
         negated = set()
         for i in range(numb):
