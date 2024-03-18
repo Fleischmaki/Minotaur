@@ -773,6 +773,7 @@ def get_negated(conds: dict, group: t.Set[str], vars: t.Dict[str,str], numb: int
             new_group.add(cond_neg)
             for i, cond in enumerate(group):
                 cond_vars = extract_vars(cond, vars)
+                print(cond_vars)
                 for v in cond_vars:
                     new_var = "__neg%i_%s" % (i, v)
                     cond_new = cond.replace(v.split('[')[0], new_var.split('[')[0])
