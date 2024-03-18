@@ -152,15 +152,13 @@ class Minimizer:
 
     def set_fake_params(self):
         self.params['t'] = self.params['t'].replace('storm', '')
-        self.params['t'] = self.params['t'].replace('last', '')
         self.params['t'] = self.params['t'].replace('__', '_')
         self.params['t'] = self.params['t'].strip('_')
-        if self.params['t'] == '':
+        if self.params['t'] == '' or self.params['t'] == 'last':
             self.params['t'] = 'keepId'
             self.params['m'] = 0
-        elif 'wd' in self.params['t'] or 'unsat' in self.params['t']:
+        else:
             self.params['m'] = 1
-
 def read_mutant(mutant: str):
     file_data = sp.read_file(mutant)
     return list(file_data.clauses), file_data.logic
