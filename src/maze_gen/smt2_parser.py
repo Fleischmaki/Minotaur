@@ -780,7 +780,6 @@ def get_negated(conds: dict, group: t.Set[str], vars: t.Dict[str,str], numb: int
                     new_group.add(cond_new)
             negated_groups.append(new_group)
     vars.update(new_vars)
-    print(negated_groups, vars)
     return negated_groups, vars 
 
 def get_subgroup(groups: t.List[set], vars_by_groups: t.List[t.Dict[str,str]], seed: int):
