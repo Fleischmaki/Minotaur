@@ -68,7 +68,7 @@ def is_signed(node: FNode) -> str:
 
 def signed(node: FNode,converted_node: str, always=True) -> str:
     width = get_bv_width(node)
-    if not always and width in (32,64) and (len(node.args()) == 0 or (all(map(is_signed, node.args())) and all(map(lambda n: get_bv_width(n)<=width)))):
+    if not always and width in (32,64) and (len(node.args()) == 0 or (all(map(is_signed, node.args())) and all(map(lambda n: get_bv_width(n)<=width,node.args())))):
         return converted_node
     scast = bits_to_stype(width)  
     if not GENERATE_WELL_DEFINED or width == 64:
@@ -77,7 +77,7 @@ def signed(node: FNode,converted_node: str, always=True) -> str:
 
 def unsigned(node: FNode,converted_node: str, always=True) -> str:
     width = get_bv_width(node)
-    if not always and width in (32,64) and (len(node.args()) == 0 or (not all(map(is_signed, node.args())) and all(map(lambda n: get_bv_width(n)<=width)))):
+    if not always and width in (32,64) and (len(node.args()) == 0 or (not all(map(is_signed, node.args())) and all(map(lambda n: get_bv_width(n)<=width,node.args())))):
         return converted_node
     return '%s %s' % (get_unsigned_cast(node), converted_node) + (')' if width not in (8,16,32,64) else '')
 
