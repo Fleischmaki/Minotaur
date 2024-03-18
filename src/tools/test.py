@@ -21,7 +21,7 @@ def load_config(path):
     if 'expected_result' not in conf.keys():
         conf['maze_gen'] = 'error'
     if 'abort_on_error' not in conf.keys():
-        conf['maze_gen'] = False
+        conf['abort_on_error'] = False
 
 
     assert conf['repeats'] > 0
