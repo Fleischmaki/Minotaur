@@ -1,11 +1,10 @@
-import sys, os
-import subprocess
 from src.tools import *
+import sys
 
 if __name__ == '__main__':
     mode = sys.argv[1]
     if not mode.startswith("--"):
-        mode = input("Run tests [t], generate maze [g] or minimize [m]")
+        mode = input("Run tests [t], experiment [e], generate maze [g] or minimize [m]")
         argv = sys.argv[1:]
     else:
         mode = mode[2:]
@@ -17,5 +16,7 @@ if __name__ == '__main__':
         minimize.Minimizer(argv).minimize()
     elif mode == "g":
         generate.load(argv)
+    elif mode == "e":
+        experiment.load(argv)
     else:
         print("Invalid mode")
