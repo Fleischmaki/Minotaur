@@ -772,10 +772,10 @@ def get_negated(conds: dict, group: t.Set[str], vars: t.Dict[str,str], numb: int
                     break
             new_group.add(cond_neg)
             for j, cond in enumerate(group):
-                cond_vars = extract_vars(cond, vars)
+                cond_vars = sorted(list(extract_vars(cond, vars).keys()),key=len,reverse=True)
                 for v in cond_vars:
-                    new_var = "__neg_%d_%d__%s" % (i,j, v)
-                    cond_new = cond.replace(v.split('[')[0], new_var.split('[')[0])
+                    new_var = "__neg_%d_%d__%s" % (i,j,v)
+                    cond_new = cond.replace("(%s)" % v.split('[')[0], "(%s)" % new_var.split('[')[0])
                     new_vars[new_var] = vars[v]
                     new_group.add(cond_new)
             negated_groups.append(new_group)
