@@ -285,7 +285,6 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         new_width = get_bv_width(node)
         (l,) = node.args()
         old_width = get_bv_width(l)
-        print(old_width, new_width)
         if not (old_width < 32 and new_width == 32) and not (32 < old_width and old_width < 64 and new_width == 64):
             cons.write('(')
             cons.write(get_unsigned_cast(node))
