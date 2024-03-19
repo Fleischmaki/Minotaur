@@ -73,7 +73,7 @@ def signed(node: FNode,converted_node: str, always=True) -> str:
     scast = bits_to_stype(width)  
     if not GENERATE_WELL_DEFINED or width == 64:
         return '(%s) %s' % (scast, converted_node)  
-    return ('(%s) scast_helper(%s,%s)' % (scast,converted_node,width))
+    return ('scast_helper(%s,%s)' % (converted_node,width))
 
 def unsigned(node: FNode,converted_node: str, always=True) -> str:
     width = get_bv_width(node)
@@ -277,7 +277,7 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         (l,) = node.args()
         res = convert_to_string(symbs,l)
         cons.write('((')
-        cons.write(bits_to_stype(get_bv_width(node)))
+        cons.write(bits_to_utype(get_bv_width(node)))
         cons.write(')')
         cons.write(signed(l,res))
         cons.write(')')
@@ -285,7 +285,8 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         new_width = get_bv_width(node)
         (l,) = node.args()
         old_width = get_bv_width(l)
-        if not (old_width < 32 and new_width == 32) and not (old_width < 64 and new_width == 64):
+        print(old_width, new_width)
+        if not (old_width < 32 and new_width == 32) and not (32 < old_width and old_width < 64 and new_width == 64):
             cons.write('(')
             cons.write(get_unsigned_cast(node))
             convert(symbs,l, cons)
