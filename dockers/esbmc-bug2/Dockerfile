@@ -1,6 +1,9 @@
 FROM minotaur-esbmc-base
 
+### Build esbmc
 WORKDIR /home/maze/tools/esbmc
+# RUN git checkout b426077 to see if previous fix caused this
+RUN git checkout e5e0074
 RUN mkdir build 
 WORKDIR /home/maze/tools/esbmc/build
 RUN cmake .. -GNinja -DDOWNLOAD_DEPENDENCIES=On -DBUILD_STATIC=On -DBoolector_DIR=$PWD/../../boolector-release -DZ3_DIR=$PWD/../../z3 -DENABLE_MATHSAT=ON -DMathsat_DIR=$PWD/../../mathsat -DENABLE_YICES=On -DYices_DIR=$PWD/../../yices -DCVC4_DIR=$PWD/../../cvc4 -DGMP_DIR=$PWD/../../gmp -DCMAKE_INSTALL_PREFIX:PATH=$PWD/../../release
@@ -10,8 +13,8 @@ RUN ninja install
 WORKDIR /home/maze/tools
 USER maze
 
-ADD run_esbmc.sh /home/maze/tools/run_esbmc.sh
-RUN sudo chmod +x /home/maze/tools/run_esbmc.sh
+ADD run_esbmc-bug2.sh /home/maze/tools/run_esbmc-bug2.sh
+RUN sudo chmod +x /home/maze/tools/run_esbmc-bug2.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 
 ### Cleanup
