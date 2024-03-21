@@ -99,6 +99,8 @@ def get_bv_width(node: FNode) -> int:
             res = 1
         else:
             res = get_bv_width(node.args()[0])
+    elif node.is_bv_extract():
+        res = node.bv_extract_end() - node.bv_extract_start()  + 1
     elif node.is_bv_constant() or node.is_symbol() or node.is_function_application() or node.is_ite() or node.is_select():
         res = node.bv_width()
     elif len(node.args()) == 1:
