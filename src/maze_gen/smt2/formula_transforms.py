@@ -172,3 +172,28 @@ def extract_vars(cond: t.List[str], variables: t.Dict[str,str]):
             vars[var] = vartype
     return vars
 
+def daggify(formula: FNode, limit: int):
+    next = [formula]
+    seen = dict()
+    subs = dict()
+    while len(next) > 0:
+        node = next.pop()
+        for sub in node.args():
+            if sub.node_id() in seen.keys(): 
+                seen[sub.node_id()] += 1
+                if seen[sub.node_id()] == limit:
+                    if not (sub.is_constant() or sub.is_symbol() or sub.is_function_application() or sub.is_not()):
+                        var = FreshSymbol(sub.get_type())
+                        # Compute fixpoint over substitution 
+                        old = sub
+                        sub = old.substitute(subs)
+                        while old != sub:
+                            old = sub
+                            sub = sub.substitute(subs) 
+                        subs.update({sub: var})
+                        formula = formula.substitute({sub: var})
+            else:
+                seen[sub.node_id()] = 0
+                next.append(sub)
+    formula = And(*[EqualsOrIff(sub,var) for (sub,var) in subs.items()], formula)
+    return formula, set(subs.values())

@@ -1,10 +1,8 @@
-import sys, random, os
+import sys, random
 from collections import defaultdict, OrderedDict, namedtuple
-import io
 
 from pysmt.smtlib.parser import SmtLibParser
 from pysmt.shortcuts import *
-from pysmt.typing import INT
 from pysmt.oracles import get_logic
 from pysmt.smtlib.commands import SET_LOGIC
 from pysmt.fnode import FNode
