@@ -15,6 +15,6 @@ OUTFILE=$OUTDIR/$3
 mkdir -p $OUTDIR
 
 # Create dummy file to indicate running start
-touch $WORKDIR/.start
-timeout $2s /home/maze/tools/release/bin/esbmc --timeout $2s ${@:4} $1 &> $OUTDIR/res 
-touch $WORKDIR/.end
+touch $WORKDIR/.start$3
+timeout --foreground $2s /home/maze/tools/release/bin/esbmc --timeout $2s ${@:4} $1 &> $OUTDIR/$3 
+touch $WORKDIR/.end$3

@@ -1,19 +1,21 @@
 {
 	"verbosity": "summary",
 	"repeats" : 5,
-	"mazes" : [1,5,10,20,30],
-	"duration" : [10],
-	"workers" : 6,
+	"mazes" : [-1],
+	"duration" : [30],
+	"workers" : 5,
 	"memory" : 4,
-	"transforms" : [60,12,6,3,2],
-	"maze_gen" : "local",
+	"transforms" : [15],
+	"seed": [1,2,3,4,5],
+	"batch_size": [1],
+	"maze_gen" : "container",
 	"expected_result": "error",
 	"tool" : {
 		"cpa-release": {
 			"variant" : ["kInduction"]
 		}
 	},
-	"avg": 10,
+	"avg": 1,
 	"parameters" : {
 		"u" : [0,1],
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],

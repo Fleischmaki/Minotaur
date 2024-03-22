@@ -1,12 +1,15 @@
 {
-	"verbosity": "all",
-	"repeats" : 10,
-	"mazes" : 100,
-	"duration" : 120,
-	"workers" : 6,
+	"verbosity": "summary",
+	"repeats" : 5,
+	"avg" : 1,
+	"mazes" : [-1],
+	"duration" : [30],
+	"workers" : 5,
 	"memory" : 4,
-	"transforms" : 10,
-	"maze_gen" : "local",
+	"transforms" : [15],
+	"seed": [1,2,3,4,5],
+	"batch_size": [1],
+	"maze_gen" : "container",
 	"expected_result": "error",
 	"tool" : {
 		"ultimate-release": {
