@@ -257,7 +257,7 @@ def write_summary(conf,out_dir, target,tag,runtime):
     offset = 0 if 'keepId' in params['t'] else 1
     with open(out_dir + '/summary.csv', 'a') as f:
         u = '0' if 'u' not in params.keys() else '1'
-        f.write(tool + ',' + variant + ',' + flags + ',' + str(conf['parameters']['m'] % conf['transforms'] + offset) + ',' + u + ',')
+        f.write(tool + ',' + variant + ',' + flags + ',' + str(params['m'] % conf['transforms'] + offset) + ',' + u + ',')
         for key, value in params.items():
             if key == 's':
                 f.write(str(params['s'].split('/')[-1] + ','))
