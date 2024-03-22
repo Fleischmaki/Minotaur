@@ -21,6 +21,10 @@ def error(flag: int, *info):
     else:
         raise ValueError("ERROR: an unknown error occurred")
 
+def set_well_defined(wd: Bool):
+    global GENERATE_WELL_DEFINED
+    GENERATE_WELL_DEFINED = wd 
+
 def binary_to_decimal(binary: str, unsigned : bool = True) -> str:
     if len(binary) > 64:
         error(1, "BV width > 64: ",binary)

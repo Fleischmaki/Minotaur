@@ -97,6 +97,7 @@ def add_used_variables(variables: set, ldecl_arr: t.List[FNode], symbs: t.Set[st
 def set_well_defined(generate_well_defined: bool):
     global GENERATE_WELL_DEFINED
     GENERATE_WELL_DEFINED = generate_well_defined
+    converter.set_well_defined(generate_well_defined)
 
 def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
     constraints = set()
