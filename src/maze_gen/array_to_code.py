@@ -241,7 +241,6 @@ def generate_maze_chain(mazes, cycle, t_index, unit):
     return size,graph,solution
 
 def main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, unit, smt_file, CVE_name):
-    random.seed(seed)
     transformations = transforms.parse_transformations(t_type)
     min = 0 if transformations['keepId'] == 1 else t_numb if transformations['last'] else 1
     if transformations["storm"]:

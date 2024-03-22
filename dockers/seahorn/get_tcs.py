@@ -20,31 +20,38 @@ OUTDIR = '/home/usea/workspace/outputs'
 def main(dest_dir,expected_result):           
     # Create destination directory
     os.system('mkdir -p %s' % dest_dir)
-    start_file = os.path.join(WORKDIR, '.start')
-    start_time = os.path.getmtime(start_file)
-    end_file = os.path.join(WORKDIR, '.end')
-    end_time = os.path.getmtime(end_file)       
+    for file in filter(lambda f: '_' in f, os.listdir(OUTDIR)):
+        respath = '%s/%s' %(OUTDIR,file)
+        try:
+            start_file = os.path.join(WORKDIR, '.start%s' % file)
+            start_time = os.path.getmtime(start_file)
+            end_file = os.path.join(WORKDIR, '.end%s' % file)
+            end_time = os.path.getmtime(end_file)       
+            resfile = open(respath, "r").read()
+            file_dir = os.path.join(dest_dir,"maze_%s" % file) 
+            os.system('mkdir -p %s' % file_dir)
+        except Exception as e:
+            print("NOTE: Failed to parse file %s: %s", file, str(e))
+            continue
 
-    respath = '%s/res' %(OUTDIR)
-    resfile = open(respath, 'r').read()
+        resfile = open(respath, "r").read()
+        # False negatives
+        if ('unsat' in resfile):
+            save_tc(file_dir, respath, start_time, end_time, 'negative', expected_result)
+        # True positives
+        elif ('sat' in resfile):
+            save_tc(file_dir, respath, start_time, end_time, 'positive', expected_result)
 
-    # False negatives
-    if ('unsat' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time, 'negative', expected_result)
-    # True positives
-    elif ('sat' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time, 'positive', expected_result)
+        
+        ## Crashes/Errors
+        elif ('ERROR' in resfile):
+            save_tc(file_dir, respath, start_time, end_time, 'er')
 
-    
-    ## Crashes/Errors
-    elif ('ERROR' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time, 'er')
-
-    # Timeout
-    else: 
-        save_tc(dest_dir, respath, start_time, end_time, 'to')
+        # Timeout
+        else: 
+            save_tc(file_dir, respath, start_time, end_time, 'to')
 
 if __name__ == '__main__':
-    dest_dir = sys.argv[1]
+    dest_dir = sys.argv[1]    
     expected_result = sys.argv[2]
-    main(dest_dir,expected_result)
+    main(dest_dir, expected_result)

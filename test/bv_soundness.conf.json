@@ -23,7 +23,7 @@
 		"cbmc": {
 			"variant" : ["--boolector","--mathsat","--cvc4","--yices","--z3"],
 			"choose" : {
-				"--paths= " : [0,"fifo","lifo"],
+				"--paths " : [0,"fifo","lifo"],
 				"--" : [0,"full-slice","reachability-slice","reachability-slice-fb"]
 			},
 			"toggle" : ["--refine"]

@@ -21,17 +21,18 @@ RUN apt-get update && apt-get install -y \
     openjdk-8-jre \
     lld \
     pkg-config \
+    lcov \
 && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/maze/tools
-
+USER maze
 ### Get CMAKE manually, as we need version >= 3.18
 RUN wget https://github.com/Kitware/CMake/releases/download/v3.27.2/cmake-3.27.2-linux-x86_64.tar.gz
 RUN tar xf cmake-3.27.2-linux-x86_64.tar.gz
 RUN mv cmake-3.27.2-linux-x86_64 cmake
 ENV PATH=$PATH:/home/maze/tools/cmake/bin
 
-### Install ESBM
+### Install ESBMC
 WORKDIR /home/maze/tools
 RUN ls
 RUN git clone https://github.com/esbmc/esbmc

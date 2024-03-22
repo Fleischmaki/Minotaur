@@ -6,7 +6,7 @@
 	"memory" : 4,
 	"transforms" : 15,
 	"maze_gen" : "container",
-	"expected_result": "safe",
+	"expected_result": "error",
 	"tool" : { 
 		"cpa" : {
 			"variant" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution", "invariantGeneration", "smg2","bmc"]
@@ -21,11 +21,10 @@
 			"variant" : ["Automizer Default","Taipan Default","Kojak Default","GemCutter Default", "Automizer Bitvector","Taipan Bitvector","Kojak Bitvector","GemCutter Bitvector"]
 		},
 		"cbmc": {
-			"variant" : ["--boolector","--mathsat","--cvc4","--yices","--z3"],
+			"variant" : ["--cvc4","--yices","--z3"],
 			"choose" : {
 				"--paths " : [0,"fifo","lifo"],
-				"--" : [0,"full-slice","reachability-slice","reachability-slice-fb"],
-				"" : ["--bounds-check --pointer-check --div-by-zero-check --signed-overflow-check --undefined-shift-check "]
+				"--" : [0,"full-slice","reachability-slice","reachability-slice-fb"]
 			},
 			"toggle" : ["--refine"]
 		},
@@ -33,24 +32,22 @@
 			"variant" : ["", "--inline", "--incremental-bmc", "--k-induction", "--preconditions", "--preconditions --sufficient"],
 			"toggle" : ["--context-sensitive"],
 			"choose" : {
-				"" : ["--intervals", "--octagons", "--equalities", "--havoc", "--heap", "--heap --intervals", "--heap --zones", "--arrays"],
-				"--" : ["bounds-check --pointer-check --div-by-zero-check --signed-overflow-check --undefined-shift-check"]
+				"" : ["--intervals", "--octagons", "--equalities", "--havoc", "--heap", "--heap --intervals", "--heap --zones", "--arrays"]	
 			}
 		},
 		"esbmc": {
-			"variant" : ["","--bv","--ir"],
-			"toggle" : ["--array-flattener","--unwind 1024",
-						"--interval-analysis-extrapolate","--interval-analysis-ibex-contractor","--interval-analysis-simplify","--interval-analysis-no-contract",
-						"--interval-analysis-eval-assumptions", "--interval-analysis-arithmetic","--interval-analysis-bitwise", "--interval-analysis-modular",
-						"--interval-analysis-narrowing", "--interval-analysis-extrapolate-under-approximate"],
+			"variant" : [""],
+			"toggle" : ["--smt-during-symex","--array-flattener","--unwind 1024"],
 			"choose" : {
 				"" : ["--z3", "--boolector", "--cvc", "--mathsat", "--yices", "--bitwuzla", "--bv"],
 				"--incremental-bmc" : [0,""," --falsification"],
 				"--tuple" : [0,"-node-flattener", "-sym-flattener"],
 				"--k-induction": [0,""," --bidirectional"],
-				"--interval-analysis": [0,"", "-wrapped"],
-				"--smt-during-symex": [0,""," --smt-symex-guard"," --smt-symex-assert"]
+				"--interval-analysis": [0,"", "-wrapped", "-arithmetic","-bitwise", "-modular"]
 			}
+		},
+		"mopsa": {
+			"variant" : ["default", "cell-itv", "cell-itv-congr", "cell-pack-rel-itv", "cell-itv-powerset", "cell-itv-excluded-powerset", "cell-itv-zero", "cell-itv-congr"]
 		}
 	},
 	"parameters" : {
@@ -70,13 +67,13 @@
 		},
 		"t" : {
 			"storm": [1],
+			"wd": [0,1],
 			"mc": [0,25,50,75,100],
-			"wd": [1],
-			"unsat": [1],
-			"dag" : [0,2,3,4]
+			"dag": [0,2,3,4],
+			"rw": [0,25,50]
 		},
-		"g": ["CVE_gen","CVE-neg_gen"],
-		"s": "/home/mfleischmann/unsat_seeds",
+		"g": ["CVE_gen", "CVE-neg_gen"],
+		"s": "/home/mfleischmann/klee_smts",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y \
 RUN git clone https://github.com/staticafi/symbiotic
 WORKDIR /home/maze/tools/symbiotic
 RUN yes | scripts/install-ubuntu.sh 
-RUN ./build.sh
+RUN ./build.sh 
 
 ### Set up directory structure
 USER maze

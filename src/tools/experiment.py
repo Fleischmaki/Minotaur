@@ -47,18 +47,15 @@ def load(argv):
 
     for i in range(runs):
         curr_conf = dict(conf)
-        for key in ['transforms','duration','repeats']:
+        for key in ['transforms','duration','repeats', 'batch_size', 'seed']:
             set_param_value(curr_conf, conf, key, i)
-        total_targets = max(curr_conf['transforms'],1) * curr_conf['repeats'] 
         times = []
-        targets = []
         for j in range(conf['avg']):
             start = time.time()
-            remaining_targets = test.main(curr_conf, os.path.join(outdir, 'run%d_%d' % (i,j))) 
+            test.main(curr_conf, os.path.join(outdir, 'run%d_%d' % (i,j))) 
             end = time.time()
             times.append(end-start)
-            targets.append(total_targets - remaining_targets)
-        resfile.write("%d,%f,%d\n" % (i, sum(times)/len(times),sum(targets)/len(targets)))
+        resfile.write("%d,%f\n" % (i, sum(times)/len(times)))
 
 def set_param_value(new_conf, old_conf, key, i):
     new_conf[key] = old_conf[key][i % len(old_conf[key])]

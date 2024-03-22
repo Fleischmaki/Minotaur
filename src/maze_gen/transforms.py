@@ -24,7 +24,7 @@ def make_const(variables: dict, mc: int):
         const = symbols.pop(random.randrange(0,len(symbols)))
         variables[const] = 'const ' + variables[const]
 
-def coshuffle(list1: list,list2: list) -> (list, list):
+def coshuffle(list1: list,list2: list) -> 'tuple[list, list]':
     temp = list(zip(list1,list2)) #shuffle groups and vars together
     random.shuffle(temp)
     r1, r2 = zip(*temp)

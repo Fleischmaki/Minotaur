@@ -9,11 +9,11 @@ WORKDIR=/home/maze/workspace
 
 INDIR=$WORKDIR/inputs
 OUTDIR=$WORKDIR/outputs
-OUTFILE=$OUTDIR/res
+OUTFILE=$OUTDIR/$3
 
 mkdir -p $OUTDIR
 
 # Create dummy file to indicate running start
-touch $WORKDIR/.start
-timeout $2s /home/maze/tools/symbiotic/scripts/symbiotic --explicit-symbolic --exit-on-error $1 &> $OUTDIR/res 
-touch $WORKDIR/.end
+touch $WORKDIR/.start$3
+timeout --foreground $2s /home/maze/tools/symbiotic/scripts/symbiotic --explicit-symbolic --exit-on-error $1 &> $OUTDIR/$3 
+touch $WORKDIR/.end$3

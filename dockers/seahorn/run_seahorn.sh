@@ -7,7 +7,7 @@ WORKDIR=/home/usea/workspace
 
 INDIR=$WORKDIR/inputs
 OUTDIR=$WORKDIR/outputs
-OUTFILE=$OUTDIR/res
+OUTFILE=$OUTDIR/$3
 
 mkdir -p $OUTDIR
 
@@ -16,6 +16,6 @@ mkdir -p $OUTDIR
 # sed -i "s/ = __VERIFIER_nondet_.*()//g" $1
 
 # Create dummy file to indicate running start
-touch $WORKDIR/.start
-timeout $2s sea $3 -m=64 -unroll-threshold=1024 ${@:4} $1 &> $OUTFILE
-touch $WORKDIR/.end
+touch $WORKDIR/.start$3
+timeout --foreground $2s sea $4 --inline --track=mem -m=64 -unroll-threshold=1025 ${@:5} $1 &> $OUTFILE
+touch $WORKDIR/.end$3

@@ -20,39 +20,46 @@ OUTDIR = '/home/maze/workspace/outputs'
 def main(dest_dir,expected_result):           
     # Create destination directory
     os.system('mkdir -p %s' % dest_dir)
+    for file in filter(lambda f: '_' in f, os.listdir(OUTDIR)):
+        respath = '%s/%s' %(OUTDIR,file)
+        try:
+            start_file = os.path.join(WORKDIR, '.start%s' % file)
+            start_time = os.path.getmtime(start_file)
+            end_file = os.path.join(WORKDIR, '.end%s' % file)
+            end_time = os.path.getmtime(end_file)       
+            resfile = open(respath, "r").read()
+            file_dir = os.path.join(dest_dir,"maze_%s" % file) 
+            os.system('mkdir -p %s' % file_dir)
+        except Exception as e:
+            print("NOTE: Failed to parse file %s: %s", file, str(e))
+            continue
 
-    start_file = os.path.join(WORKDIR, '.start')
-    start_time = os.path.getmtime(start_file)
-    end_file = os.path.join(WORKDIR, '.end')
-    end_time = os.path.getmtime(end_file)       
+        resfile = open(respath, "r").read()
+        # True positives
+        if ('Ultimate proved your program to be incorrect' in resfile):
+            save_tc(file_dir, respath, start_time, end_time, 'positive', expected_result)
 
-    respath = '%s/res' %(OUTDIR)
-    resfile = open(respath, 'r').read()
-    # True positives
-    if ('Ultimate proved your program to be incorrect' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time, 'positive', expected_result)
+        # False negatives
+        elif ('Ultimate proved your program to be correct' in resfile):
+            save_tc(file_dir, respath, start_time, end_time, 'negative', expected_result)
 
-    # False negatives
-    elif ('Ultimate proved your program to be correct' in resfile):
-        save_tc(dest_dir, respath, start_time, end_time, 'negative', expected_result)
+        elif (len(resfile) == 0 or 'RESULT: Ultimate could not prove your program: Timeout' in resfile): 
+            save_tc(file_dir, respath, start_time, end_time, 'to')
 
-    elif (len(resfile) == 0 or 'RESULT: Ultimate could not prove your program: Timeout' in resfile): 
-        save_tc(dest_dir, respath, start_time, end_time, 'to')
+        # Crashes/Errors
+        elif ("ShortDescription: Unsupported Syntax" in resfile or \
+            "ShortDescription: Incorrect Syntax" in resfile or \
+            "Type Error" in resfile or \
+            "InvalidWitnessErrorResult" in resfile or \
+                ("ExceptionOrErrorResult" in resfile and not "ExceptionOrErrorResult: UnsupportedOperationException: Solver said unknown" in resfile)):
+            save_tc(file_dir, respath, start_time, end_time, 'er')
 
-    # Crashes/Errors
-    elif ("ShortDescription: Unsupported Syntax" in resfile or \
-          "ShortDescription: Incorrect Syntax" in resfile or \
-          "Type Error" in resfile or \
-          "InvalidWitnessErrorResult" in resfile or \
-            ("ExceptionOrErrorResult" in resfile and not "ExceptionOrErrorResult: UnsupportedOperationException: Solver said unknown" in resfile)):
-        save_tc(dest_dir, respath, start_time, end_time, 'er')
+        else:
+            save_tc(file_dir, respath, start_time, end_time, 'uk')
 
-    else:
-        save_tc(dest_dir, respath, start_time, end_time, 'uk')
-
-    # Timeout
+        # Timeout
 
 if __name__ == '__main__':
-    dest_dir = sys.argv[1]
+    dest_dir = sys.argv[1]    
     expected_result = sys.argv[2]
-    main(dest_dir,expected_result)
+    main(dest_dir, expected_result)

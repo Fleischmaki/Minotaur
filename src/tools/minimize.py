@@ -137,7 +137,7 @@ class Minimizer:
 
 
     def is_err(self):
-        resdir = os.path.join(self.outdir,'res')
+        resdir = os.path.join(self.outdir,'res','maze_res')
         for file in os.listdir(resdir):
                 if '_' in file: # Still false negative
                     commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(self.outdir,'runs')))
