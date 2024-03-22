@@ -1,4 +1,4 @@
-from smt2 import parser
+from smt2 import parser, converter
 import transforms
 import random
 
@@ -130,7 +130,7 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
     def get_initialisation(self, var):
         if '[' in var: #Arrays
             dim = var.count('[')
-            return "\t{} {};\n\tinit({}{},{});\n".format(self.vars_all[var],var,'*'*(dim-1),var.split('[')[0],parser.get_array_size_from_dim(dim))
+            return "\t{} {};\n\tinit({}{},{});\n".format(self.vars_all[var],var,'*'*(dim-1),var.split('[')[0],converter.get_array_size_from_dim(dim))
         elif self.vars_all[var] == 'bool':
             return "\t_Bool {} = __VERIFIER_nondet_bool();\n".format(var)
         elif self.vars_all[var] == 'const bool':
