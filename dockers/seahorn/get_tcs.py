@@ -20,21 +20,20 @@ OUTDIR = '/home/usea/workspace/outputs'
 def main(dest_dir,expected_result):           
     # Create destination directory
     os.system('mkdir -p %s' % dest_dir)
-    for file in filter(lambda f: '_' in f, os.listdir(OUTDIR)):
+    for file in filter(lambda f: 'res' in f, os.listdir(OUTDIR)):
+        name = file[3:]
         respath = '%s/%s' %(OUTDIR,file)
         try:
-            start_file = os.path.join(WORKDIR, '.start%s' % file)
+            start_file = os.path.join(WORKDIR, '.start%s' % name)
             start_time = os.path.getmtime(start_file)
-            end_file = os.path.join(WORKDIR, '.end%s' % file)
+            end_file = os.path.join(WORKDIR, '.end%s' % name)
             end_time = os.path.getmtime(end_file)       
             resfile = open(respath, "r").read()
-            file_dir = os.path.join(dest_dir,"maze_%s" % file) 
+            file_dir = os.path.join(dest_dir,"maze_%s" % name) 
             os.system('mkdir -p %s' % file_dir)
         except Exception as e:
             print("NOTE: Failed to parse file %s: %s", file, str(e))
             continue
-
-        resfile = open(respath, "r").read()
         # False negatives
         if ('unsat' in resfile):
             save_tc(file_dir, respath, start_time, end_time, 'negative', expected_result)

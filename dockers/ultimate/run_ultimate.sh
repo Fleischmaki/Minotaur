@@ -11,7 +11,7 @@ WORKDIR=/home/maze/workspace
 
 INDIR=$WORKDIR/inputs
 OUTDIR=$WORKDIR/outputs
-OUTFILE=$OUTDIR/$3
+OUTFILE=$OUTDIR/res$3
 
 mkdir -p $OUTDIR
 UDIR="/home/maze/tools/U${4}-linux"

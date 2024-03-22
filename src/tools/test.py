@@ -274,7 +274,7 @@ def write_summary(conf,out_dir, target,tag,runtime):
 def write_summary_header(conf, out_dir):
     with open(out_dir + '/summary.csv', 'w') as f:
         f.write('tool,variant,flags,id,u,')
-        for key in conf['parameters'].keys():
+        for key in conf['parameters'].keys(): 
             if key != 'u':
                 f.write(str(key)+',')
         f.write('runtime,status\n')

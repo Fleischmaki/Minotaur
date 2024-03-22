@@ -1,6 +1,6 @@
 import os
 from ..runner import *
-from ..maze_gen import smt2_parser as sp
+from ..maze_gen.smt2 import parser as sp
 from math import ceil
 class Minimizer:
     def __init__(self,argv: 'list[str]'):
