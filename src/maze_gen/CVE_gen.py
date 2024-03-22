@@ -1,9 +1,5 @@
-if __name__ == 'CVE_gen':
-    import smt2_parser
-    import transforms
-else:
-    from . import smt2_parser, transforms
-
+from smt2 import parser
+import transforms
 import random
 
 
@@ -13,10 +9,10 @@ class Generator:
         self.edges = edges
         self.sln = sln
         self.transformations = transformations
-        self.logic = smt2_parser.read_file(smt_file).logic
+        self.logic = parser.read_file(smt_file).logic
 
         try:
-            self.constraints, self.vars_all, self.array_size = smt2_parser.parse(smt_file, check_neg = False, generate_well_defined=transformations['wd'], generate_sat=transformations['sat'],limit=transformations['dag'])
+            self.constraints, self.vars_all, self.array_size = parser.parse(smt_file, check_neg = False, generate_well_defined=transformations['wd'], generate_sat=transformations['sat'],limit=transformations['dag'])
         except ValueError as e:
             print('Error while parsing smt file %s' % str(e))
             self.constraints = {} if transformations['sat'] else '(1==0)'
@@ -27,7 +23,7 @@ class Generator:
         transforms.remove_constraints(self.constraints, transformations['dc'])
         transforms.make_const(self.vars_all, transformations['mc'])
 
-        self.groups, self.vars = smt2_parser.independent_formulas(self.constraints, self.vars_all)
+        self.groups, self.vars = parser.independent_formulas(self.constraints, self.vars_all)
 
         if transformations['sh']:
             self.groups, self.vars = transforms.coshuffle(self.groups, self.vars)
@@ -134,7 +130,7 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
     def get_initialisation(self, var):
         if '[' in var: #Arrays
             dim = var.count('[')
-            return "\t{} {};\n\tinit({}{},{});\n".format(self.vars_all[var],var,'*'*(dim-1),var.split('[')[0],smt2_parser.get_array_size_from_dim(dim))
+            return "\t{} {};\n\tinit({}{},{});\n".format(self.vars_all[var],var,'*'*(dim-1),var.split('[')[0],parser.get_array_size_from_dim(dim))
         elif self.vars_all[var] == 'bool':
             return "\t_Bool {} = __VERIFIER_nondet_bool();\n".format(var)
         elif self.vars_all[var] == 'const bool':

@@ -2,12 +2,11 @@ import random
 from storm.smt.smt_object import smtObject
 from storm.fuzzer.fuzzer import generate_mutants
 from storm.parameters import get_parameters_dict
-import smt2_parser as s2
 import math as m
 
 from z3 import *
 from pysmt.shortcuts import *
-
+from smt2 import parser
 
 def remove_constraints(constraints: dict, dc: int):
     curr = len(constraints)
@@ -79,14 +78,14 @@ def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: 
     fpars['max_depth'] = 10 # Reduce the depth, we want simpler formulas
 
     # Find the logic of the formula
-    file_data = s2.read_file(smt_file)
+    file_data = parser.read_file(smt_file)
     logic = file_data.logic
-    core = TRUE if generate_sat else And(*s2.get_unsat_core(file_data.clauses, file_data.logic))
+    core = TRUE if generate_sat else And(*parser.get_unsat_core(file_data.clauses, file_data.logic))
     
     generate_mutants(smt_obj, mutant_path, fpars['max_depth'],fpars['max_assert'],seed, logic,fpars)
     mutants = [mutant_path + '/mutant_%s.smt2' % i for i in range(n)]
     if not generate_sat:
         for mutant in mutants:
-            assertions = s2.read_file(mutant).formula
-            s2.write_to_file(And(core,assertions), mutant)
+            assertions = parser.read_file(mutant).formula
+            parser.write_to_file(And(core,assertions), mutant)
     return mutants 
