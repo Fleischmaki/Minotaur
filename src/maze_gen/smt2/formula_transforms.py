@@ -34,8 +34,9 @@ def get_bv_width(node: FNode) -> int:
             res = r.bv_width()
     else:
         raise ValueError("Could not compute BV width: " + str(node))
+    if res <= 0 or res > 64:
+        raise ValueError("Invalid bv width: %s (%s)", res, node)
     return res
-
 
 def is_neg_sat(c, clauses):
     form_neg = Not(c)
