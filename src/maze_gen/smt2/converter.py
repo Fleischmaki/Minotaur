@@ -141,9 +141,9 @@ def div_helper(symbs: t.Set[str],node: FNode, cons: io.TextIOBase):
         cons.write(get_unsigned_cast(node))
         cons.write(helper)
         cons.write('(')
-        convert(symbs,node,l)
+        convert(symbs,node,cons,l)
         cons.write(',')
-        convert(symbs,node,r)
+        convert(symbs,node,cons,r)
         cons.write(',%s,)' % width)
 
     else:
