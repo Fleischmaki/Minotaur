@@ -106,7 +106,6 @@ class Target_Generator():
         self.repeats = self.conf['repeats'] if self.conf['repeats'] >= 0 else inf
         self.targets = list()
         self.conf = self.conf
-        self.completed = list()
         self.mazes = OrderedDict()
 
     def __iter__(self):
@@ -291,7 +290,7 @@ def kill_containers(works, conf):
 def cleanup(completed):
     procs = []
     while(len(completed) > 0):
-        maze = completed.pop()[0]
+        maze = completed.pop()
         procs.append(commands.spawn_cmd(REMOVE_CMD % os.path.join(get_temp_dir(),'src',maze)))
     commands.wait_for_procs(procs)
 
