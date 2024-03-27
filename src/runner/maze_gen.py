@@ -33,7 +33,7 @@ def get_maze_names(params):
             %  (params['a'], params['w'], params['h'],params['r'], params['t'],i,params['c'], generator)
               for i in range(min,params['m'] + 1)]
 
-def generate_maze_in_docker(params, index = 0):
+def generate_maze_in_docker(params, index = 0, timeout=-1):
     docker.spawn_docker(1, index, 'gen').wait()
 
     if params['s'] is not None:
@@ -43,7 +43,7 @@ def generate_maze_in_docker(params, index = 0):
     
     cmd = './Minotaur/scripts/generate.sh ' + param_string
 
-    return docker.spawn_cmd_in_docker(docker.get_container('gen', index),  cmd)
+    return docker.spawn_cmd_in_docker(docker.get_container('gen', index),  cmd, timeout=timeout)
 
 def get_string_from_params(params):
     param_string = '-o ' + 'outputs '
@@ -72,10 +72,12 @@ def get_params_from_string(param_string):
     return params
 
 
-def generate_mazes(paramss, outdir):
+def generate_mazes(paramss, outdir, timeout=-1):
     pipes = []
     for i in range(len(paramss)):
         pipes.append(generate_maze_in_docker(paramss[i],i))
+    if timeout > 0:
+        time.sleep(timeout)
     commands.wait_for_procs(pipes)
     pipes = []
     for i in range(len(paramss)):

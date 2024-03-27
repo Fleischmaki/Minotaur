@@ -11,9 +11,11 @@ KILL_CMD = 'docker kill %s'
 REMOVE_CMD = 'docker rm %s'
 DOCKER_PREFIX = 'minotaur-'
 
-def spawn_cmd_in_docker(container, cmd_str):
+def spawn_cmd_in_docker(container, cmd_str, timeout=-1):
     print('[*] Executing (in container %s): %s' % (container, cmd_str))
     cmd_prefix = 'docker exec %s /bin/bash -c' %  container
+    if timeout > 0:
+        cmd_prefix = 'docker exec %s timeout %d /bin/bash -c' %  (container, timeout)
     cmd_args = cmd_prefix.split()
     cmd_args += [cmd_str]
     try:
@@ -44,8 +46,8 @@ def spawn_docker(memory, name, tool, cpu = -1):
         cmd = SPAWN_CMD_NOCPU % (memory, get_container(tool,name), DOCKER_PREFIX + tool)
     return commands.spawn_cmd(cmd)
 
-def add_docker_maze(path, name, tool):
-    cmd = CP_MAZE_CMD % (path, get_container(tool,name),get_user(tool), os.path.split(path)[1])
+def add_docker_maze(path, name, tool,maze_name):
+    cmd = CP_MAZE_CMD % (path, get_container(tool,name),get_user(tool), os.path.split(path)[1] if maze_name == '' else maze_name)
     return commands.spawn_cmd(cmd)
 
 def set_docker_seed(path, name, tool):
