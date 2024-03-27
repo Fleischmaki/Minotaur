@@ -24,6 +24,8 @@ def load_config(path):
         conf['abort_on_error'] = False
     if 'batch_size' not in conf.keys():
         conf['batch_size'] = 1
+    if 'gen_time' not in conf.keys():
+        conf['gen_time'] = 120
 
     assert conf['repeats'] != 0
     assert conf['duration'] > 0
@@ -159,7 +161,7 @@ class Target_Generator():
     def generate_mazes(self):
         if self.conf['maze_gen'] == 'container':
             paramss = self.fetch_maze_params()
-            maze_gen.generate_mazes(paramss, get_temp_dir())
+            maze_gen.generate_mazes(paramss, get_temp_dir(),self.conf['gen_time'])
             for params in paramss:
                 self.mazes.update({maze: params for maze in maze_gen.get_maze_names(params)})
         else:
@@ -251,7 +253,7 @@ def write_summary(conf,out_dir, target,tag,runtime):
     maze, tool, id, params, variant, flags = target
     out_path = os.path.join(out_dir, tool, maze)
     if (conf['verbosity'] == 'bug' or conf['verbosity'] == 'bug_only') and tag not in ('fp', 'fn'):
-        commands.run_cmd(REMOVE_CMD % out_path)
+        remove_file_once_present(out_path)
         if conf['verbosity'] == 'bug_only':
             return
     offset = 0 if 'keepId' in params['t'] else 1
@@ -268,8 +270,12 @@ def write_summary(conf,out_dir, target,tag,runtime):
         f.write('%s,%s' % (runtime, tag))
         f.write('\n')
     if conf['verbosity'] == 'summary': 
-        commands.run_cmd(REMOVE_CMD % out_path)
+        remove_file_once_present(out_path)
 
+def remove_file_once_present(path):
+    while(not os.path.exists(path)):
+        time.sleep(1)
+    commands.run_cmd(REMOVE_CMD % path)
 
 def write_summary_header(conf, out_dir):
     with open(out_dir + '/summary.csv', 'w') as f:
