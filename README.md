@@ -29,9 +29,9 @@ Note that the provided dockers build most tools from source. Building might take
 
 ## Using Minotaur
 ### Test Analyzers
-Runs are configured via conf.json files located in Minotaur/test.
+Runs are configured via conf.json files located in the [test](Minotaur/test) folder.
 To perform a test using the config file test/conf_name.conf.json run `python3 Minotaur --t conf_name outdir`
-For more info on config files check [config.md](./config.md)
+For more info on config files check [config.md](./config.md) and the example config files provided.
 
 ### Generate a single maze
 `python3 Minotaur --g {local,container} outdir params...` or ./Minotaur/scripts/generate.sh -o outdir [params...]. For parameter options see [params.md](./params.md)
