@@ -341,7 +341,8 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
             cons.write(get_unsigned_cast(node))
         cons.write(var)
         if dim == 0 and not has_matching_type(ff.get_bv_width(node)):
-            symbs.add(var)
+            cons.write(')')
+        symbs.add(var)
     elif node.is_select():
         (a, p) = node.args()
         if 'BV' in str(node.get_type()): 
