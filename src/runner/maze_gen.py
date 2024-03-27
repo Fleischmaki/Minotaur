@@ -75,7 +75,7 @@ def get_params_from_string(param_string):
 def generate_mazes(paramss, outdir, timeout=-1):
     pipes = []
     for i in range(len(paramss)):
-        pipes.append(generate_maze_in_docker(paramss[i],i))
+        pipes.append(generate_maze_in_docker(paramss[i],i, timeout))
     if timeout > 0:
         time.sleep(timeout)
     commands.wait_for_procs(pipes)
