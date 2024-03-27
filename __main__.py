@@ -1,7 +1,9 @@
 from src.tools import *
-import sys
+import sys, logging
+LOGGER = logging.getLogger(__name__)
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     mode = sys.argv[1]
     if not mode.startswith("--"):
         mode = input("Run tests [t], experiment [e], generate maze [g] or minimize [m]")
@@ -19,4 +21,4 @@ if __name__ == '__main__':
     elif mode == "e":
         experiment.load(argv)
     else:
-        print("Invalid mode")
+        LOGGER.error("Invalid mode")
