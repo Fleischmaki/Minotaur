@@ -25,7 +25,7 @@ Alternatively, first generate the maze and then run `python3 Minotaur --m maze.c
 
 ### Recreate an experiment 
 Before recreating experiments, build the necessary experiments with ./Minotaur/scripts/build_experiment_dockers.sh
-To run an experiment simply run `python3 Minotaur --e experiment_name outdir`. Experiment configurations are stored in the [experiments](Minotaur/experiments) folder 
+To run an experiment simply run `python3 Minotaur --e experiment_name outdir`. Experiment configurations are stored in the [experiments](Minotaur/experiments) folder.
 
 ## Bugs found by Minotaur
 ### Soundness Bugs
