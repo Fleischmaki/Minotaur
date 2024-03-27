@@ -7,8 +7,6 @@ def load_config(path):
         txt = f.read()
     conf = json.loads(txt)
 
-    print(conf)
-
     if 'verbosity' not in conf.keys():
         conf['verbosity'] = 'bug_only'
     if 'maze_gen' not in conf.keys():
@@ -19,6 +17,8 @@ def load_config(path):
         conf['abort_on_error'] = True
     if 'avg' not in conf.keys():
         conf['avg'] = 1
+    if 'gen_time' not in conf.keys():
+        conf['gen_time'] = 120
 
     assert len(conf['mazes']) > 0
     assert len(conf['duration']) > 0
@@ -40,7 +40,7 @@ def load(argv):
 
     commands.run_cmd('mkdir -p %s' % outdir)
     resfile = open(os.path.join(outdir, 'times'), 'w')
-    resfile.write("run_nr, time, mazes_tested\n")    
+    resfile.write("run_nr, time\n")    
 
     runs = conf['repeats']
     conf['repeats'] = conf['mazes']
