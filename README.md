@@ -1,5 +1,23 @@
 # Minotaur
-Minotaur is a metamorphic testing tools for software model checkers, based on [STORM](https://github.com/mariachris/storm) and [Fuzzle](https://github.com/SoftSec-KAIST/Fuzzle)
+Minotaur is a generative black-box fuzzer for software model checkers, based on [STORM](https://github.com/mariachris/storm) and [Fuzzle](https://github.com/SoftSec-KAIST/Fuzzle)
+
+## About
+Minotaur uses sat/unsat SMT-Files to generate programs that are unsafe/safe by construction. Optionally, [STORM](https://github.com/mariachris/storm)'s mutation algorithm can be used to create several variants for each seed. Optionally, a minimizer can be used to drop unneccessary clauses, which results in concise explanations for PA bugs.  
+```mermaid
+flowchart LR
+    Klee --> Storm
+    SMTComp --> Storm
+    Storm --> |Clauses| Generator
+    Maze --> |Scaffolding| Fuzzle
+    Generator --> |Logic| Fuzzle
+    Fuzzle --> |Populate| Code 
+    Code -->  SMC
+    SMC --> |Result| Minimizer
+    SMC --> |Imprecise/Unsound| Bug 
+    Storm --> |Clauses| Minimizer
+    Minimizer --> | Selected Clauses | Generator
+    Minimizer --> | Minimized Code | Bug
+```
 
 ## Installation
 ```
@@ -53,21 +71,3 @@ Tool | Status | Type
  -- | -- | --
  Symbiotic | [open](https://github.com/staticafi/symbiotic/issues/246) | Arrays
  Ultimate Kojak | [fixed](https://github.com/ultimate-pa/ultimate/issues/647#event-10423593364) |
-
-
-## About
-```mermaid
-flowchart BT
-    Klee --> Storm
-    SMTComp --> Storm
-    Storm --> |Clauses| Generator
-    Maze --> |Scaffolding| Fuzzle
-    Generator --> |Logic| Fuzzle
-    Fuzzle --> |Populate| Code 
-    Code -->  SMC
-    SMC --> |Result| Minimizer
-    SMC --> |Imprecise/Unsound| Bug 
-    Storm --> |Clauses| Minimizer
-    Minimizer --> | Selected Clauses | Generator
-    Minimizer --> | Minimized Code | Bug
-```
