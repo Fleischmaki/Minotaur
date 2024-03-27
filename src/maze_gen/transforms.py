@@ -1,4 +1,5 @@
-import random
+import random,logging
+
 from storm.smt.smt_object import smtObject
 from storm.fuzzer.fuzzer import generate_mutants
 from storm.parameters import get_parameters_dict
@@ -7,6 +8,8 @@ import math as m
 from z3 import *
 from pysmt.shortcuts import *
 from smt2 import parser
+
+LOGGER = logging.getLogger(__name__)
 
 def remove_constraints(constraints: dict, dc: int):
     curr = len(constraints)
@@ -62,16 +65,16 @@ def parse_transformations(t_type: str) -> dict:
     return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keepId, 'wd' : well_defined, 'mc' : make_const, 'sat' : sat, 'dag': dag, 'last': last}
 
 def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: bool = True) -> list:
-    print("NOTE: Running Storm.")
+    LOGGER.info("Running Storm.")
     if n <= 0:
         return   
     smt_obj = smtObject(smt_file, mutant_path, generate_sat)
     smt_obj.check_satisfiability(10*60)
     if smt_obj.orig_satisfiability == "timeout":
-        print("WARNING: Could not fuzz file: timeout")
+        LOGGER.warning("Could not fuzz file: timeout")
         return [smt_file] * n
     if smt_obj.orig_satisfiability == "sat" and not generate_sat:
-        print("WARNING: Could not fuzz file: cannot generate unsat files from sat files")
+        LOGGER.warning("Could not fuzz file: cannot generate unsat files from sat files")
         return [smt_file] * n
     fpars = get_parameters_dict(False, 0)
     fpars['number_of_mutants'] = n

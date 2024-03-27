@@ -1,6 +1,6 @@
 from . import test
 from ..runner import commands
-import time, json, os, math
+import time, json, os
 
 def load_config(path):
     with open(path) as f:

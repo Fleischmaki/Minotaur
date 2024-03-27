@@ -1,4 +1,5 @@
-import sys, random
+import sys, random, logging
+
 from collections import defaultdict, OrderedDict, namedtuple
 
 from pysmt.smtlib.parser import SmtLibParser
@@ -11,15 +12,14 @@ import typing as t
 
 from . import converter, formula_transforms as ff
 
-
-
+LOGGER = logging.getLogger(__name__)
 
 SmtFileData = namedtuple('SmtFileData',['decl_arr','formula', 'logic', 'clauses'])
 
 def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well_defined=True, generate_sat = True, limit=0):
     sys.setrecursionlimit(10000)
     set_well_defined(generate_well_defined)
-    print("Converting %s: " % file_path)
+    LOGGER.info("Converting %s: " % file_path)
     decl_arr, formula, logic, formula_clauses = read_file(file_path, limit)
     if generate_sat:
         clauses, array_size = run_checks(formula, logic, formula_clauses)
@@ -30,7 +30,7 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
     try:
         core = set() if generate_sat else get_unsat_core(clauses, logic)
     except pysmt.exceptions.SolverStatusError as e:
-        print("WARNING: Could not find core, will abort if any clause fails")
+        LOGGER.warning("Could not find core, will abort if any clause fails")
         continue_on_error = False
     parsed_cons = OrderedDict()
     variables = dict()
@@ -42,26 +42,26 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
         ldecl_arr = decl_arr
 
         if logic.split('_')[-1].startswith('A'):
-            print("NOTE: Renaming array stores", end = " ")
+            LOGGER.debug("Renaming array stores")
             clause, constraints = ff.rename_arrays(clause)
-            print("Added %d new arrays" % len(constraints))
+            LOGGER.info("Added %d new arrays" % len(constraints))
             clause = And(*constraints, clause) # Make sure to render constraints first
             ldecl_arr.extend(map(lambda c: c.args()[1],constraints))
 
         symbs = set()
 
         try:
-            print("NOTE: converting clause %d/%d." % (c,len(clauses)), end = " ")
+            LOGGER.debug("Converting clause %d/%d." % (c,len(clauses)))
             result = converter.convert_to_string(symbs,clause)
         except Exception as e:
-            print("Could not convert clause: ", e)
+            LOGGER.warning("Could not convert clause: %s", str(e))
             if continue_on_error:
                 if clause not in core:
                     continue
                 parsed_cons['(1==0)'] = True if check_neg else "" # Make sure condition remains unsat
             else:
                 raise e
-        print("Done.")
+        LOGGER.debug("Done.")
 
         add_parsed_cons(check_neg, clauses, parsed_cons, clause, result)
         add_used_variables(variables, ldecl_arr, symbs)
@@ -104,7 +104,7 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
     clauses = list(formula_clauses)
 
     if 'BV' not in logic and GENERATE_WELL_DEFINED:
-        print("WARNING: Can only guarantee well-definedness on bitvectors")
+        LOGGER.warning("Can only guarantee well-definedness on bitvectors")
     
     if logic.split('_')[-1].startswith('A'):
         array_size, array_constraints = ff.constrain_array_size(formula)
@@ -116,18 +116,18 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
         array_constraints = []
     
     if 'IA' in logic:
-        print("NOTE: Generating integer constraints")
+        LOGGER.info("Generating integer constraints")
         constraints.update(ff.get_integer_constraints(formula))
     
     if not GENERATE_WELL_DEFINED:
-        print("NOTE: Generating divsion constraints")
+        LOGGER.info("Generating divsion constraints")
         constraints.update(ff.get_division_constraints(formula))
     
     if len(constraints) > len(array_constraints):
-        print("NOTE: Checking satisfiability with global constraints")
+        LOGGER.info("Checking satisfiability with global constraints")
         if not is_sat(And(*constraints, formula), solver_name='z3'):
             raise ValueError("Cannot guarantee a valid solution")
-        print("Done.")
+        LOGGER.info("Done.")
     
     return clauses,array_size
 
@@ -164,7 +164,7 @@ def get_logic_from_script(script):
     else:
         formula = script.get_strict_formula()
         logic = str(get_logic(formula))
-        print('NOTE: Logic not found in script. Using logic from formula: '  + logic)
+        LOGGER.info('Logic not found in script. Using logic from formula: '  + logic)
     return logic
 
 def conjunction_to_clauses(formula: FNode):

@@ -1,4 +1,4 @@
-import sys
+import sys, logging
 import random
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,6 +9,8 @@ from mazelib.generate.Prims import Prims
 from mazelib.generate.Wilsons import Wilsons
 from mazelib.generate.Sidewinder import Sidewinder
 from mazelib.solve.ShortestPath import ShortestPath
+
+LOGGER = logging.getLogger(__name__)
 
 def generate_maze(algorithm, width, height, seed, maze_exit):
     if seed == "NONE":
@@ -28,7 +30,7 @@ def generate_maze(algorithm, width, height, seed, maze_exit):
     elif algorithm == "Sidewinder":
         m.generator = Sidewinder(height, width)
     else:
-        print("No such algorithm supported")
+        LOGGER.error("No such algorithm supported")
         exit(1)
 
     m.solver = ShortestPath()

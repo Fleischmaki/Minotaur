@@ -1,7 +1,8 @@
 from smt2 import parser, converter
 import transforms
-import random
+import random, logging
 
+LOGGER = logging.getLogger(__name__)
 
 class Generator:
     def __init__(self, size, edges, sln, smt_file, transformations):
@@ -14,7 +15,7 @@ class Generator:
         try:
             self.constraints, self.vars_all, self.array_size = parser.parse(smt_file, check_neg = False, generate_well_defined=transformations['wd'], generate_sat=transformations['sat'],limit=transformations['dag'])
         except ValueError as e:
-            print('Error while parsing smt file %s' % str(e))
+            LOGGER.warn('Error while parsing smt file %s' % str(e))
             self.constraints = {} if transformations['sat'] else '(1==0)'
             self.vars_all = {}
             self.array_size = 0

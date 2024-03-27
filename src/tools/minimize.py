@@ -1,7 +1,10 @@
-import os
+import os, logging
 from ..runner import *
 from ..maze_gen.smt2 import parser as sp
 from math import ceil
+
+LOGGER = logging.getLogger(__name__)
+
 class Minimizer:
     def __init__(self,argv: 'list[str]'):
         if ',' in argv[0]:
@@ -43,7 +46,7 @@ class Minimizer:
         commands.run_cmd("mkdir -p %s" % os.path.join(self.outdir,'runs'))
 
         if not self.result_is_err(False):
-            print('ERROR: Original maze not a %s' % self.err)
+            logging.error('Original maze not a %s' % self.err)
             return
 
         self.minimize_maze()
@@ -94,7 +97,7 @@ class Minimizer:
             misses_bug = self.result_is_err()
             if misses_bug:
                 clauses = new_clauses
-                print("Discarded %s half of constraints" % 'first' if keep_first_half else 'second')
+                logging.info("Discarded %s half of constraints" % 'first' if keep_first_half else 'second')
                 keep_first_half = True
             else:
                 keep_first_half = not(keep_first_half)

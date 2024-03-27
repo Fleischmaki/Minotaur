@@ -1,4 +1,7 @@
 from ..runner import docker, maze_gen as mg
+import logging
+
+LOGGER = logging.getLogger(__name__)
 
 def load(argv):
     gen = argv[0]
@@ -12,4 +15,4 @@ def load(argv):
     elif gen == 'local': 
         mg.generate_maze(param_string, out_dir)
     else:
-        print("Invalid generation option, please use one of [container,local]")
+        LOGGER.error("Invalid generation option, please use one of [container,local]")

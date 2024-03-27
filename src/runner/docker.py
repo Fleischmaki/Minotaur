@@ -1,6 +1,7 @@
-import subprocess
-import os
+import subprocess, os, logging
 from . import commands, maze_gen
+
+LOGGER = logging.getLogger(__name__)
 
 SPAWN_CMD_CPU = 'docker run --rm -m=%dg -t -d --cpuset-cpus=%d --name %s %s'
 SPAWN_CMD_NOCPU = 'docker run --rm -m=%dg -t -d --name %s %s'
@@ -12,7 +13,7 @@ REMOVE_CMD = 'docker rm %s'
 DOCKER_PREFIX = 'minotaur-'
 
 def spawn_cmd_in_docker(container, cmd_str, timeout=-1):
-    print('[*] Executing (in container %s): %s' % (container, cmd_str))
+    LOGGER.info('Executing (in container %s): %s' % (container, cmd_str))
     cmd_prefix = 'docker exec %s /bin/bash -c' %  container
     if timeout > 0:
         cmd_prefix = 'docker exec %s timeout %d /bin/bash -c' %  (container, timeout)
@@ -21,7 +22,7 @@ def spawn_cmd_in_docker(container, cmd_str, timeout=-1):
     try:
         return subprocess.Popen(cmd_args)
     except Exception as e:
-        print(e)
+        LOGGER.error(e)
         exit(1)
 
 def run_cmd_in_docker(container,cmd_str):

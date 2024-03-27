@@ -3,6 +3,9 @@ import itertools as it
 from ..runner import *
 from collections import namedtuple, OrderedDict
 from math import ceil, inf
+import logging
+
+LOGGER = logging.getLogger(__name__)
 
 REMOVE_CMD = 'rm -r %s'
 CP_CMD = 'cp %s %s'
@@ -56,7 +59,7 @@ def pick_values(head,value,tail):
 def set_default(parameters, name, value):
     if name not in parameters.keys():
         parameters[name] = value
-        print('Using default value %s for parameter %s' % (value, name))
+        LOGGER.info('Using default value %s for parameter %s' % (value, name))
 
 def get_random_params(conf):
     conf['repeats'] -= 1
@@ -205,10 +208,12 @@ def run_tools(conf: dict,works: 'list[Target]'):
             procs.append(docker.add_docker_maze(get_maze_dir(target.maze), target.index,target.tool, 'maze.c'))
         commands.wait_for_procs(procs)
         time.sleep(5)
+        procs = []
         for i in range(get_containers_needed(conf, works)):
-                target  = works[i*conf['batch_size'] + j]
-                docker.run_docker(duration, target.tool, target.index, target.variant, target.flags, maze_name='maze.c', result_name=str(j))
-        time.sleep(duration + 3) 
+            target  = works[i*conf['batch_size'] + j]
+            procs.append(docker.run_docker(duration, target.tool, target.index, target.variant, target.flags, maze_name='maze.c', result_name=str(j)))
+        commands.wait_for_procs(procs)
+        time.sleep(3) 
 
 def store_outputs(conf: dict, out_dir: str, works: 'list[Target]'):
     has_bug = False

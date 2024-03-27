@@ -3,7 +3,9 @@ from pysmt.typing import INT
 from pysmt.fnode import FNode
 from pysmt.solvers.z3 import Z3Solver
 
-import math, typing as t
+import math, typing as t, logging
+
+LOGGER = logging.getLogger(__name__)
 MAXIMUM_ARRAY_SIZE = 2**10 - 1 
 
 def get_bv_width(node: FNode) -> int:
@@ -48,12 +50,12 @@ def is_neg_sat(c, clauses):
 
 
 def get_unsat_core(clauses, logic):
-    print('NOTE: Finding unsat core')
+    LOGGER.info('Finding unsat core')
     solver = Z3Solver(get_env(),logic,unsat_cores_mode='all')
     solver.add_assertions(clauses)
     solver.solve()
     core = set(solver.get_unsat_core())
-    print("Done")
+    LOGGER.info("Done")
     return core
 
 
@@ -111,10 +113,10 @@ def get_array_index_calls(formula: FNode):
     return get_array_calls_helper(formula, set())
 
 def constrain_array_size(formula: FNode):
-    print("NOTE: Calculating array size.")
+    LOGGER.info("Calculating array size.")
     min_index, array_ops = get_array_index_calls(formula)
     if len(array_ops) == 0:
-        print("No arrays found")
+        LOGGER.info("No arrays found")
         return 0, set()
     if not is_sat(formula, solver_name = "z3"):
         formula = Not(formula)
@@ -124,7 +126,7 @@ def constrain_array_size(formula: FNode):
     array_size = max(min_index,2)
     
     while not sat:
-        print("Checking size: %d" % array_size)
+        LOGGER.debug("Checking size: %d" % array_size)
         if (math.pow(array_size,max_dim)) > MAXIMUM_ARRAY_SIZE:  
             raise ValueError("Minimum array size too large")
         assertions = get_array_constraints(array_ops, array_size)
@@ -132,7 +134,7 @@ def constrain_array_size(formula: FNode):
         sat = is_sat(new_formula, solver_name = "z3")
         array_size *= 2
     array_size //= 2
-    print("Sat on size %d."  % array_size)
+    LOGGER.info("Sat on size %d."  % array_size)
     return array_size, assertions
 
 def get_array_calls_helper(formula: FNode, visited_nodes: set):
