@@ -34,8 +34,7 @@ To perform a test using the config file test/conf_name.conf.json run `python3 Mi
 For more info on config files check [config.md](./config.md)
 
 ### Generate a single maze
-`python3 Minotaur --g {local,container} outdir params...` or ./Minotaur/scripts/generate.sh -o outdir params...
-See [params.md](./params.md)
+`python3 Minotaur --g {local,container} outdir params...` or ./Minotaur/scripts/generate.sh -o outdir [params...]. For parameter options see [params.md](./params.md)
 
 ### Minimize a maze
 Run `python3 Minotaur --m report seed-dir out-dir {local,container}`, where 'report' the line of the summary.csv file from testing
