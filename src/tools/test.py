@@ -195,13 +195,13 @@ def spawn_containers(conf, works):
     commands.wait_for_procs(procs)
     time.sleep(5)
 
-    procs = []
-    for i in range(container_count):
-        for j in range(conf['batch_size']):
+    for j in range(conf['batch_size']):
+        procs = []
+        for i in range(container_count):
             target = works[i*conf['batch_size'] + j]
             # Copy maze in the container
             procs.append(docker.add_docker_maze(get_maze_dir(target.maze), target.index,target.tool))
-    commands.wait_for_procs(procs)
+        commands.wait_for_procs(procs)
     time.sleep(5)
 
 
@@ -251,9 +251,9 @@ def store_outputs(conf: dict, out_dir: str, works: 'list[Target]'):
 
 def write_summary(conf,out_dir, target,tag,runtime):
     maze, tool, id, params, variant, flags = target
-    out_path = os.path.join(out_dir, tool, maze)
+    out_path = os.path.join(out_dir,tool, str(id), maze)
     if (conf['verbosity'] == 'bug' or conf['verbosity'] == 'bug_only') and tag not in ('fp', 'fn'):
-        remove_file_once_present(out_path)
+        commands.run_cmd(REMOVE_CMD % out_path)
         if conf['verbosity'] == 'bug_only':
             return
     offset = 0 if 'keepId' in params['t'] else 1
@@ -270,12 +270,8 @@ def write_summary(conf,out_dir, target,tag,runtime):
         f.write('%s,%s' % (runtime, tag))
         f.write('\n')
     if conf['verbosity'] == 'summary': 
-        remove_file_once_present(out_path)
+        commands.run_cmd(REMOVE_CMD % out_path)
 
-def remove_file_once_present(path):
-    while(not os.path.exists(path)):
-        time.sleep(1)
-    commands.run_cmd(REMOVE_CMD % path)
 
 def write_summary_header(conf, out_dir):
     with open(out_dir + '/summary.csv', 'w') as f:
