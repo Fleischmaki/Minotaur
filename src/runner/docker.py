@@ -1,4 +1,4 @@
-import subprocess, os, logging
+import subprocess, os, logging, time
 from . import commands, maze_gen
 
 LOGGER = logging.getLogger(__name__)
@@ -42,14 +42,10 @@ def clean_name(name):
 
 def spawn_docker(memory, name, tool, maze_dir='', cpu = -1):
     if cpu > 0:
-        cmd = SPAWN_CMD_CPU % (memory, cpu, get_container(tool,name),'' if maze_dir == '' else '-v %s:/mazes' % maze_dir, DOCKER_PREFIX + tool)
+        cmd = SPAWN_CMD_CPU % (memory, cpu, get_container(tool,name),'' if maze_dir == '' else '-v ./%s:/mazes' % maze_dir, DOCKER_PREFIX + tool)
     else:
-        cmd = SPAWN_CMD_NOCPU % (memory, get_container(tool,name),'' if maze_dir == '' else '-v %s:/mazes' % maze_dir, DOCKER_PREFIX + tool)
+        cmd = SPAWN_CMD_NOCPU % (memory, get_container(tool,name),'' if maze_dir == '' else '-v ./%s:/mazes' % maze_dir, DOCKER_PREFIX + tool)
     return commands.spawn_cmd(cmd)
-
-# def add_docker_maze(path, name, tool,maze_name):
-#     cmd = CP_MAZE_CMD % (path, get_container(tool,name),get_user(tool), os.path.split(path)[1] if maze_name == '' else maze_name)
-#     return commands.spawn_cmd(cmd)
 
 def set_docker_seed(path, name, tool):
     cmd = CP_SEED_CMD % (path, get_container(tool,name),get_user(tool), os.path.split(path)[1])
@@ -88,7 +84,7 @@ def kill_docker(tool,name):
     return commands.spawn_cmd(cmd)
 
 
-def run_mc(tool,variant,flags, name, params,outdir, memory = 4,  timeout=1, gen='container', expected_result='error'):
+def run_pa(tool,variant,flags, name, params,outdir, memory = 4,  timeout=1, gen='container', expected_result='error'):
     if gen == 'container':
         maze_gen.generate_maze_in_docker(params,name).wait()
         copy_docker_results('gen', name, outdir)
@@ -98,7 +94,7 @@ def run_mc(tool,variant,flags, name, params,outdir, memory = 4,  timeout=1, gen=
     t_index = params['m'] - (0 if 'keepId' in params['t'] else 1)
     maze = maze_gen.get_maze_names(params)[t_index]
     maze_path = os.path.join(outdir,'src',maze)
-    spawn_docker(memory,name,tool,maze_path).wait()
+    spawn_docker(memory,name,tool,os.path.join(outdir,'src')).wait()
     run_docker(timeout, tool, name, variant,flags,maze).wait()
     collect_docker_results(tool,name,expected_result).wait()
     copy_docker_results(tool,name,os.path.join(outdir, 'res'))

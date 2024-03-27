@@ -16,6 +16,6 @@ def spawn_cmd(cmd_str: str):
         exit(1)
 
 def run_cmd(cmd_str: str):
-    LOGGER.info('[*] Executing: %s' % cmd_str)
+    LOGGER.info('Executing: %s' % cmd_str)
     cmd_args = cmd_str.split()
     return subprocess.run(cmd_args)

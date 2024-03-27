@@ -123,7 +123,7 @@ class Minimizer:
         return clauses
 
     def result_is_err(self, rm=True):
-        docker.run_mc(self.tool,self.variant,self.flags, 'min', self.params, self.outdir,timeout=self.timeout, gen=self.gen, expected_result=self.expected_result)
+        docker.run_pa(self.tool,self.variant,self.flags, 'min', self.params, self.outdir,timeout=self.timeout, gen=self.gen, expected_result=self.expected_result)
         sat = self.is_err()
         if rm:
             commands.run_cmd('rm -r %s' % os.path.join(self.outdir, 'src'))
