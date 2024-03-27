@@ -23,6 +23,10 @@ See [params.md](./params.md)
 Run `python3 Minotaur --m report seed-dir out-dir {local,container}`, where 'report' the line of the summary.csv file from testing
 Alternatively, first generate the maze and then run `python3 Minotaur --m maze.c seed-dir out-dir timeout {container,local} {fn,fp,er,...} tool [variant] [params]`
 
+### Recreate an experiment 
+Before recreating experiments, build the necessary experiments with ./Minotaur/scripts/build_experiment_dockers.sh
+To run an experiment simply run `python3 Minotaur --e experiment_name outdir`. Experiment configurations are stored in the [experiments](Minotaur/experiments) folder 
+
 ## Bugs found by Minotaur
 ### Soundness Bugs
  Tool | Status | Type
@@ -54,6 +58,7 @@ Tool | Status | Type
 ## About
 ```mermaid
 flowchart BT
+    Klee --> Storm
     SMTComp --> Storm
     Storm --> |Clauses| Generator
     Maze --> |Scaffolding| Fuzzle
@@ -61,7 +66,8 @@ flowchart BT
     Fuzzle --> |Populate| Code 
     Code -->  SMC
     SMC --> |Result| Minimizer
+    SMC --> |Imprecise/Unsound| Bug 
     Storm --> |Clauses| Minimizer
     Minimizer --> | Selected Clauses | Generator
-
+    Minimizer --> | Minimized Code | Bug
 ```
