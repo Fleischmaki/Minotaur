@@ -3,8 +3,8 @@ from . import commands, maze_gen
 
 LOGGER = logging.getLogger(__name__)
 
-SPAWN_CMD_CPU = 'docker run --rm -m=%dg -t -d --cpuset-cpus=%d --name %s %s'
-SPAWN_CMD_NOCPU = 'docker run --rm -m=%dg -t -d --name %s %s'
+SPAWN_CMD_CPU = 'docker run --rm -m=%dg -t -d --cpus=1 --cpuset-cpus=%d --name %s %s %s'
+SPAWN_CMD_NOCPU = 'docker run --rm -m=%dg -t -d --cpus=1 --name %s %s %s'
 CP_MAZE_CMD = 'docker cp %s %s:/home/%s/%s'
 CP_SEED_CMD = 'docker cp %s %s:/home/%s/%s'
 CP_CMD = 'docker cp %s:/home/%s/workspace/%s %s'
@@ -40,16 +40,16 @@ def get_container(tool,name):
 def clean_name(name):
     return str(name).replace(' ', '').replace('=','')
 
-def spawn_docker(memory, name, tool, cpu = -1):
+def spawn_docker(memory, name, tool, maze_dir='', cpu = -1):
     if cpu > 0:
-        cmd = SPAWN_CMD_CPU % (memory, cpu, get_container(tool,name), DOCKER_PREFIX + tool)
+        cmd = SPAWN_CMD_CPU % (memory, cpu, get_container(tool,name),'' if maze_dir == '' else '-v %s:/mazes' % maze_dir, DOCKER_PREFIX + tool)
     else:
-        cmd = SPAWN_CMD_NOCPU % (memory, get_container(tool,name), DOCKER_PREFIX + tool)
+        cmd = SPAWN_CMD_NOCPU % (memory, get_container(tool,name),'' if maze_dir == '' else '-v %s:/mazes' % maze_dir, DOCKER_PREFIX + tool)
     return commands.spawn_cmd(cmd)
 
-def add_docker_maze(path, name, tool,maze_name):
-    cmd = CP_MAZE_CMD % (path, get_container(tool,name),get_user(tool), os.path.split(path)[1] if maze_name == '' else maze_name)
-    return commands.spawn_cmd(cmd)
+# def add_docker_maze(path, name, tool,maze_name):
+#     cmd = CP_MAZE_CMD % (path, get_container(tool,name),get_user(tool), os.path.split(path)[1] if maze_name == '' else maze_name)
+#     return commands.spawn_cmd(cmd)
 
 def set_docker_seed(path, name, tool):
     cmd = CP_SEED_CMD % (path, get_container(tool,name),get_user(tool), os.path.split(path)[1])
@@ -58,7 +58,7 @@ def set_docker_seed(path, name, tool):
 def run_docker(duration, tool, name, variant='', flags='', maze_name='maze.c', result_name = 'res'):
     user = get_user(tool)
     script = '/home/%s/tools/run_%s.sh' % (user, tool)
-    src_path = '/home/%s/%s' % (user, maze_name)
+    src_path = '/mazes/%s' % (maze_name)
     out_name = result_name
     cmd = '%s %s %s %s %s %s' % (script, src_path, duration, out_name, variant,flags)
     return spawn_cmd_in_docker(get_container(tool,name), cmd)
@@ -89,7 +89,6 @@ def kill_docker(tool,name):
 
 
 def run_mc(tool,variant,flags, name, params,outdir, memory = 4,  timeout=1, gen='container', expected_result='error'):
-    spawn_docker(memory,name,tool).wait()
     if gen == 'container':
         maze_gen.generate_maze_in_docker(params,name).wait()
         copy_docker_results('gen', name, outdir)
@@ -99,7 +98,7 @@ def run_mc(tool,variant,flags, name, params,outdir, memory = 4,  timeout=1, gen=
     t_index = params['m'] - (0 if 'keepId' in params['t'] else 1)
     maze = maze_gen.get_maze_names(params)[t_index]
     maze_path = os.path.join(outdir,'src',maze)
-    add_docker_maze(maze_path,name,tool).wait()
+    spawn_docker(memory,name,tool,maze_path).wait()
     run_docker(timeout, tool, name, variant,flags,maze).wait()
     collect_docker_results(tool,name,expected_result).wait()
     copy_docker_results(tool,name,os.path.join(outdir, 'res'))

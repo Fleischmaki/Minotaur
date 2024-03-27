@@ -193,25 +193,17 @@ def spawn_containers(conf, works):
     container_count = get_containers_needed(conf,works)
     for i in range(container_count):
         target = works[i*conf['batch_size']]
-        procs.append(docker.spawn_docker(conf['memory'], target.index, target.tool,i))
+        procs.append(docker.spawn_docker(conf['memory'], target.index, target.tool,get_maze_dir(),i))
     commands.wait_for_procs(procs)
     time.sleep(5)
 
 def run_tools(conf: dict,works: 'list[Target]'):
     duration = conf['duration']
-    container_count = get_containers_needed(conf,works)
     for j in range(conf['batch_size']):
-        procs = []
-        for i in range(container_count):
-            target = works[i*conf['batch_size'] + j]
-            # Copy maze in the container
-            procs.append(docker.add_docker_maze(get_maze_dir(target.maze), target.index,target.tool, 'maze.c'))
-        commands.wait_for_procs(procs)
-        time.sleep(5)
         procs = []
         for i in range(get_containers_needed(conf, works)):
             target  = works[i*conf['batch_size'] + j]
-            procs.append(docker.run_docker(duration, target.tool, target.index, target.variant, target.flags, maze_name='maze.c', result_name=str(j)))
+            procs.append(docker.run_docker(duration, target.tool, target.index, target.variant, target.flags, target.maze, result_name=str(j)))
         commands.wait_for_procs(procs)
         time.sleep(3) 
 
