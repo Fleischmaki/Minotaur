@@ -71,7 +71,7 @@ def write_signed(symbs,node: FNode,cons, text: 'FNode | str', always=True) -> st
             cons.write('scast_helper(')
     write_or_convert(symbs,text,cons)
     if GENERATE_WELL_DEFINED and (always or width in (32,64) or (len(node.args()) != 0 and (not all(map(is_signed, node.args())) or not all(map(lambda n: ff.get_bv_width(n)<=width,node.args()))))):
-        cons.write(', %s)') % width
+        cons.write(', %s)' % width) 
 
 def write_unsigned(symbs, node: FNode, cons, text: 'FNode | str', always=True) -> str:
     width = ff.get_bv_width(node)
