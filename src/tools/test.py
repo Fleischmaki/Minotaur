@@ -161,7 +161,6 @@ class Target_Generator():
 
 
     def generate_mazes(self):
-        commands.run_cmd('mkdir -p %s' % get_temp_dir())
         if self.conf['maze_gen'] == 'container':
             paramss = self.fetch_maze_params()
             maze_gen.generate_mazes(paramss, get_temp_dir(),self.conf['gen_time'])
@@ -181,7 +180,7 @@ def fetch_works(conf: dict, gen: Target_Generator):
 
 
 def get_temp_dir():
-    return os.path.join('/tmp/minotaur_mazes')
+   return os.path.join('/tmp','minotaur_mazes')
 
 def get_maze_dir(maze=''):
     return os.path.join(get_temp_dir(),'src', maze)

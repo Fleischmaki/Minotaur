@@ -5,10 +5,10 @@ LOGGER = logging.getLogger(__name__)
 
 DOCKER_PREFIX = 'minotaur-'
 DOCKER_COMMAND = 'docker'
-HOST_NAME = 'seeds'
+HOST_NAME = '/mazes'
 
-SPAWN_CMD_CPU = f'{DOCKER_COMMAND} run --rm -m=%dg -t -d --cpus=1 --cpuset-cpus=%d --name %s -v %s:/{HOST_NAME} %s' 
-SPAWN_CMD_NOCPU = f'{DOCKER_COMMAND} run --rm -m=%dg -t -d --cpus=1 --name %s -v %s:/{HOST_NAME} %s'
+SPAWN_CMD_CPU = f'{DOCKER_COMMAND} run --rm -m=%dg -t -d --cpus=1 --cpuset-cpus=%d --name %s --mount type=bind,source=%s,destination={HOST_NAME} %s' 
+SPAWN_CMD_NOCPU = f'{DOCKER_COMMAND} run --rm -m=%dg -t -d --cpus=1 --name %s --mount type=bind,source=%s,destination={HOST_NAME} %s'
 CP_MAZE_CMD = DOCKER_COMMAND + ' cp %s %s:/home/%s/%s'
 CP_SEED_CMD = DOCKER_COMMAND + ' cp %s %s:/home/%s/%s'
 CP_CMD = DOCKER_COMMAND + ' cp %s:/home/%s/workspace/%s %s'
@@ -57,7 +57,7 @@ def set_docker_seed(path, name, tool):
 def run_docker(duration, tool, name, variant='', flags='', maze_name='maze.c', result_name = 'res'):
     user = get_user(tool)
     script = '/home/%s/tools/run_%s.sh' % (user, tool)
-    src_path = '/%s/%s' % (HOST_NAME,maze_name)
+    src_path = '%s/%s' % (HOST_NAME,maze_name)
     out_name = result_name
     cmd = ' '.join(map(str,[script, src_path, duration, out_name, variant,flags]))
     return spawn_cmd_in_docker(get_container(tool,name), cmd)

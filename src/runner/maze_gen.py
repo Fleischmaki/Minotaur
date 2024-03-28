@@ -34,7 +34,9 @@ def get_maze_names(params):
               for i in range(min,params['m'] + 1)]
 
 def generate_maze_in_docker(params, outdir, index = 0, timeout=-1):
+    commands.run_cmd('mkdir -p ' + outdir + ' ' + ' '.join([os.path.join(outdir, i) for i in ['src','smt','sln','png','txt','bin']]) )
     docker.spawn_docker(1, index, 'gen', outdir).wait()
+    params['o'] = docker.HOST_NAME
     if params['s'] is not None:
         docker.set_docker_seed(params['s'], index, 'gen').wait()
     param_string = get_string_from_params(params)
@@ -43,7 +45,7 @@ def generate_maze_in_docker(params, outdir, index = 0, timeout=-1):
     return docker.spawn_cmd_in_docker(docker.get_container('gen', index),  cmd, timeout=timeout)
 
 def get_string_from_params(params):
-    param_string = '-o ' + 'outputs '
+    param_string = ''
     for param, value in params.items():
         if param == 's':
             value = '/home/maze/' + params['s'].split('/')[-1]
@@ -74,13 +76,14 @@ def generate_mazes(paramss, outdir, timeout=-1):
     for i in range(len(paramss)):
         pipes.append(generate_maze_in_docker(paramss[i],outdir, i, timeout))
     commands.wait_for_procs(pipes)
+    for i in range(len(paramss)):
+        docker.kill_docker('gen',i)
 
 def generate_maze(params, out_dir = '', minotaur = ''):
     if(minotaur == ''):
         import __main__
         minotaur = '/'.join(__main__.__file__.split('/')[:-1])
     param_string = ''
-    print(params)
     for param, value in params.items():
         param_string += '-%s %s ' % (param, value)
     out_dir = os.path.join(minotaur, 'temp') if out_dir == '' else out_dir
