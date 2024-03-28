@@ -59,7 +59,7 @@ def run_docker(duration, tool, name, variant='', flags='', maze_name='maze.c', r
     script = '/home/%s/tools/run_%s.sh' % (user, tool)
     src_path = '/%s/%s' % (HOST_NAME,maze_name)
     out_name = result_name
-    cmd = ' '.join([script, src_path, duration, out_name, variant,flags])
+    cmd = ' '.join(map(str,[script, src_path, duration, out_name, variant,flags]))
     return spawn_cmd_in_docker(get_container(tool,name), cmd)
 
 def collect_docker_results(tool,name, expected_result='error'):
