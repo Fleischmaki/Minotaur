@@ -73,8 +73,6 @@ def generate_mazes(paramss, outdir, timeout=-1):
     pipes = []
     for i in range(len(paramss)):
         pipes.append(generate_maze_in_docker(paramss[i],outdir, i, timeout))
-    if timeout > 0:
-        time.sleep(timeout)
     commands.wait_for_procs(pipes)
 
 def generate_maze(params, out_dir = '', minotaur = ''):
