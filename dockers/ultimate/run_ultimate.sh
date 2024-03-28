@@ -5,7 +5,7 @@
 # Arg3: Variant 
 # Arg4: Config
 
-sudo chown -R maze:maze $1
+
 
 WORKDIR=/home/maze/workspace
 
