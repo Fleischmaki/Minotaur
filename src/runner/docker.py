@@ -42,9 +42,9 @@ def clean_name(name):
 
 def spawn_docker(memory, name, tool, maze_dir='', cpu = -1):
     if cpu > 0:
-        cmd = SPAWN_CMD_CPU % (memory, cpu, get_container(tool,name),'' if maze_dir == '' else '-v ./%s:/mazes' % maze_dir, DOCKER_PREFIX + tool)
+        cmd = SPAWN_CMD_CPU % (memory, cpu, get_container(tool,name),'' if maze_dir == '' else '-v %s:/mazes' % maze_dir, DOCKER_PREFIX + tool)
     else:
-        cmd = SPAWN_CMD_NOCPU % (memory, get_container(tool,name),'' if maze_dir == '' else '-v ./%s:/mazes' % maze_dir, DOCKER_PREFIX + tool)
+        cmd = SPAWN_CMD_NOCPU % (memory, get_container(tool,name),'' if maze_dir == '' else '-v %s:/mazes' % maze_dir, DOCKER_PREFIX + tool)
     return commands.spawn_cmd(cmd)
 
 def set_docker_seed(path, name, tool):
@@ -93,7 +93,6 @@ def run_pa(tool,variant,flags, name, params,outdir, memory = 4,  timeout=1, gen=
         maze_gen.generate_maze(params,outdir)
     t_index = params['m'] - (0 if 'keepId' in params['t'] else 1)
     maze = maze_gen.get_maze_names(params)[t_index]
-    maze_path = os.path.join(outdir,'src',maze)
     spawn_docker(memory,name,tool,os.path.join(outdir,'src')).wait()
     run_docker(timeout, tool, name, variant,flags,maze).wait()
     collect_docker_results(tool,name,expected_result).wait()

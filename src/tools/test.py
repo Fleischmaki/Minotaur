@@ -180,7 +180,7 @@ def fetch_works(conf: dict, gen: Target_Generator):
 
 
 def get_temp_dir():
-    return os.path.join(get_minotaur_root(), 'temp')
+    return os.path.join('/tmp/miotaur_mazes')
 
 def get_maze_dir(maze=''):
     return os.path.join(get_temp_dir(),'src', maze)
