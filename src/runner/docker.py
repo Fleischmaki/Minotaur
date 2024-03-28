@@ -3,22 +3,25 @@ from . import commands, maze_gen
 
 LOGGER = logging.getLogger(__name__)
 
-SPAWN_CMD_CPU = 'docker run --rm -m=%dg -t -d --cpus=1 --cpuset-cpus=%d --name %s %s %s'
-SPAWN_CMD_NOCPU = 'docker run --rm -m=%dg -t -d --cpus=1 --name %s %s %s'
-CP_MAZE_CMD = 'docker cp %s %s:/home/%s/%s'
-CP_SEED_CMD = 'docker cp %s %s:/home/%s/%s'
-CP_CMD = 'docker cp %s:/home/%s/workspace/%s %s'
-KILL_CMD = 'docker kill %s'
-REMOVE_CMD = 'docker rm %s'
 DOCKER_PREFIX = 'minotaur-'
+DOCKER_COMMAND = 'docker'
+HOST_NAME = 'seeds'
+
+SPAWN_CMD_CPU = f'{DOCKER_COMMAND} run --rm -m=%dg -t -d --cpus=1 --cpuset-cpus=%d --name %s -v %s:/{HOST_NAME} %s' 
+SPAWN_CMD_NOCPU = f'{DOCKER_COMMAND} run --rm -m=%dg -t -d --cpus=1 --name %s -v %s:/{HOST_NAME} %s'
+CP_MAZE_CMD = DOCKER_COMMAND + ' cp %s %s:/home/%s/%s'
+CP_SEED_CMD = DOCKER_COMMAND + ' cp %s %s:/home/%s/%s'
+CP_CMD = DOCKER_COMMAND + ' cp %s:/home/%s/workspace/%s %s'
+KILL_CMD = DOCKER_COMMAND + ' kill %s'
+REMOVE_CMD = DOCKER_COMMAND + ' rm %s'
 
 def spawn_cmd_in_docker(container, cmd_str, timeout=-1):
-    LOGGER.info('Executing (in container %s): %s' % (container, cmd_str))
-    cmd_prefix = 'docker exec %s /bin/bash -c' %  container
+    cmd_prefix = DOCKER_COMMAND + ' exec %s /bin/bash -c' %  container
     if timeout > 0:
-        cmd_prefix = 'docker exec %s timeout %d /bin/bash -c' %  (container, timeout)
+        cmd_prefix = DOCKER_COMMAND + ' exec %s timeout %ds /bin/bash -c' %  (container, timeout)
     cmd_args = cmd_prefix.split()
     cmd_args += [cmd_str]
+    LOGGER.info('Executing (in container %s): %s' % (container, ' '.join(cmd_args[3:])))
     try:
         return subprocess.Popen(cmd_args)
     except Exception as e:
@@ -40,11 +43,11 @@ def get_container(tool,name):
 def clean_name(name):
     return str(name).replace(' ', '').replace('=','')
 
-def spawn_docker(memory, name, tool, maze_dir='', cpu = -1):
+def spawn_docker(memory, name, tool, maze_dir, cpu = -1):
     if cpu > 0:
-        cmd = SPAWN_CMD_CPU % (memory, cpu, get_container(tool,name),'' if maze_dir == '' else '-v %s:/mazes' % maze_dir, DOCKER_PREFIX + tool)
+        cmd = SPAWN_CMD_CPU % (memory, cpu, get_container(tool,name), maze_dir, DOCKER_PREFIX + tool)
     else:
-        cmd = SPAWN_CMD_NOCPU % (memory, get_container(tool,name),'' if maze_dir == '' else '-v %s:/mazes' % maze_dir, DOCKER_PREFIX + tool)
+        cmd = SPAWN_CMD_NOCPU % (memory, get_container(tool,name), maze_dir, DOCKER_PREFIX + tool)
     return commands.spawn_cmd(cmd)
 
 def set_docker_seed(path, name, tool):
@@ -54,9 +57,9 @@ def set_docker_seed(path, name, tool):
 def run_docker(duration, tool, name, variant='', flags='', maze_name='maze.c', result_name = 'res'):
     user = get_user(tool)
     script = '/home/%s/tools/run_%s.sh' % (user, tool)
-    src_path = '/mazes/%s' % (maze_name)
+    src_path = '/%s/%s' % (HOST_NAME,maze_name)
     out_name = result_name
-    cmd = '%s %s %s %s %s %s' % (script, src_path, duration, out_name, variant,flags)
+    cmd = ' '.join([script, src_path, duration, out_name, variant,flags])
     return spawn_cmd_in_docker(get_container(tool,name), cmd)
 
 def collect_docker_results(tool,name, expected_result='error'):
