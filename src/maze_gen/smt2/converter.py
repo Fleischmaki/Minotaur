@@ -87,7 +87,7 @@ def write_cast(symbs, node: FNode, cons, text: 'FNode | str', always=False) -> s
     else:
         write_or_convert(symbs,text,cons)
     
-def get_unsigned_cast(node: FNode,) -> str:
+def get_unsigned_cast(node: FNode) -> str:
     width = ff.get_bv_width(node)
     if width in (32,64) and (len(node.args()) == 0 or (not all(map(is_signed, node.args())) and all(map(lambda n: ff.get_bv_width(n)<=width,node.args())))):
         return ''
@@ -337,10 +337,10 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         dim = ff.get_array_dim(node)
         cons.write("*"*(dim-1))
         var = clean_string(str(node))
-        if dim == 0:
+        if dim == 0 and node.get_type().is_bv_type():
             cons.write(get_unsigned_cast(node))
         cons.write(var)
-        if dim == 0 and not has_matching_type(ff.get_bv_width(node)):
+        if dim == 0 and node.get_type().is_bv_type() and not has_matching_type(ff.get_bv_width(node)):
             cons.write(')')
         symbs.add(var)
     elif node.is_select():
