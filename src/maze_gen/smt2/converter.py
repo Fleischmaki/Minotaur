@@ -143,9 +143,9 @@ def div_helper(symbs: t.Set[str],node: FNode, cons: io.TextIOBase):
         cons.write(get_unsigned_cast(node))
         cons.write(helper)
         cons.write('(')
-        convert(symbs,node,cons,l)
+        write_cast(symbs,node,cons,l)
         cons.write(',')
-        convert(symbs,node,cons,r)
+        write_cast(symbs,node,cons,r)
         cons.write(',%s,)' % width)
         if not has_matching_type(width):
             cons.write(')')
