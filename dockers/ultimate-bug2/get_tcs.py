@@ -32,7 +32,7 @@ def main(dest_dir,expected_result):
             file_dir = os.path.join(dest_dir,"maze_%s" % name) 
             os.system('mkdir -p %s' % file_dir)
         except Exception as e:
-            print("NOTE: Failed to parse file %s: %s", file, str(e))
+            print("NOTE: Failed to parse file %s: %s" % (file, str(e)))
             continue
         if ('FALSE' in resfile):
             save_tc(file_dir, respath, start_time, end_time, 'positive', expected_result)

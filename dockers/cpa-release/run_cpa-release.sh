@@ -19,5 +19,3 @@ touch $WORKDIR/.start$3
 # Tell CPA how long it has (to select heuristics, etc.), but use timeout to ensure termination
 timeout --foreground $2s /home/maze/tools/cpa/scripts/cpa.sh -spec sv-comp-reachability -preprocess -$4 -timelimit $2 $1 &> $OUTFILE 
 touch $WORKDIR/.end$3
-
-mv output outputs/output

@@ -32,7 +32,7 @@ def main(dest_dir,expected_result):
             os.system('mkdir -p %s' % file_dir)
             resfile = open(respath, "r").read()
         except Exception as e:
-            print("NOTE: Failed to parse file %s: %s", file, str(e))
+            print("NOTE: Failed to parse file %s: %s" % (file, str(e)))
             continue
 
         # True positives

@@ -24,7 +24,3 @@ export PATH=$PATH:$UDIR
 touch $WORKDIR/.start$3
 timeout --foreground $2s $UDIR/Ultimate -tc $UDIR/config/${4}Reach.xml -s $UDIR/config/svcomp-Reach-64bit-${4}_$5.epf -i $1 &> $OUTFILE
 touch $WORKDIR/.end$3
-
-# Cleanup outputs
-mv Ultimate.log outputs/Ultimate.log
-mv UltimateCounterExample.errorpath outputs/UltimateCounterExample.errorpath
