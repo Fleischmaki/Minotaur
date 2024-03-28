@@ -54,7 +54,7 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
             LOGGER.debug("Converting clause %d/%d." % (c,len(clauses)))
             result = converter.convert_to_string(symbs,clause)
         except Exception as e:
-            LOGGER.warning("Could not convert clause: %s", str(e))
+            LOGGER.warning("Could not convert clause: ", e)
             if continue_on_error:
                 if clause not in core:
                     continue
