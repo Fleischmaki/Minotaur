@@ -3,7 +3,7 @@
 	"repeats" : 5,
 	"avg" : 1,
 	"mazes" : [-1],
-	"duration" : [30],
+	"duration" : [300],
 	"workers" : 5,
 	"memory" : 4,
 	"transforms" : [15],
@@ -38,7 +38,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MasterThesis/bug_seeds/bench_12285.smt2",
+		"s": "/home/markus/MasterThesis/Minotaur/bug_seeds/bench_12285.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

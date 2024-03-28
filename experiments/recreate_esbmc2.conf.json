@@ -11,8 +11,8 @@
 	"maze_gen" : "container",
 	"expected_result": "error",
 	"tool" : {
-		"cpa-release": {
-			"variant" : ["kInduction"]
+		"esbmc-bug2": {
+			"variant" : ["--interval-analysis"]
 		}
 	},
 	"avg": 1,
@@ -34,11 +34,10 @@
 		"t" : {
 			"storm": [1],
 			"wd": [0],
-			"mc": [0,25,50,75,100],
-			"dag": [0,2,3,4]
+			"mc": [0,25,50,75,100]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MasterThesis/seeds/QF_BV_bv_bv_resistance.2.prop1_cc_ref_max.smt2",
+		"s": "/home/markus/MasterThesis/Minotaur/bug_seeds/app9bench_1287.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

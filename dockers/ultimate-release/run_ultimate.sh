@@ -21,7 +21,3 @@ export PATH=$PATH:/home/maze/tools/$4
 touch $WORKDIR/.start$3
 timeout --foreground $2s /home/maze/tools/$4/Ultimate.py --spec unreach.prp --witness-dir $OUTDIR --architecture 64bit --file $1 &> $OUTFILE
 touch $WORKDIR/.end$3
-
-# Cleanup outputs
-mv Ultimate.log outputs/Ultimate.log
-mv UltimateCounterExample.errorpath outputs/UltimateCounterExample.errorpath
