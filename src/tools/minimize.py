@@ -81,7 +81,7 @@ class Minimizer:
         
     def get_seed(self):
         if 'storm' in self.params['t']:
-            return os.path.join(self.outdir,'smt', 'mutant_%d.smt2' % (self.params['m'] - 1))
+            return os.path.join(self.outdir,'smt',self.params['r'], 'mutant_%d.smt2' % (self.params['m'] - 1))
         else:
             return self.params['s']
 
