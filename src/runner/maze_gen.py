@@ -43,7 +43,7 @@ def setup_generation_docker(params, outdir, index):
     commands.run_cmd('mkdir -p ' + outdir + ' ' + ' '.join([os.path.join(outdir, i) for i in ['src','smt','sln','png','txt','bin','smt/' + params['r']]]) )
     docker.spawn_docker(1, index, 'gen', outdir).wait()
     if params['s'] is not None:
-        return docker.set_docker_seed(params['s'], index, 'gen').wait()
+        docker.set_docker_seed(params['s'], index, 'gen').wait()
 
 def get_string_from_params(params):
     param_string = ''
@@ -77,14 +77,19 @@ def generate_mazes(paramss, outdir, workers=1, timeout=-1):
     for i , params in enumerate(paramss):
         works[i % workers].append(params)
     works = list(filter(lambda w: len(w) > 0, works))
+
+    pipes = []
     for i in range(len(works)):
         setup_generation_docker(works[i][0], outdir, i)
+        pipes.append(generate_maze_in_docker(works[i][0],i,timeout)) # Can already generate first maze while others spawn in
+    commands.wait_for_procs(pipes)
 
-    for i in range(max(map(len,works))):
+    for i in range(1,max(map(len,works))):
         pipes = []
         for j, work in enumerate(works):
             if i < len(work):
                 commands.run_cmd('mkdir -p ' + os.path.join(outdir, 'smt', str(work[i]['r'])))
+                docker.set_docker_seed(work[i]['s'], j, 'gen').wait()
                 pipes.append(generate_maze_in_docker(work[i], j, timeout))
         commands.wait_for_procs(pipes)
     for i in range(len(works)):
