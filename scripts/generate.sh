@@ -123,7 +123,7 @@ echo "Generator used: "$GEN
 echo "Output directory: "$OUTPUT_DIR
 echo "##############################################"
 
-mkdir -p $OUTPUT_DIR/src $OUTPUT_DIR/bin $OUTPUT_DIR/png $OUTPUT_DIR/txt $OUTPUT_DIR/sln $OUTPUT_DIR/smt
+mkdir -p $OUTPUT_DIR/src $OUTPUT_DIR/bin $OUTPUT_DIR/png $OUTPUT_DIR/txt $OUTPUT_DIR/sln $OUTPUT_DIR/smt $OUTPUT_DIR/smt/$SEED
 MAZEGEN_DIR=$(readlink -f $(dirname "$0")/..)/src/maze_gen
 
 NAME=$ALGORITHM"_"$WIDTH"x"$HEIGHT"_"$SEED"_"
