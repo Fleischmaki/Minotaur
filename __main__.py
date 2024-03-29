@@ -34,5 +34,7 @@ if __name__ == '__main__':
         generate.load(argv)
     elif mode == "e":
         experiment.load(argv)
+    elif mode == "c":
+        check_files.load(argv) 
     else:
         LOGGER.error("Invalid mode")

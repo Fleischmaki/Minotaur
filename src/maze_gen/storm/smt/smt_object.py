@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from storm.runner.z3_python_api import check_satisfiability, convert_ast_to_expression, get_model
+from ..runner.z3_python_api import check_satisfiability, convert_ast_to_expression, get_model
 from z3 import *
 from termcolor import colored
 import copy

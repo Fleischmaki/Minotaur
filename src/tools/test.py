@@ -59,7 +59,7 @@ def pick_values(head,value,tail):
 def set_default(parameters, name, value):
     if name not in parameters.keys():
         parameters[name] = value
-        LOGGER.info('Using default value %s for parameter %s' % (value, name))
+        LOGGER.debug('Using default value %s for parameter %s' % (value, name))
 
 def get_random_params(conf):
     conf['repeats'] -= 1
@@ -108,7 +108,6 @@ class Target_Generator():
         self.conf = conf
         self.repeats = self.conf['repeats'] if self.conf['repeats'] >= 0 else inf
         self.targets = list()
-        self.conf = self.conf
         self.mazes = OrderedDict()
 
     def __iter__(self):
@@ -116,6 +115,7 @@ class Target_Generator():
 
     def __next__(self):
         if len(self.targets) == 0:
+            LOGGER.info("Out of targets, fetching new batch.")
             self.add_batch()   
         if len(self.targets) == 0:
             raise StopIteration
@@ -125,6 +125,7 @@ class Target_Generator():
         return self.repeats != 0 or len(self.targets) > 0 or len(self.mazes) > 0
 
     def add_batch(self):
+        LOGGER.info("Out of mazes, generating more.")
         while(len(self.mazes) < self.conf['batch_size'] and self.repeats != 0):
             self.generate_mazes()
 
