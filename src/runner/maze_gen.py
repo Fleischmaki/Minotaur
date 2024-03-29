@@ -40,6 +40,7 @@ def generate_maze_in_docker(params, index = 0, timeout=-1):
     return docker.spawn_cmd_in_docker(docker.get_container('gen', index),  cmd, timeout=timeout)
 
 def setup_generation_docker(params, outdir, index):
+    commands.run_cmd('mkdir -p ' + outdir + ' ' + ' '.join([os.path.join(outdir, i) for i in ['src','smt','sln','png','txt','bin','smt/' + params['r']]]) )
     docker.spawn_docker(1, index, 'gen', outdir).wait()
     if params['s'] is not None:
         return docker.set_docker_seed(params['s'], index, 'gen').wait()
@@ -83,6 +84,7 @@ def generate_mazes(paramss, outdir, workers=1, timeout=-1):
         pipes = []
         for j, work in enumerate(works):
             if i < len(work):
+                commands.run_cmd('mkdir -p ' + os.path.join(outdir, 'smt', str(work[i]['r'])))
                 pipes.append(generate_maze_in_docker(work[i], j, timeout))
         commands.wait_for_procs(pipes)
     for i in range(len(works)):
