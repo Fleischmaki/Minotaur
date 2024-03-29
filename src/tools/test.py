@@ -2,7 +2,7 @@ import random, sys, os, json, time
 import itertools as it
 from ..runner import *
 from collections import namedtuple, OrderedDict
-from math import ceil, inf
+from math import floor,ceil, inf
 import logging
 
 LOGGER = logging.getLogger(__name__)
@@ -164,7 +164,7 @@ class Target_Generator():
     def generate_mazes(self):
         if self.conf['maze_gen'] == 'container':
             paramss = self.fetch_maze_params()
-            maze_gen.generate_mazes(paramss, get_temp_dir(),self.conf['gen_time'])
+            maze_gen.generate_mazes(paramss, get_temp_dir(),self.conf['workers'],self.conf['gen_time'])
             for params in paramss:
                 self.mazes.update({maze: params for maze in maze_gen.get_maze_names(params)})
         else:
@@ -172,8 +172,8 @@ class Target_Generator():
             maze_gen.generate_maze(params, get_temp_dir(), get_minotaur_root())
             self.mazes.update({maze: params for maze in maze_gen.get_maze_names(params)})
 
-    def fetch_maze_params(self):
-        return [get_random_params(self.conf) for _ in range(min(self.repeats,self.conf['workers']))]
+    def fetch_maze_params(self):                                                                 
+        return [get_random_params(self.conf) for _ in range(min(self.repeats,ceil(self.conf['batch_size']/self.conf['transforms'])))] # NUMNB_BATCHES*SIZE / MAZES_PER_PARAMS
 
 def fetch_works(conf: dict, gen: Target_Generator):
     all = list(it.islice(gen, 0, conf['workers']*conf['batch_size']))

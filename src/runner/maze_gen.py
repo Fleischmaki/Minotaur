@@ -33,16 +33,16 @@ def get_maze_names(params):
             %  (params['a'], params['w'], params['h'],params['r'], params['t'],i,params['c'], generator)
               for i in range(min,params['m'] + 1)]
 
-def generate_maze_in_docker(params, outdir, index = 0, timeout=-1):
-    commands.run_cmd('mkdir -p ' + outdir + ' ' + ' '.join([os.path.join(outdir, i) for i in ['src','smt','sln','png','txt','bin','smt/' + params['r']]]) )
-    docker.spawn_docker(1, index, 'gen', outdir).wait()
+def generate_maze_in_docker(params, index = 0, timeout=-1):
     params['o'] = docker.HOST_NAME
-    if params['s'] is not None:
-        docker.set_docker_seed(params['s'], index, 'gen').wait()
     param_string = get_string_from_params(params)
     cmd = './Minotaur/scripts/generate.sh ' + param_string
-
     return docker.spawn_cmd_in_docker(docker.get_container('gen', index),  cmd, timeout=timeout)
+
+def setup_generation_docker(params, outdir, index):
+    docker.spawn_docker(1, index, 'gen', outdir).wait()
+    if params['s'] is not None:
+        return docker.set_docker_seed(params['s'], index, 'gen').wait()
 
 def get_string_from_params(params):
     param_string = ''
@@ -71,12 +71,21 @@ def get_params_from_string(param_string):
     return params
 
 
-def generate_mazes(paramss, outdir, timeout=-1):
-    pipes = []
-    for i in range(len(paramss)):
-        pipes.append(generate_maze_in_docker(paramss[i],outdir, i, timeout))
-    commands.wait_for_procs(pipes)
-    for i in range(len(paramss)):
+def generate_mazes(paramss, outdir, workers=1, timeout=-1):
+    works = [[] for _ in range(workers)]
+    for i , params in enumerate(paramss):
+        works[i % workers].append(params)
+    works = list(filter(lambda w: len(w) > 0, works))
+    for i in range(len(works)):
+        setup_generation_docker(works[i][0], outdir, i)
+
+    for i in range(max(map(len,works))):
+        pipes = []
+        for j, work in enumerate(works):
+            if i < len(work):
+                pipes.append(generate_maze_in_docker(work[i], j, timeout))
+        commands.wait_for_procs(pipes)
+    for i in range(len(works)):
         docker.kill_docker('gen',i)
 
 def generate_maze(params, out_dir = '', minotaur = ''):

@@ -89,8 +89,8 @@ def kill_docker(tool,name):
 
 def run_pa(tool,variant,flags, name, params,outdir, memory = 4,  timeout=1, gen='container', expected_result='error'):
     if gen == 'container':
+        maze_gen.setup_generation_docker(params,outdir,name)
         maze_gen.generate_maze_in_docker(params,name).wait()
-        copy_docker_results('gen', name, outdir)
         kill_docker('gen', name)
     else:
         maze_gen.generate_maze(params,outdir)
