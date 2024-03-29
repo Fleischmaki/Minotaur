@@ -125,8 +125,8 @@ class Target_Generator():
         return self.repeats != 0 or len(self.targets) > 0 or len(self.mazes) > 0
 
     def add_batch(self):
-        LOGGER.info("Out of mazes, generating more.")
         while(len(self.mazes) < self.conf['batch_size'] and self.repeats != 0):
+            LOGGER.info("Out of mazes, generating more.")
             self.generate_mazes()
 
         maze_keys = list(self.mazes.keys())
@@ -234,6 +234,7 @@ def store_outputs(conf: dict, out_dir: str, works: 'list[Target]'):
             out_path = os.path.join(out_path,w.maze)
             for filename in os.listdir(out_path):
                 if '_' in filename:
+                    print(filename)
                     runtime, tag = filename.split('_')
                     if (tag == 'fn'):
                         if conf['abort_on_error']:
