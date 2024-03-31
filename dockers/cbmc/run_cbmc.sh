@@ -14,5 +14,5 @@ mkdir -p $OUTDIR
 
 # Create dummy file to indicate running start
 touch $WORKDIR/.start$3
-timeout --foreground $2s cbmc  --error-label "__VERIFIER_ERROR()" ${@:4}  $1 &> $OUTFILE
+timeout --foreground $2s -k 2s cbmc  --error-label "__VERIFIER_ERROR()" ${@:4}  $1 &> $OUTFILE
 touch $WORKDIR/.end$3

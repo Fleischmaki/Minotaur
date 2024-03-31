@@ -17,5 +17,5 @@ mkdir -p $OUTDIR
 # Create dummy file to indicate running start
 touch $WORKDIR/.start$3
 # Tell CPA how long it has (to select heuristics, etc.), but use timeout to ensure termination
-timeout --foreground $2s /home/maze/tools/cpa/scripts/cpa.sh -64 -spec sv-comp-reachability -preprocess -$4 -timelimit $2 $1 &> $OUTFILE 
+timeout --foreground $2s -k 2s /home/maze/tools/cpa/scripts/cpa.sh -64 -spec sv-comp-reachability -preprocess -$4 -timelimit $2 $1 &> $OUTFILE 
 touch $WORKDIR/.end$3

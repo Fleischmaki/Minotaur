@@ -16,5 +16,5 @@ mkdir -p $OUTDIR
 
 # Create dummy file to indicate running start
 touch $WORKDIR/.start$3
-timeout --foreground $2s /home/maze/tools/mopsa-analyzer/bin/mopsa -c-check-unsigned-implicit-cast-overflow false -no-color -config c/$4.json -additional-stubs c/mopsa/svcomp.c -ccopt -fbracket-depth=2048 $1 >  $OUTFILE 
+timeout --foreground $2s -k 2s /home/maze/tools/mopsa-analyzer/bin/mopsa -c-check-unsigned-implicit-cast-overflow false -no-color -config c/$4.json -additional-stubs c/mopsa/svcomp.c -ccopt -fbracket-depth=2048 $1 >  $OUTFILE 
 touch $WORKDIR/.end$3
