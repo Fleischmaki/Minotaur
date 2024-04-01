@@ -82,7 +82,7 @@ def copy_docker_output(tool, name, out_path, user):
 
 def kill_docker(tool,name):
     cmd = KILL_CMD % (get_container(tool,name))
-    commands.run_cmd(cmd)
+    return commands.spawn_cmd(cmd)
 
 
 def run_pa(tool,variant,flags, name, params,outdir, memory = 4,  timeout=1, gen='container', expected_result='error'):
