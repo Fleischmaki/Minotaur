@@ -247,7 +247,7 @@ def store_outputs(conf: dict, out_dir: str, works: 'list[Target]'):
 
 def write_summary(conf,out_dir, target,tag,runtime):
     maze, tool, id, params, variant, flags = target
-    out_path = os.path.join(out_dir,tool, str(id))
+    out_path = os.path.join(out_dir,tool, str(id),maze)
     if (conf['verbosity'] == 'bug' or conf['verbosity'] == 'bug_only') and tag not in ('fp', 'fn'):
         commands.run_cmd(REMOVE_CMD % out_path)
         if conf['verbosity'] == 'bug_only':
