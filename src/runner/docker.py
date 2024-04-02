@@ -45,7 +45,7 @@ def clean_name(name):
     return str(name).replace(' ', '').replace('=','')
 
 def spawn_docker(memory, name, tool, maze_dir, cpu = -1, host_is_readonly=False):
-    if cpu > 0:
+    if cpu >= 0:
         cmd = SPAWN_CMD_CPU % (memory, cpu, get_container(tool,name), os.path.abspath(maze_dir), ',readonly' if host_is_readonly else '', DOCKER_PREFIX + tool)
     else:
         cmd = SPAWN_CMD_NOCPU % (memory, get_container(tool,name), os.path.abspath(maze_dir), ',readonly' if host_is_readonly else '', DOCKER_PREFIX + tool) # TODO rewrite this, this is disgusting
