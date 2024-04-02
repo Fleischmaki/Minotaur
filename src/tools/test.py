@@ -198,22 +198,20 @@ def get_containers_needed(conf, works):
 
 def spawn_containers(conf, works):
     procs = []
-    container_count = get_containers_needed(conf,works)
-    for i in range(container_count):
+    for i in range(get_containers_needed(conf,works)):
         target = works[i*conf['batch_size']]
-        procs.append(docker.spawn_docker(conf['memory'], target.index, target.tool,get_maze_dir(),i))
+        procs.append(docker.spawn_docker(conf['memory'], target.index, target.tool,get_maze_dir(),i,True))
     commands.wait_for_procs(procs)
     time.sleep(5)
 
 def run_tools(conf: dict,works: 'list[Target]'):
     duration = conf['duration']
-    for j in range(conf['batch_size']):
-        procs = []
-        for i in range(get_containers_needed(conf, works)):
-            target  = works[i*conf['batch_size'] + j]
-            procs.append(docker.run_docker(duration, target.tool, target.index, target.variant, target.flags, target.index))
-        commands.wait_for_procs(procs)
-        time.sleep(3) 
+    procs = []
+    for i in range(get_containers_needed(conf, works)):
+        target  = works[i*conf['batch_size']]
+        procs.append(docker.run_docker(duration, target.tool, target.index, target.variant, target.flags, target.index))
+    commands.wait_for_procs(procs)
+    time.sleep(3) 
 
 def store_outputs(conf: dict, out_dir: str, works: 'list[Target]'):
     has_bug = False
