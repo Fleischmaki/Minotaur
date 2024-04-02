@@ -75,8 +75,7 @@ def write_signed(symbs,node: FNode,cons, text: 'FNode | str', always=True) -> st
 
 def write_unsigned(symbs, node: FNode, cons, text: 'FNode | str', always=True) -> str:
     width = ff.get_bv_width(node)
-    if always or width not in (32,64) or (len(node.args()) != 0 and (all(map(is_signed, node.args())) or not all(map(lambda n: ff.get_bv_width(n)<=width,node.args())))):
-        cons.write(get_unsigned_cast(node))
+    cons.write(get_unsigned_cast(node, always))
     write_or_convert(symbs,text,cons)
     if not has_matching_type(width):
         cons.write(')')
@@ -87,9 +86,9 @@ def write_cast(symbs, node: FNode, cons, text: 'FNode | str', always=False) -> s
     else:
         write_or_convert(symbs,text,cons)
     
-def get_unsigned_cast(node: FNode) -> str:
+def get_unsigned_cast(node: FNode, always=False) -> str:
     width = ff.get_bv_width(node)
-    if width in (32,64) and (len(node.args()) == 0 or (not all(map(is_signed, node.args())) and all(map(lambda n: ff.get_bv_width(n)<=width,node.args())))):
+    if  not always and width in (32,64) and (len(node.args()) == 0 or (not all(map(is_signed, node.args())) and all(map(lambda n: ff.get_bv_width(n)<=width,node.args())))):
         return ''
     if has_matching_type(width):
         return '(' + bits_to_utype(width) + ') '
@@ -114,11 +113,11 @@ def type_to_c(ntype: node_type) -> str:
     else:
         error(0, ntype)
 
-def convert_helper(symbs: t.Set[str],node: FNode, cons: io.TextIOBase, op: str):
+def convert_helper(symbs: t.Set[str],node: FNode, cons: io.TextIOBase, op: str, always_cast_args=False):
     (l, r) = node.args()
-    write_cast(symbs,node,cons,l)
+    write_cast(symbs,node,cons,l, always=always_cast_args)
     cons.write(" %s " % op)
-    write_cast(symbs,node,cons,r)
+    write_cast(symbs,node,cons,r, always=always_cast_args)
 
 def check_shift_size(node: FNode) -> None:
     global GENERATE_WELL_DEFINED
@@ -227,10 +226,10 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         convert_helper(symbs,node, cons, " < ")
     elif node.is_bv_lshr():
         check_shift_size(node)
-        convert_helper(symbs,node, cons, " >> ") # C >> is logical for unsigned, arithmetic for signed
+        convert_helper(symbs,node, cons, " >> ", True) # C >> is logical for unsigned, arithmetic for signed
     elif node.is_bv_ashr():
         check_shift_size(node)
-        convert_helper(symbs,node, cons, " >> ")
+        convert_helper(symbs,node, cons, " >> ", True) # Always need to cast for shifts, as we dont only look at left operand
     elif node.is_bv_add():
         convert_helper(symbs,node, cons, " + ") # Recast result on all operations that can exceed value ranges
     elif node.is_bv_sub():
@@ -247,7 +246,7 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         convert_helper(symbs,node, cons, " & ")
     elif node.is_bv_lshl():
         check_shift_size(node)
-        convert_helper(symbs,node, cons, " << ")
+        convert_helper(symbs,node, cons, " << ", True)
     elif node.is_bv_not():
         (b,) = node.args()
         cons.write("(~")

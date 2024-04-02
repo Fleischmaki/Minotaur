@@ -1,5 +1,5 @@
 from . import docker, commands
-import os, time
+import os
 
 GENERATE_CMD = '%s/scripts/generate.sh -o %s %s'
 
