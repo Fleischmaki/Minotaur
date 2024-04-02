@@ -1,6 +1,8 @@
 from . import test
 from ..runner import commands
-import json, os, time
+import json, os, time, logging
+
+LOGGER = logging.getLogger(__name__)
 
 def load_config(path: str) -> dict:
     with open(path) as f:
@@ -47,16 +49,18 @@ def load(argv):
     runs = conf['repeats']
     conf['repeats'] = conf['mazes']
 
-    variable_keys = map(lambda kv: kv[0],(filter(lambda kv: type(kv[1]) is list, conf.items())))
-    
+    variable_keys = list(map(lambda kv: kv[0],(filter(lambda kv: type(kv[1]) is list, conf.items()))))
+    LOGGER.info("Found the following variable keys " + str(variable_keys))
 
     for i in range(runs):
         curr_conf = dict(conf)
         for key in variable_keys:
             set_param_value(curr_conf, conf, key, i)
         times = []
+        LOGGER.info("Starting experiment %d" % i)
         for j in range(conf['avg']):
             start = time.time()
+            LOGGER.debug("Staring run %d/%d of experiment %d" % (j, conf['avg'],i))
             test.main(curr_conf, os.path.join(outdir, 'run%d_%d' % (i,j))) 
             end = time.time()
             times.append(end-start)
@@ -64,5 +68,5 @@ def load(argv):
 
 def set_param_value(new_conf, old_conf, key, i):
     new_conf[key] = old_conf[key][i % len(old_conf[key])]
-    if key == 'transforms':
+    if key == 'transforms' and new_conf['transforms'] == 0:
         new_conf['parameters']['t']['keepId'] = [1] 
