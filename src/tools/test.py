@@ -114,11 +114,12 @@ class Target_Generator():
         return self
 
     def __next__(self):
+        if not(self.has_targets()):
+            LOGGER.info("All batches generated")
+            raise StopIteration
         if len(self.targets) == 0:
             LOGGER.info("Out of targets, fetching new batch.")
-            self.add_batch()   
-        if len(self.targets) == 0:
-            raise StopIteration
+            self.add_batch()              
         return self.targets.pop(0)
 
     def has_targets(self):
@@ -128,6 +129,8 @@ class Target_Generator():
         while(len(self.mazes) < self.conf['batch_size'] and self.repeats != 0):
             LOGGER.info("Out of mazes, generating more.")
             self.generate_mazes()
+
+        self.repeats -= 1
 
         maze_keys = list(self.mazes.keys())
 
@@ -235,7 +238,7 @@ def store_outputs(conf: dict, out_dir: str, works: 'list[Target]'):
         tag = 'notFound'
         out_path = os.path.join(out_dir, w.tool, str(w.index), w.maze)
         for filename in os.listdir(out_path):
-            if '_' in filename:
+            if len(filename.split('_')) == 2:
                 runtime, tag = filename.split('_')
                 if (tag == 'fn'):
                     if conf['abort_on_error']:
@@ -256,7 +259,7 @@ def write_summary(conf,out_dir, target,tag,runtime):
     offset = 0 if 'keepId' in params['t'] else 1
     with open(out_dir + '/summary.csv', 'a') as f:
         u = '0' if 'u' not in params.keys() else '1'
-        f.write(tool + ',' + variant + ',' + flags + ',' + str(params['m'] % conf['transforms'] + offset) + ',' + u + ',')
+        f.write(tool + ',' + variant + ',' + flags + ',' + str(params['m'] % max(1,conf['transforms']) + offset) + ',' + u + ',')
         for key, value in params.items():
             if key == 's':
                 f.write(str(params['s'].split('/')[-1] + ','))
