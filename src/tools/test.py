@@ -2,7 +2,7 @@ import random, sys, os, json, time
 import itertools as it
 from ..runner import *
 from collections import namedtuple, OrderedDict
-from math import floor,ceil, inf
+from math import ceil, inf
 import logging
 
 LOGGER = logging.getLogger(__name__)
@@ -233,7 +233,7 @@ def store_outputs(conf: dict, out_dir: str, works: 'list[Target]'):
         # Write file details into summary
         runtime = 'notFound'
         tag = 'notFound'
-        out_path = os.path.join(out_dir, w.tool, w.index, w.maze)
+        out_path = os.path.join(out_dir, w.tool, str(w.index), w.maze)
         for filename in os.listdir(out_path):
             if '_' in filename:
                 runtime, tag = filename.split('_')
