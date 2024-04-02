@@ -1,10 +1,11 @@
 from . import test
 from ..runner import commands
-import time, json, os
+import json, os, time
 
-def load_config(path):
+def load_config(path: str) -> dict:
     with open(path) as f:
         txt = f.read()
+    
     conf = json.loads(txt)
 
     if 'verbosity' not in conf.keys():
@@ -34,6 +35,7 @@ def load_config(path):
     return conf
 
 
+
 def load(argv):
     conf = load_config(os.path.join(test.get_minotaur_root(),'experiments',argv[0] + '.conf.json'))
     outdir = argv[1]
@@ -45,9 +47,12 @@ def load(argv):
     runs = conf['repeats']
     conf['repeats'] = conf['mazes']
 
+    variable_keys = map(lambda kv: kv[0],(filter(lambda kv: type(kv[1]) is list, conf.items())))
+    
+
     for i in range(runs):
         curr_conf = dict(conf)
-        for key in ['transforms','duration','repeats', 'batch_size', 'seed']:
+        for key in variable_keys:
             set_param_value(curr_conf, conf, key, i)
         times = []
         for j in range(conf['avg']):
@@ -59,3 +64,5 @@ def load(argv):
 
 def set_param_value(new_conf, old_conf, key, i):
     new_conf[key] = old_conf[key][i % len(old_conf[key])]
+    if key == 'transforms':
+        new_conf['parameters']['t']['keepId'] = [1] 

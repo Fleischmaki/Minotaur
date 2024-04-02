@@ -177,7 +177,7 @@ class Target_Generator():
             self.mazes.update({maze: params for maze in maze_gen.get_maze_names(params)})
 
     def fetch_maze_params(self):                                                                 
-        return [get_random_params(self.conf) for _ in range(min(self.repeats,ceil(ceil(self.conf['workers']/len(self.conf['tool']))*self.conf['batch_size']/self.conf['transforms'])))] # NUMNB_BATCHES*SIZE / MAZES_PER_PARAMS
+        return [get_random_params(self.conf) for _ in range(min(self.repeats,ceil(ceil(self.conf['workers']/len(self.conf['tool']))*self.conf['batch_size']/max(1,self.conf['transforms']))))] # NUMNB_BATCHES*SIZE / MAZES_PER_PARAMS
 
 def fetch_works(conf: dict, gen: Target_Generator):
     all = list(it.islice(gen, 0, conf['workers']*conf['batch_size']))
