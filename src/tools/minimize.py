@@ -13,14 +13,13 @@ class Minimizer:
             if len(args) == 16:
                 self.tool,self.variant,self.flags,id,u,a,w,h,c,t,s,g,_,r,self.timeout,self.err = args
             else:
-                self.tool,self.variant,self.flags,id,a,w,h,c,t,s,g,_,r,self.timeout,self.err = args
-                u = 0
+                self.tool,self.variant,self.flags,id,u,a,w,h,c,t,g,s,r,self.timeout,self.err = args
 
             self.timeout = ceil(float(self.timeout)) + 60 # Add a minute for buffer
             self.seeddir = argv[1]
             self.outdir = argv[2]
             self.gen = argv[3]
-            self.params= {'m':int(id),'a':a,'w':int(w),'h':int(h),'c':int(c),'t':('last_' + t).strip('_'),'g':g,'s':os.path.join(self.seeddir,s+'.smt2'),'r':int(r)}
+            self.params= {'m':int(id),'a':a,'w':int(w),'h':int(h),'c':int(c),'t':('last_' + t).strip('_'),'g':g,'s':os.path.join(self.seeddir,s+('' if s.endswith('.smt2') else '.smt2')),'r':int(r)}
             if u == '1':
                 self.params['u'] = ''
             self.maze = maze_gen.get_maze_names(self.params)[self.params['m']-1]
@@ -82,7 +81,7 @@ class Minimizer:
         
     def get_seed(self):
         if 'storm' in self.params['t']:
-            return os.path.join(self.outdir,'smt',self.params['r'], 'mutant_%d.smt2' % (self.params['m'] - 1))
+            return os.path.join(self.outdir,'smt',str(self.params['r']), 'mutant_%d.smt2' % (self.params['m'] - 1))
         else:
             return self.params['s']
 
@@ -137,16 +136,17 @@ class Minimizer:
             seed += '.smt2'
         sp.write_to_file(constraints,seed)            
         self.params['s'] = seed
-        self.maze = maze_gen.get_maze_names(self.params)[self.params['m']]
+        self.maze = maze_gen.get_maze_names(self.params)[max(0,self.params['m']-1)]
 
 
     def is_err(self):
-        resdir = os.path.join(self.outdir,self.maze)
+        resdir = os.path.join(self.outdir,self.maze, self.maze)
         for file in os.listdir(resdir):
-                if '_' in file: # Still false negative
+                if len(file.split('_')) == 2: # Still false negative
+                    print(file)
                     commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(self.outdir,'runs')))
+                    commands.run_cmd('rm -r %s' % os.path.join(self.outdir,self.maze))
                     if self.err in file: 
-                        commands.run_cmd('rm -r %s' % resdir)
                         return True
         return False
 
