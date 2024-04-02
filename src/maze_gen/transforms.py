@@ -67,7 +67,7 @@ def parse_transformations(t_type: str) -> dict:
 def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: bool = True) -> list:
     LOGGER.info("Running Storm.")
     if n <= 0:
-        return   
+        return []
     smt_obj = smtObject(smt_file, mutant_path, generate_sat)
     smt_obj.check_satisfiability(10*60)
     if smt_obj.orig_satisfiability == "timeout":
