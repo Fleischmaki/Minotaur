@@ -23,6 +23,7 @@ class Minimizer:
             self.params= {'m':int(id),'a':a,'w':int(w),'h':int(h),'c':int(c),'t':('last_' + t).strip('_'),'g':g,'s':os.path.join(self.seeddir,s+'.smt2'),'r':int(r)}
             if u == '1':
                 self.params['u'] = ''
+            self.maze = maze_gen.get_maze_names(self.params)[self.params['m']-1]
         else:
             self.maze = argv[0]
             self.seeddir = argv[1]
@@ -136,15 +137,16 @@ class Minimizer:
             seed += '.smt2'
         sp.write_to_file(constraints,seed)            
         self.params['s'] = seed
-
+        self.maze = maze_gen.get_maze_names(self.params)[self.params['m']]
 
 
     def is_err(self):
-        resdir = os.path.join(self.outdir,'res','maze_res')
+        resdir = os.path.join(self.outdir,self.maze)
         for file in os.listdir(resdir):
                 if '_' in file: # Still false negative
                     commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(self.outdir,'runs')))
                     if self.err in file: 
+                        commands.run_cmd('rm -r %s' % resdir)
                         return True
         return False
 

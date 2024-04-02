@@ -24,7 +24,7 @@ def main(dest_dir,expected_result):
             end_file = os.path.join(WORKDIR, '.end%s' % name)
             end_time = os.path.getmtime(end_file)       
             resfile = open(respath, "r").read()
-            file_dir = os.path.join(dest_dir,"maze_%s" % name) 
+            file_dir = os.path.join(dest_dir,name) 
             os.system('mkdir -p %s' % file_dir)
         except Exception as e:
             print("NOTE: Failed to parse file %s: %s" % (file, str(e)))

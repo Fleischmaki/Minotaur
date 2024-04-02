@@ -1,23 +1,23 @@
 #!/bin/bash
 
-# Arg1: Target Source code
+# Arg1: File containing targets
 # Arg2: Timeout (in minutes)
 # Arg3: Variant 
 
 
-sudo chown -R maze:maze /home/maze/tools/$4
+sudo chown -R maze:maze /home/maze/tools/$3
 
 WORKDIR=/home/maze/workspace
 
-INDIR=$WORKDIR/inputs
 OUTDIR=$WORKDIR/outputs
-OUTFILE=$OUTDIR/res$3
-
 mkdir -p $OUTDIR
 
-export PATH=$PATH:/home/maze/tools/$4
-
-# Create dummy file to indicate running start
-touch $WORKDIR/.start$3
-timeout --foreground -k 2s $2s  /home/maze/tools/$4/Ultimate.py --spec unreach.prp --witness-dir $OUTDIR --architecture 64bit --file $1 &> $OUTFILE
-touch $WORKDIR/.end$3
+for maze in $(cat $1)
+do
+    name=$(basename $maze)
+    OUTFILE=$OUTDIR/res$name
+    # Create dummy file to indicate running start
+    touch $WORKDIR/.start$name
+    timeout --foreground -k 2s $2s  /home/maze/tools/$3/Ultimate.py --spec unreach.prp --witness-dir $OUTDIR --architecture 64bit --file $maze &> $OUTFILE
+    touch $WORKDIR/.end$name
+done

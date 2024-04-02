@@ -22,7 +22,7 @@ def load_config(path):
     if 'maze_gen' not in conf.keys():
         conf['maze_gen'] = 'local'
     if 'expected_result' not in conf.keys():
-        conf['maze_gen'] = 'error'
+        conf['expected_result'] = 'error'
     if 'abort_on_error' not in conf.keys():
         conf['abort_on_error'] = False
     if 'batch_size' not in conf.keys():
@@ -131,15 +131,18 @@ class Target_Generator():
 
         maze_keys = list(self.mazes.keys())
 
+        batch_id = random.randint(0,65535)
         for tool in self.conf['tool'].keys():
-            container_id = random.randint(0,65535)
             for i in range(min(len(maze_keys),self.conf['batch_size'])):
                 maze = maze_keys[i]
                 params = self.mazes[maze]
                 variant, flags = self.pick_tool_flags(tool)
-                self.targets.append((False,Target(maze, tool,container_id, params, variant, flags)))
+                self.targets.append((False,Target(maze, tool,batch_id, params, variant, flags)))
     
-            
+        with open(get_batch_file(batch_id), 'w') as batch_file:
+            for maze in maze_keys:
+                batch_file.write("%s/%s\n" % (docker.HOST_NAME,maze))
+
         if len(self.targets) > 0:
             self.targets[-1] = (True, self.targets[-1][1])
 
@@ -178,7 +181,7 @@ class Target_Generator():
 
 def fetch_works(conf: dict, gen: Target_Generator):
     all = list(it.islice(gen, 0, conf['workers']*conf['batch_size']))
-    return list(map(lambda w: w[1],all)), list(map(lambda t: t[1].maze, filter(lambda w: w[0], all)))
+    return list(map(lambda w: w[1],all)), list(map(lambda w : w[1], filter(lambda w: w[0], all)))
 
 
 def get_temp_dir():
@@ -186,6 +189,9 @@ def get_temp_dir():
 
 def get_maze_dir(maze=''):
     return os.path.join(get_temp_dir(),'src', maze)
+
+def get_batch_file(batch: int):
+    return get_maze_dir(docker.BATCH_FILE_FORMAT % batch)
 
 def get_containers_needed(conf, works): 
     return min(ceil(len(works)/conf['batch_size']), conf['workers'])
@@ -205,7 +211,7 @@ def run_tools(conf: dict,works: 'list[Target]'):
         procs = []
         for i in range(get_containers_needed(conf, works)):
             target  = works[i*conf['batch_size'] + j]
-            procs.append(docker.run_docker(duration, target.tool, target.index, target.variant, target.flags, target.maze, result_name=str(j)))
+            procs.append(docker.run_docker(duration, target.tool, target.index, target.variant, target.flags, target.index))
         commands.wait_for_procs(procs)
         time.sleep(3) 
 
@@ -225,22 +231,19 @@ def store_outputs(conf: dict, out_dir: str, works: 'list[Target]'):
         docker.copy_docker_results(w.tool, w.index, out_path)
     time.sleep(5)
 
-    for i, w in enumerate(works):
+    for w in works:
         # Write file details into summary
         runtime = 'notFound'
         tag = 'notFound'
-        out_path = os.path.join(out_dir, w.tool, str(w.index))
-        if os.path.isdir(os.path.join(out_path,"maze_%d" % (i % conf['batch_size']))):
-            commands.run_cmd("mv %s %s" % (os.path.join(out_path, "maze_%d" % (i % conf['batch_size'])), os.path.join(out_path, w.maze)))
-            out_path = os.path.join(out_path,w.maze)
-            for filename in os.listdir(out_path):
-                if '_' in filename:
-                    runtime, tag = filename.split('_')
-                    if (tag == 'fn'):
-                        if conf['abort_on_error']:
-                            has_bug = True
-                        commands.run_cmd(CP_CMD % (get_maze_dir(w.maze), out_path)) # Keep buggy mazes
-                    write_summary(conf, out_dir, w, tag, runtime)
+        out_path = os.path.join(out_dir, w.tool, w.index, w.maze)
+        for filename in os.listdir(out_path):
+            if '_' in filename:
+                runtime, tag = filename.split('_')
+                if (tag == 'fn'):
+                    if conf['abort_on_error']:
+                        has_bug = True
+                    commands.run_cmd(CP_CMD % (get_maze_dir(w.maze), out_path)) # Keep buggy mazes
+                write_summary(conf, out_dir, w, tag, runtime)
         if runtime == 'notFound' or tag == 'notFound':
             write_summary(conf, out_dir, w, tag, runtime)
     return has_bug
@@ -286,11 +289,12 @@ def kill_containers(works, conf):
     commands.wait_for_procs(procs)
     time.sleep(5)
 
-def cleanup(completed):
+def cleanup(completed: list[Target]):
     procs = []
     while(len(completed) > 0):
-        maze = completed.pop()
-        procs.append(commands.spawn_cmd(REMOVE_CMD % os.path.join(get_temp_dir(),'src',maze)))
+        target = completed.pop()
+        procs.append(commands.spawn_cmd(REMOVE_CMD % get_maze_dir(target.maze)))
+        procs.append(commands.spawn_cmd(REMOVE_CMD % get_batch_file(target.index)))
     commands.wait_for_procs(procs)
 
 def get_minotaur_root():
