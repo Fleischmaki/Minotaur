@@ -37,7 +37,7 @@ def main(dest_dir,expected_result):
         if ('VERIFICATION FAILED' in resfile):
             save_tc(file_dir, respath, start_time, end_time, 'positive', expected_result)
 
-        elif ('VERIFICATION SUCCESSFUL' in resfile):
+        elif (resfile.endswith('VERIFICATION SUCCESSFUL')): # --paths might print these for each path
             save_tc(file_dir, respath, start_time, end_time, 'negative', expected_result)
 
         #elif ('UNKNOWN' in resfile):
