@@ -12,7 +12,7 @@ WORKDIR=/home/maze/workspace
 OUTDIR=$WORKDIR/outputs
 mkdir -p $OUTDIR
 
-UDIR="/home/maze/tools/U${4}-linux"
+UDIR="/home/maze/tools/U${3}-linux"
 sudo chown -R maze:maze $UDIR
 export PATH=$PATH:$UDIR 
 
@@ -22,6 +22,6 @@ do
     OUTFILE=$OUTDIR/res$name
     # Create dummy file to indicate running start
     touch $WORKDIR/.start$name
-    timeout -k 2s $2s  $UDIR/Ultimate -tc $UDIR/config/${4}Reach.xml -s $UDIR/config/svcomp-Reach-64bit-${4}_$4.epf -i $maze &> $OUTFILE
+    timeout -k 2s $2s  $UDIR/Ultimate -tc $UDIR/config/${3}Reach.xml -s $UDIR/config/svcomp-Reach-64bit-${3}_$4.epf -i $maze &> $OUTFILE
     touch $WORKDIR/.end$name
 done
