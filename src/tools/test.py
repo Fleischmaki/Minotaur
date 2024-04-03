@@ -15,7 +15,7 @@ LOGGER = logging.getLogger(__name__)
 
 REMOVE_CMD = 'rm -r %s'
 CP_CMD = 'cp %s %s'
-Target = namedtuple('Target',['maze','tool','index','params','variant','flags'])
+Target = namedtuple(typename='Target',field_names=['maze','tool','index','params','variant','flags'])
 
 
 def load_config(path):
@@ -269,7 +269,7 @@ def write_summary(conf,out_dir, target,tag,runtime):
     offset = 0 if 'keepId' in params['t'] else 1
     with open(out_dir + '/summary.csv', 'a') as f:
         u = '0' if 'u' not in params.keys() else '1'
-        f.write(tool + ',' + variant + ',' + flags + ',' + str(params['m'] % max(1,conf['transforms']) + offset) + ',' + u + ',')
+        f.write(tool + ',' + variant + ',' + flags + ',' + str(maze_gen.get_params_from_maze(maze)['m'] + offset) + ',' + u + ',') # TODO this is a liiiitle bit hacky
         for key, value in params.items():
             if key == 's':
                 f.write(str(params['s'].split('/')[-1] + ','))
@@ -304,7 +304,7 @@ def get_minotaur_root():
     return os.path.dirname(os.path.realpath('' if mainfile is None else mainfile))
 
 def main(conf, out_dir):
-    os.system('mkdir -p %s' % out_dir)
+    os.system(f'mkdir -p {out_dir}')
     if 'seed' in conf.keys():
         random.seed(conf['seed'])
 
