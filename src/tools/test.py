@@ -237,7 +237,7 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
         out_path = os.path.join(out_dir, w.tool, str(w.index))
         os.system(f'mkdir -p {out_path}')
         docker.copy_docker_results(w.tool, w.index, out_path)
-        docker.kill_docker(w.tool, w.batch_id)
+        docker.kill_docker(w.tool, w.index)
     time.sleep(5)
 
 
