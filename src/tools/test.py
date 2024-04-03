@@ -143,10 +143,10 @@ class Target_Generator():
 
         batch_id = random.randint(0,65535)
         for tool in self.conf['tool'].keys():
+            variant, flags = self.pick_tool_flags(tool) # Since we run whole batch at once can only pick one flag
             for i in range(min(len(maze_keys),self.conf['batch_size'])):
                 maze = maze_keys[i]
                 params = self.mazes[maze]
-                variant, flags = self.pick_tool_flags(tool)
                 self.targets.append((False,Target(maze, tool,batch_id, params, variant, flags)))
     
         with open(get_batch_file(batch_id), 'w') as batch_file:
