@@ -195,7 +195,7 @@ def fetch_works(conf: dict, gen: Target_Generator):
 
 
 def get_temp_dir():
-   return os.path.join('/tmp','minotaur_mazes')
+    return os.path.join('/tmp','minotaur_mazes')
 
 def get_maze_dir(maze=''):
     return os.path.join(get_temp_dir(),'src', maze)
@@ -269,7 +269,7 @@ def write_summary(conf,out_dir, target,tag,runtime):
     offset = 0 if 'keepId' in params['t'] else 1
     with open(out_dir + '/summary.csv', 'a') as f:
         u = '0' if 'u' not in params.keys() else '1'
-        f.write(tool + ',' + variant + ',' + flags + ',' + str(maze_gen.get_params_from_maze(maze)['m'] + offset) + ',' + u + ',') # TODO this is a liiiitle bit hacky
+        f.write(tool + ',' + str(batch_id) + ',' + variant + ',' + flags + ',' + str(maze_gen.get_params_from_maze(maze)['m'] + offset) + ',' + u + ',') # TODO this is a liiiitle bit hacky
         for key, value in params.items():
             if key == 's':
                 f.write(str(params['s'].split('/')[-1] + ','))
@@ -285,7 +285,7 @@ def write_summary(conf,out_dir, target,tag,runtime):
 
 def write_summary_header(conf, out_dir):
     with open(out_dir + '/summary.csv', 'w') as f:
-        f.write('tool,variant,flags,id,u,')
+        f.write('tool,batch,variant,flags,id,u,')
         for key in conf['parameters'].keys():
             if key != 'u':
                 f.write(str(key)+',')
