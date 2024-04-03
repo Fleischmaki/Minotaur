@@ -19,7 +19,7 @@ Target = namedtuple('Target',['maze','tool','index','params','variant','flags'])
 
 
 def load_config(path):
-    with open(path) as f:
+    with open(path, 'r') as f:
         txt = f.read()
     conf = json.loads(txt)
 
@@ -177,7 +177,7 @@ class Target_Generator():
     def generate_mazes(self):
         if self.conf['maze_gen'] == 'container':
             paramss = self.fetch_maze_params()
-            LOGGER.info("Generating %d more mazes." % len(paramss))
+            LOGGER.info("Generating %d more mazes.", len(paramss))
             maze_gen.generate_mazes(paramss, get_temp_dir(),self.conf['workers'],self.conf['gen_time'])
             for params in paramss:
                 self.mazes.update({maze: params for maze in maze_gen.get_maze_names(params)})
@@ -190,8 +190,8 @@ class Target_Generator():
         return [get_random_params(self.conf) for _ in range(min(self.repeats,ceil(ceil(self.conf['workers']/len(self.conf['tool']))*self.conf['batch_size']/max(1,self.conf['transforms']))))] # NUMNB_BATCHES*SIZE / MAZES_PER_PARAMS
 
 def fetch_works(conf: dict, gen: Target_Generator):
-    all = list(it.islice(gen, 0, conf['workers']*conf['batch_size']))
-    return list(map(lambda w: w[1],all)), list(map(lambda w : w[1], filter(lambda w: w[0], all)))
+    new_targets = list(it.islice(gen, 0, conf['workers']*conf['batch_size']))
+    return list(map(lambda w: w[1],new_targets)), list(map(lambda w : w[1], filter(lambda w: w[0], new_targets)))
 
 
 def get_temp_dir():
@@ -223,7 +223,7 @@ def run_tools(conf: dict,works: 'list[Target]'):
     commands.wait_for_procs(procs)
     time.sleep(3) 
 
-def store_outputs(conf: dict, out_dir: str, works: 'list[Target]'):
+def store_outputs(conf: dict, out_dir: str, works: list[Target]):
     has_bug = False
     procs = []
     for i in range(get_containers_needed(conf,works)):
@@ -235,9 +235,11 @@ def store_outputs(conf: dict, out_dir: str, works: 'list[Target]'):
     for i in range(get_containers_needed(conf,works)):
         w = works[i*conf['batch_size']]
         out_path = os.path.join(out_dir, w.tool, str(w.index))
-        os.system('mkdir -p %s' % out_path)
+        os.system(f'mkdir -p {out_path}')
         docker.copy_docker_results(w.tool, w.index, out_path)
+        docker.kill_docker(w.tool, w.batch_id)
     time.sleep(5)
+
 
     for w in works:
         # Write file details into summary
@@ -257,8 +259,8 @@ def store_outputs(conf: dict, out_dir: str, works: 'list[Target]'):
     return has_bug
 
 def write_summary(conf,out_dir, target,tag,runtime):
-    maze, tool, id, params, variant, flags = target
-    out_path = os.path.join(out_dir,tool, str(id),maze)
+    maze, tool, batch_id, params, variant, flags = target
+    out_path = os.path.join(out_dir,tool, str(batch_id),maze)
     if (conf['verbosity'] == 'bug' or conf['verbosity'] == 'bug_only') and tag not in ('fp', 'fn'):
         commands.run_cmd(REMOVE_CMD % out_path)
         if conf['verbosity'] == 'bug_only':
@@ -274,28 +276,19 @@ def write_summary(conf,out_dir, target,tag,runtime):
                 continue # We already wrote u 
             elif key in conf['parameters'].keys():
                 f.write(str(value) + ',')
-        f.write('%s,%s' % (runtime, tag))
+        f.write(f'{runtime},{tag}' % (runtime, tag))
         f.write('\n')
-    if conf['verbosity'] == 'summary': 
+    if conf['verbosity'] == 'summary':
         commands.run_cmd(REMOVE_CMD % out_path)
 
 
 def write_summary_header(conf, out_dir):
     with open(out_dir + '/summary.csv', 'w') as f:
         f.write('tool,variant,flags,id,u,')
-        for key in conf['parameters'].keys(): 
+        for key in conf['parameters'].keys():
             if key != 'u':
                 f.write(str(key)+',')
         f.write('runtime,status\n')
-
-
-def kill_containers(works, conf):
-    procs = []
-    for i in range(get_containers_needed(conf,works)):
-        _, tool, id, _, _, _  = works[i*conf['batch_size']]
-        procs.append(docker.kill_docker(tool,id))
-    commands.wait_for_procs(procs)
-    time.sleep(5)
 
 def cleanup(completed: 'list[Target]'):
     procs = []
@@ -306,7 +299,7 @@ def cleanup(completed: 'list[Target]'):
     commands.wait_for_procs(procs)
 
 def get_minotaur_root():
-    mainfile = sys.modules['__main__'].__file__ # pylint: disable=no-member
+    mainfile = sys.modules['__main__'].__file__ # pylint: disable=no-member 
     return os.path.dirname(os.path.realpath('' if mainfile is None else mainfile))
 
 def main(conf, out_dir):
@@ -323,11 +316,10 @@ def main(conf, out_dir):
         spawn_containers(conf, works)
         run_tools(conf, works)
         done = store_outputs(conf, out_dir, works)
-        kill_containers(works, conf)
-        cleanup(to_remove) 
+        cleanup(to_remove)
 
     commands.run_cmd(REMOVE_CMD % get_temp_dir())
-    
+
 def load(argv):
     conf_path = os.path.join(get_minotaur_root(),'test',argv[0] + '.conf.json')
     out_dir = argv[1]
