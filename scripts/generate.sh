@@ -153,6 +153,9 @@ MIN=1
 if [[ "$T_TYPE" == *"keepId"* ]]; then
     MIN=0
 fi
+if [[ "$T_TYPE" == *"last"* ]]; then
+    MIN=$T_NUMB
+fi
 for (( T_INDEX=$MIN; T_INDEX<=$T_NUMB; T_INDEX++ ))
 do
     NAME_P=$NAME"0_"$T_TYPE"_t"$T_INDEX$NAME_EXT;
