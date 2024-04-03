@@ -15,6 +15,6 @@ do
     OUTFILE=$OUTDIR/res$name
     # Create dummy file to indicate running start
     touch $WORKDIR/.start$name
-    timeout --foreground -k 2s $2s  sea $3 --inline --track=mem -m=64 -unroll-threshold=1025 ${@:4} $maze &> $OUTFILE
+    timeout -k 2s $2s  sea $3 --inline --track=mem -m=64 -unroll-threshold=1025 ${@:4} $maze &> $OUTFILE
     touch $WORKDIR/.end$name
 done

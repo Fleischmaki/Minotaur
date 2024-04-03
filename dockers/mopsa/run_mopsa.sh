@@ -17,6 +17,6 @@ do
     OUTFILE=$OUTDIR/res$name
     # Create dummy file to indicate running start
     touch $WORKDIR/.start$name
-    timeout --foreground -k 2s $2s  /home/maze/tools/mopsa-analyzer/bin/mopsa -c-check-unsigned-implicit-cast-overflow false -no-color -config c/$3.json -additional-stubs c/mopsa/svcomp.c -ccopt -fbracket-depth=2048 $maze >  $OUTFILE 
+    timeout -k 2s $2s  /home/maze/tools/mopsa-analyzer/bin/mopsa -c-check-unsigned-implicit-cast-overflow false -no-color -config c/$3.json -additional-stubs c/mopsa/svcomp.c -ccopt -fbracket-depth=2048 $maze >  $OUTFILE 
     touch $WORKDIR/.end$name
 done

@@ -17,6 +17,6 @@ do
     OUTFILE=$OUTDIR/res$name
     # Create dummy file to indicate running start
     touch $WORKDIR/.start$name
-    timeout --foreground -k 2s $2s  /home/maze/tools/release/bin/esbmc --timeout $2s ${@:3} $maze &> $OUTFILE 
+    timeout -k 2s $2s  /home/maze/tools/release/bin/esbmc --timeout $2s ${@:3} $maze &> $OUTFILE 
     touch $WORKDIR/.end$name
 done

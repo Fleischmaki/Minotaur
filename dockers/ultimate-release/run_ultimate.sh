@@ -18,6 +18,6 @@ do
     OUTFILE=$OUTDIR/res$name
     # Create dummy file to indicate running start
     touch $WORKDIR/.start$name
-    timeout --foreground -k 2s $2s  /home/maze/tools/$3/Ultimate.py --spec unreach.prp --witness-dir $OUTDIR --architecture 64bit --file $maze &> $OUTFILE
+    timeout -k 2s $2s  /home/maze/tools/$3/Ultimate.py --spec unreach.prp --witness-dir $OUTDIR --architecture 64bit --file $maze &> $OUTFILE
     touch $WORKDIR/.end$name
 done

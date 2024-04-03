@@ -17,6 +17,6 @@ do
     name=$(basename $maze)
     OUTFILE=$OUTDIR/res$name
     touch $WORKDIR/.start$name
-    timeout --foreground -k 2s $2s  /home/maze/tools/cpa/scripts/cpa.sh -spec sv-comp-reachability -preprocess -$3 -timelimit $2 $maze &> $OUTFILE 
+    timeout -k 2s $2s  /home/maze/tools/cpa/scripts/cpa.sh -spec sv-comp-reachability -preprocess -$3 -timelimit $2 $maze &> $OUTFILE 
     touch $WORKDIR/.end$name
 done
