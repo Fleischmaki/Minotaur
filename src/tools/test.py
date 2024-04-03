@@ -1,9 +1,15 @@
-import random, sys, os, json, time
+"""Run automated tests of program analyzers"""
+import random
+import sys
+import os
+import json
+import time
 import itertools as it
-from ..runner import *
 from collections import namedtuple, OrderedDict
-from math import ceil, inf
+from math import ceil
 import logging
+
+from ..runner import docker, commands, maze_gen
 
 LOGGER = logging.getLogger(__name__)
 
@@ -41,14 +47,14 @@ def load_config(path):
 
     return conf
 
-def pick_values(head,value,tail):
-    if 'min' in value:
+def pick_values(head: str, value: dict  | list,tail: str) -> str | None:
+    if isinstance(value,dict):
         body = str(random.randint(value['min'], value['max']))
-    else: 
+    else:
         choice = random.choice(value)
         if choice == 0:
             if head == '' and tail == '':
-                return None    
+                return None
             return ''
         elif choice == 1:
             body = ''
@@ -59,18 +65,19 @@ def pick_values(head,value,tail):
 def set_default(parameters, name, value):
     if name not in parameters.keys():
         parameters[name] = value
-        LOGGER.debug('Using default value %s for parameter %s' % (value, name))
+        LOGGER.debug('Using default value %s for parameter %s', value, name)
 
 def get_random_params(conf):
     conf['repeats'] -= 1
     params = conf['parameters']
-    res = dict()
+    res = {}
     for key, value in params.items():
         if key == 't':
             body = ''
             for tkey, tvalue in value.items():
-                body += pick_values(tkey, tvalue, '_')
-            body = body[:-1] # remove last _
+                transform = pick_values(tkey, tvalue, '_')
+                body += transform if transform is not None else ''
+            body = body.strip('_') # remove last _
         elif key == 's':
             body = value
             while os.path.isdir(body):
@@ -80,8 +87,8 @@ def get_random_params(conf):
 
         if body is not None:
             res[key] = body
-    
-    # default values 
+
+    # default values
     set_default(res,'a','Backtracking')
     set_default(res,'w',5)
     set_default(res,'h',5)
@@ -94,7 +101,7 @@ def get_random_params(conf):
     set_default(res,'m',int(conf['transforms']))
     #set_default(res,'u',0) # not included by default
 
-    if 'u' in res.keys():
+    if 'u' in res:
         res['w'] = 1
         res['h'] = 1
         res['u'] = ''
@@ -106,7 +113,7 @@ def get_random_params(conf):
 class Target_Generator():
     def __init__(self, conf):
         self.conf = conf
-        self.repeats = self.conf['repeats'] if self.conf['repeats'] >= 0 else inf
+        self.repeats = self.conf['repeats'] if self.conf['repeats'] >= 0 else sys.maxsize
         self.targets = list()
         self.mazes = OrderedDict()
 
@@ -143,8 +150,8 @@ class Target_Generator():
                 self.targets.append((False,Target(maze, tool,batch_id, params, variant, flags)))
     
         with open(get_batch_file(batch_id), 'w') as batch_file:
-            for maze in maze_keys:
-                batch_file.write("%s/%s\n" % (docker.HOST_NAME,maze))
+            for i in range(min(len(maze_keys),self.conf['batch_size'])):
+                batch_file.write(f"{docker.HOST_NAME}/{maze_keys[i]}\n")
 
         if len(self.targets) > 0:
             self.targets[-1] = (True, self.targets[-1][1])
@@ -290,7 +297,7 @@ def kill_containers(works, conf):
     commands.wait_for_procs(procs)
     time.sleep(5)
 
-def cleanup(completed: list[Target]):
+def cleanup(completed: 'list[Target]'):
     procs = []
     while(len(completed) > 0):
         target = completed.pop()
@@ -299,7 +306,8 @@ def cleanup(completed: list[Target]):
     commands.wait_for_procs(procs)
 
 def get_minotaur_root():
-    return os.path.dirname(os.path.realpath(sys.modules['__main__'].__file__))
+    mainfile = sys.modules['__main__'].__file__ # pylint: disable=no-member
+    return os.path.dirname(os.path.realpath('' if mainfile is None else mainfile))
 
 def main(conf, out_dir):
     os.system('mkdir -p %s' % out_dir)
