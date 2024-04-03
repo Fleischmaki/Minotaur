@@ -276,7 +276,7 @@ def write_summary(conf,out_dir, target,tag,runtime):
                 continue # We already wrote u 
             elif key in conf['parameters'].keys():
                 f.write(str(value) + ',')
-        f.write(f'{runtime},{tag}' % (runtime, tag))
+        f.write(f'{runtime},{tag}')
         f.write('\n')
     if conf['verbosity'] == 'summary':
         commands.run_cmd(REMOVE_CMD % out_path)
