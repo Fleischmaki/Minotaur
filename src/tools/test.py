@@ -246,14 +246,15 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
         runtime = 'notFound'
         tag = 'notFound'
         out_path = os.path.join(out_dir, w.tool, str(w.index), w.maze)
-        for filename in os.listdir(out_path):
-            if len(filename.split('_')) == 2:
-                runtime, tag = filename.split('_')
-                if (tag == 'fn'):
-                    if conf['abort_on_error']:
-                        has_bug = True
-                    commands.run_cmd(CP_CMD % (get_maze_dir(w.maze), out_path)) # Keep buggy mazes
-                write_summary(conf, out_dir, w, tag, runtime)
+        if os.path.isdir(out_path):
+            for filename in os.listdir(out_path):
+                if len(filename.split('_')) == 2:
+                    runtime, tag = filename.split('_')
+                    if (tag == 'fn'):
+                        if conf['abort_on_error']:
+                            has_bug = True
+                        commands.run_cmd(CP_CMD % (get_maze_dir(w.maze), out_path)) # Keep buggy mazes
+                    write_summary(conf, out_dir, w, tag, runtime)
         if runtime == 'notFound' or tag == 'notFound':
             write_summary(conf, out_dir, w, tag, runtime)
     return has_bug
