@@ -1,14 +1,20 @@
-from pysmt.shortcuts import *
+"""Contains functions that handle formulas (but not files or transforms)"""
+import math
+import typing as t
+import logging
+
+from pysmt.shortcuts import And, Not, is_sat,\
+    get_env,FreshSymbol, Equals, Int, GT, LT, BV, EqualsOrIff
 from pysmt.typing import INT
 from pysmt.fnode import FNode
 from pysmt.solvers.z3 import Z3Solver
 
-import math, typing as t, logging
 
 LOGGER = logging.getLogger(__name__)
 MAXIMUM_ARRAY_SIZE = 2**10 - 1 
 
 def get_bv_width(node: FNode) -> int:
+    """Calculate bit width of a node"""
     res = 0
     if node.get_type().is_bool_type():
         if node.is_bool_constant() or node.is_symbol():
@@ -37,10 +43,12 @@ def get_bv_width(node: FNode) -> int:
     else:
         raise ValueError("Could not compute BV width: " + str(node))
     if res <= 0 or res > 64:
-        raise ValueError("Invalid bv width: %s (%s)", res, node)
+        raise ValueError(f"Invalid bv width: {res}({node})")
     return res
 
 def is_neg_sat(c, clauses):
+    """Check if negation of a c is sat
+    """
     form_neg = Not(c)
     for n in clauses:
         if n is not c:
@@ -49,7 +57,9 @@ def is_neg_sat(c, clauses):
     return sat
 
 
-def get_unsat_core(clauses, logic):
+def get_unsat_core(clauses: list[FNode], logic: str):
+    """ Compute unsat core for given clauses
+    """
     LOGGER.info('Finding unsat core')
     solver = Z3Solver(get_env(),logic,unsat_cores_mode='all')
     solver.add_assertions(clauses)
@@ -60,8 +70,10 @@ def get_unsat_core(clauses, logic):
 
 
 def rename_arrays(formula: FNode):
+    """ Introduce fresh variable for every chain of array stores
+    """
     constraints = set()
-    subs = dict()
+    subs = {}
 
     for sub in formula.args():
         new_formula, new_constraints = rename_arrays(sub)
@@ -79,14 +91,14 @@ def rename_arrays(formula: FNode):
     return formula, constraints
 
 
-def get_division_constraints(formula: FNode):
-    divisions = get_nodes(formula, (lambda f : f.is_div() or f.is_bv_udiv() or f.is_bv_sdiv() or f.is_bv_urem() or f.is_bv_srem()))
-    return [Not(Equals(BV(0,get_bv_width(div)),div)) for div in map(lambda division : division.args()[1], divisions)]
-
 def get_nodes(formula: FNode, cond: t.Callable[[FNode], bool]):
+    """ Get all nodes that satisfy a condition 
+    """
     return get_nodes_helper(formula,cond,set())
 
 def get_nodes_helper(node: FNode,cond: t.Callable[[FNode], bool],visited_nodes: set) -> t.Set[FNode]:
+    """ Helper function for get_nodes
+    """
     visited_nodes.add(node.node_id())
     matching = set()
     if cond(node):
@@ -96,18 +108,22 @@ def get_nodes_helper(node: FNode,cond: t.Callable[[FNode], bool],visited_nodes: 
             matching.update(get_nodes_helper(sub, cond, visited_nodes))
     return matching
 
+
+def get_division_constraints(formula: FNode):
+    """ Returns constraints encoding that divisors should not be zero  
+    """
+    divisions = get_nodes(formula, (lambda f : f.is_div() or f.is_bv_udiv() or f.is_bv_sdiv() or f.is_bv_urem() or f.is_bv_srem()))
+    return [Not(Equals(BV(0,get_bv_width(div)),div)) for div in map(lambda division : division.args()[1], divisions)]
+
+
 def check_indices(symbol: str,maxArity: int,maxId :int, cons_in_c: str):
     if maxArity == 0:
         return set([symbol]) if symbol in cons_in_c else set()
-    for id in range(maxId):
-        var = symbol + '_' + str(id)
+    for index in range(maxId):
+        var = symbol + '_' + str(index)
         res = set([var]) if var in cons_in_c else set()
         res = res.union(check_indices(var, maxArity-1,maxId,cons_in_c))
-    return res    
-
-def get_integer_constraints(formula: FNode):
-    integer_operations = get_nodes(formula, lambda f: f.get_type() is INT)
-    return {(GT(i, Int(-(2**63)))) for i in integer_operations}.union((LT(i, Int(2**63 - 1))) for i in integer_operations)
+    return res
 
 def get_array_index_calls(formula: FNode):
     return get_array_calls_helper(formula, set())
@@ -126,7 +142,7 @@ def constrain_array_size(formula: FNode):
     array_size = max(min_index,2)
     
     while not sat:
-        LOGGER.debug("Checking size: %d" % array_size)
+        LOGGER.debug("Checking size: %d",  array_size)
         if (math.pow(array_size,max_dim)) > MAXIMUM_ARRAY_SIZE:  
             raise ValueError("Minimum array size too large")
         assertions = get_array_constraints(array_ops, array_size)
@@ -134,7 +150,7 @@ def constrain_array_size(formula: FNode):
         sat = is_sat(new_formula, solver_name = "z3")
         array_size *= 2
     array_size //= 2
-    LOGGER.info("Sat on size %d."  % array_size)
+    LOGGER.info("Sat on size %d.", array_size)
     return array_size, assertions
 
 def get_array_calls_helper(formula: FNode, visited_nodes: set):
@@ -169,34 +185,38 @@ def get_integer_constraints(formula: FNode):
     return {(GT(i, Int(-(2**63)))) for i in integer_operations}.union((LT(i, Int(2**63 - 1))) for i in integer_operations)
 
 def extract_vars(cond: t.List[str], variables: t.Dict[str,str]):    
-    vars = dict()
-    for var, vartype in variables.items():
-        if var + " " in cond or var + ")" in cond or var.split('[')[0] in cond:
-            vars[var] = vartype
-    return vars
+    variables = {}
+    for variable, vartype in variables.items():
+        if variable + " " in cond or variable + ")" in cond or variable.split('[')[0] in cond:
+            variables[variable] = vartype
+    return variables
 
 def daggify(formula: FNode, limit: int):
-    next = [formula]
-    seen = dict()
-    subs = dict()
-    while len(next) > 0:
-        node = next.pop()
+    node_queue = [formula]
+    seen = {}
+    subs = {}
+    while len(node_queue) > 0:
+        node = node_queue.pop()
         for sub in node.args():
-            if sub.node_id() in seen.keys(): 
+            if sub.node_id() in seen:
                 seen[sub.node_id()] += 1
                 if seen[sub.node_id()] == limit:
                     if not (sub.is_constant() or sub.is_symbol() or sub.is_function_application() or sub.is_not()):
                         var = FreshSymbol(sub.get_type())
-                        # Compute fixpoint over substitution 
-                        old = sub
-                        sub = old.substitute(subs)
-                        while old != sub:
-                            old = sub
-                            sub = sub.substitute(subs) 
+                        # Compute fixpoint over substitution
+                        sub = calculate_substitution_fixpoint(subs, sub)
                         subs.update({sub: var})
-                        formula = formula.substitute({sub: var})
+                        formula = formula.substitute(subs)
             else:
                 seen[sub.node_id()] = 0
-                next.append(sub)
+                node_queue.append(sub)
     formula = And(*[EqualsOrIff(sub,var) for (sub,var) in subs.items()], formula)
     return formula, set(subs.values())
+
+def calculate_substitution_fixpoint(subs: dict, sub: FNode):
+    old = sub
+    sub = old.substitute(subs)
+    while old != sub:
+        old = sub
+        sub = sub.substitute(subs)
+    return sub

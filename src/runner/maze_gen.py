@@ -1,5 +1,7 @@
-from . import docker, commands
+""" Provides commands and shortcuts for generating mazes
+"""
 import os
+from . import docker, commands
 
 GENERATE_CMD = '%s/scripts/generate.sh -o %s %s'
 
@@ -8,7 +10,7 @@ def get_params_from_maze(maze,smt_path = ''):
     params['a'], size, params['r'], _, *params['t'], params['m'], params['c']= maze.split('percent')[0].split('_')
     *params['g'],_, params['b'] = maze.split('percent')[1][1:].split('_')
 
-    params['w'], params['h'] = map(lambda x:  int(x), size.split('x'))
+    params['w'], params['h'] = map(int, size.split('x'))
     params['m'] = int(params['m'][1:]) # cut 't'    
     params['r'] = int(params['r'])
     params['g'] = '_'.join(params['g'])
