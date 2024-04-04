@@ -21,7 +21,7 @@ def error(flag: int, *info):
     else:
         raise ValueError("ERROR: an unknown error occurred")
 
-def set_well_defined(wd: Bool):
+def set_well_defined(wd: bool):
     global GENERATE_WELL_DEFINED
     GENERATE_WELL_DEFINED = wd 
 
@@ -33,7 +33,7 @@ def binary_to_decimal(binary: str, unsigned : bool = True) -> str:
         val += 'ULL' if unsigned else 'LL'
     return val 
 
-def bits_to_type(num_bits: int):
+def bits_to_type(num_bits: int) -> str: # type: ignore
     if num_bits <= 8:
         return "char"
     elif num_bits <= 16:
@@ -42,9 +42,8 @@ def bits_to_type(num_bits: int):
         return "int"
     elif num_bits <= 64:
         return "long"
-    else:
-        error(1, "BV width > 64:", num_bits)
-        
+    error(1, "BV width > 64:", num_bits)
+
 def bits_to_stype(numb_bits: int) -> str:
     return "signed " + bits_to_type(numb_bits)
 def bits_to_utype(num_bits: int) -> str:
@@ -55,32 +54,32 @@ def has_matching_type(numb_bits: int) -> bool:
 def is_signed(node: FNode) -> str:
     return node.is_bv_sle() or node.is_bv_slt() or node.is_bv_ashr() or node.is_bv_sext() or node.is_bv_srem() or node.is_bv_sdiv()
 
-def write_or_convert(symbs,node,cons: 'FNode | str'):
-    if type(node) is FNode:
+def write_or_convert(symbs: set[str],node: FNode | str,cons: io.TextIOBase):
+    if isinstance(node,FNode):
         convert(symbs,node,cons)
     else:
         cons.write(node)
 
-def write_signed(symbs,node: FNode,cons, text: 'FNode | str', always=True) -> str:
+def write_signed(symbs,node: FNode,cons, text: 'FNode | str', always=True):
     width = ff.get_bv_width(node)
     scast = bits_to_stype(width)  
     if always or width in (32,64) or (len(node.args()) != 0 and (not all(map(is_signed, node.args())) or not all(map(lambda n: ff.get_bv_width(n)<=width,node.args())))):
         if not GENERATE_WELL_DEFINED or width == 64:
-            cons.write('(%s) ' % (scast))
+            cons.write(f'({scast}) ')
         else:
             cons.write('scast_helper(')
     write_or_convert(symbs,text,cons)
     if GENERATE_WELL_DEFINED and (always or width in (32,64) or (len(node.args()) != 0 and (not all(map(is_signed, node.args())) or not all(map(lambda n: ff.get_bv_width(n)<=width,node.args()))))):
-        cons.write(', %s)' % width) 
+        cons.write(f', {width})')
 
-def write_unsigned(symbs, node: FNode, cons, text: 'FNode | str', always=True) -> str:
+def write_unsigned(symbs, node: FNode, cons, text: 'FNode | str', always=True):
     width = ff.get_bv_width(node)
     cons.write(get_unsigned_cast(node, always))
     write_or_convert(symbs,text,cons)
     if not has_matching_type(width):
         cons.write(')')
 
-def write_cast(symbs, node: FNode, cons, text: 'FNode | str', always=False) -> str:
+def write_cast(symbs, node: FNode, cons, text: 'FNode | str', always=False):
     if node.get_type().is_bv_type() or (node.get_type().is_array_type() and node.get_type().elem.type().is_bv_type()) or node.is_theory_relation() and node.arg(0).get_type().is_bv_type():
         write_signed(symbs, node, cons,text, always) if is_signed(node) else write_unsigned(symbs, node, cons,text, always)
     else:
@@ -101,18 +100,17 @@ def type_to_c(ntype: node_type) -> str:
     if ntype.is_bool_type():
         return 'bool'
     elif ntype.is_bv_type():
-        return bits_to_utype(ntype.width)
+        return bits_to_utype(ntype.width) # type: ignore
     elif ntype.is_function_type():
-        return type_to_c(ntype.return_type)
+        return type_to_c(ntype.return_type) # type: ignore
     elif ntype.is_array_type():
-        if ntype.elem_type.is_array_type():
-            return '%s[ARRAY_SIZE]' % type_to_c(ntype.elem_type) # otherwise store might be unsound, we can always cast afterwards
+        if ntype.elem_type.is_array_type(): # type: ignore
+            return f'{type_to_c(ntype.elem_type)}[ARRAY_SIZE]' # type: ignore
         return 'long[ARRAY_SIZE]'
-    # elif type.is_string_type():
-    #     return 'string'
     else:
         error(0, ntype)
-
+        return ''
+    
 def convert_helper(symbs: t.Set[str],node: FNode, cons: io.TextIOBase, op: str, always_cast_args=False):
     (l, r) = node.args()
     write_cast(symbs,node,cons,l, always=always_cast_args)
@@ -404,7 +402,7 @@ def rotate_helper(symbs: t.Set[str], node: FNode, cons: io.TextIOBase, op: str):
     convert(symbs,l,cons)
     cons.write(' %s (%s-%s) )' % (op, i, m))
 
-def clean_string(s: str):
+def clean_string(s: str | FNode):
     if s == 'c':
         return '__original_smt_name_was_c__'
     s = str(s)

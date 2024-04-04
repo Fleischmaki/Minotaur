@@ -31,7 +31,6 @@ def load_config(path: str) -> dict:
     if 'gen_time' not in conf.keys():
         conf['gen_time'] = 30000
 
-
     assert conf['repeats'] > 0
     assert conf['workers'] > 0
     assert conf['memory'] > 0
@@ -71,11 +70,13 @@ def load(argv):
             test.main(curr_conf, os.path.join(outdir, f'run{i}_{j}'))
             end = time.time()
             times.append(end-start)
-        resfile.write(f"%{i},%{sum(times)/len(times)}\n")
+        resfile.write(f"{i},{sum(times)/len(times)}\n")
 
 def set_param_value(new_conf: dict, old_conf: dict, key: str, i: int):
     """ Set new_conf[key] to i-th value of old_conf[key]
     """
     new_conf[key] = old_conf[key][i % len(old_conf[key])]
     if key == 'transforms' and new_conf['transforms'] == 0:
-        new_conf['parameters']['t']['keepId'] = [1] 
+        new_conf['parameters']['t']['keepId'] = [1]
+    if key == 'neg' and new_conf['neg'] == 1:
+        new_conf['parameters']['t']['neg'] = [1]

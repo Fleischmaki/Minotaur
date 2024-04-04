@@ -1,6 +1,8 @@
-from smt2 import parser, converter
-import transforms
-import random, logging
+import random 
+import logging
+
+from smt2 import parser, converter # pylint: disable=import-error
+import transforms # pylint: disable=import-error
 
 LOGGER = logging.getLogger(__name__)
 
@@ -13,13 +15,13 @@ class Generator:
         self.logic = parser.read_file(smt_file).logic
 
         try:
-            self.constraints, self.vars_all, self.array_size = parser.parse(smt_file, check_neg = False, generate_well_defined=transformations['wd'], generate_sat=transformations['sat'],limit=transformations['dag'])
+            self.constraints, self.vars_all, self.array_size = parser.parse(smt_file, check_neg = False, \
+                generate_well_defined=transformations['wd'], generate_sat=transformations['sat'],limit=transformations['dag'], negate_formula=transformations['neg'])
         except ValueError as e:
-            LOGGER.warn('Error while parsing smt file %s' % str(e))
-            self.constraints = {} if transformations['sat'] else '(1==0)'
+            LOGGER.warning('Error while parsing smt file %s', str(e))
+            self.constraints = {} if transformations['sat'] else {'(1==0)': False}
             self.vars_all = {}
             self.array_size = 0
-
 
         transforms.remove_constraints(self.constraints, transformations['dc'])
         transforms.make_const(self.vars_all, transformations['mc'])
@@ -29,7 +31,7 @@ class Generator:
         if transformations['sh']:
             self.groups, self.vars = transforms.coshuffle(self.groups, self.vars)
 
-        self.insert = list()
+        self.insert = []
         for _ in range(self.size):
             self.insert.append(0)
         while sum(self.insert) < len(self.groups):
@@ -43,16 +45,15 @@ class Generator:
             
     def get_logic_def(self):
         logic_def = ""
-        if 'BV' in self.logic:
+        if 'BV' in self.logic and self.transformations['wd']:
             logic_def += ("\n\n//Helper functions for division and casts\n")
             logic_def += ("""long scast_helper(unsigned long i, unsigned char width){
     if((i & (1ULL << (width-1))) > 0){
-        return (long) (i - (1ULL<< width));
+        return ((long)i - (1LL<< width));
     }
     return i;
 }\n""")
-            if self.transformations['wd']:
-                logic_def += ("""unsigned long sdiv_helper(long l, long r, int width){
+            logic_def += ("""unsigned long sdiv_helper(long l, long r, int width){
     if(r == 0){
         if(l >= 0)
             return -1ULL >> (64-width); // Make sure we shift with 0s
@@ -99,19 +100,19 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
         return logic_def
 
     def get_logic_c(self):
-        logic_c = list()
+        logic_c = []
         group_idx = 0
         for idx in range(self.size):
             if self.insert[idx] == 0 and len(self.edges[idx]) > 1:
                 logic_c.append("\t\tsigned char c = __VERIFIER_nondet_char();")
             else:
                 tab_cnt = 0
-                constraints, vars = list(), set()
+                constraints, variables = [],set()
                 for cnt in range(self.insert[idx]):
                     constraints.extend(self.groups[group_idx + cnt])
-                    vars = vars.union(self.vars[group_idx + cnt])
+                    variables = variables.union(self.vars[group_idx + cnt])
                 buggy_constraints = ""  
-                for var in vars:
+                for var in variables:
                     buggy_constraints += self.get_initialisation(var)
                     
 
@@ -144,7 +145,7 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
             return "\t{} {} = __VERIFIER_nondet_{}();\n".format(self.vars_all[var], var, short_type)
 
     def get_numb_bytes(self):
-        numb_bytes = list()
+        numb_bytes = []
         group_idx = 0
         for idx in range(self.size):
             if self.insert[idx] == 0:
@@ -158,7 +159,7 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
         return numb_bytes
 
     def get_guard(self):
-        guard = list()
+        guard = []
         group_idx = 0
         for idx in range(self.size):
             conds_default = [["0"], ["1"],
@@ -169,16 +170,16 @@ unsigned long rem_helper(unsigned long l, unsigned long r, int width){
             if self.insert[idx] == 0:
                 guard.append(conds_default[numb_edges])
             else:
-                next, bug_edge, m = 0, 0, 0
+                next_edge, bug_edge, m = 0, 0, 0
                 conds = []
                 for i in range(len(self.sln)):
                     if self.sln[i] == idx:
                         if i == len(self.sln) - 1:
-                            next = 'bug'
+                            next_edge = 'bug'
                         else:
-                            next = self.sln[i+1]
+                            next_edge = self.sln[i+1]
                 for n in range(numb_edges):
-                    if self.edges[idx][n] == next:
+                    if self.edges[idx][n] == next_edge:
                         bug_edge = n
                 for n in range(numb_edges):
                     if n == bug_edge:

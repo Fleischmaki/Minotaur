@@ -1,14 +1,18 @@
-import sys, random, logging
+""" Handles reading and writing SMT Files and similar operation  
+"""
+import sys
+import random
+import logging
+import typing as t
 
 from collections import defaultdict, OrderedDict, namedtuple
 
 from pysmt.smtlib.parser import SmtLibParser
-from pysmt.shortcuts import *
+from pysmt.shortcuts import get_unsat_core, is_sat, write_smtlib, And, Not
 from pysmt.oracles import get_logic
 from pysmt.smtlib.commands import SET_LOGIC
 from pysmt.fnode import FNode
 import pysmt.exceptions
-import typing as t
 
 from . import converter, formula_transforms as ff
 
@@ -16,11 +20,12 @@ LOGGER = logging.getLogger(__name__)
 
 SmtFileData = namedtuple('SmtFileData',['decl_arr','formula', 'logic', 'clauses'])
 
-def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well_defined=True, generate_sat = True, limit=0):
+def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well_defined=True, generate_sat = True, limit=0, negate_formula=False)\
+    -> tuple[OrderedDict[str,bool],dict[str,str],int]:
     sys.setrecursionlimit(10000)
     set_well_defined(generate_well_defined)
-    LOGGER.info("Converting %s: " % file_path)
-    decl_arr, formula, logic, formula_clauses = read_file(file_path, limit)
+    LOGGER.info("Converting %s: ", file_path)
+    decl_arr, formula, logic, formula_clauses = read_file(file_path, limit, negate_formula)
     if generate_sat:
         clauses, array_size = run_checks(formula, logic, formula_clauses)
     else:
@@ -29,11 +34,11 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
         clauses = list(ff.get_array_constraints(array_calls, array_size)) + list(formula_clauses)
     try:
         core = set() if generate_sat else get_unsat_core(clauses, logic)
-    except pysmt.exceptions.SolverStatusError as e:
+    except pysmt.exceptions.SolverStatusError:
         LOGGER.warning("Could not find core, will abort if any clause fails")
         continue_on_error = False
     parsed_cons = OrderedDict()
-    variables = dict()
+    variables = {}
     
     if GENERATE_WELL_DEFINED:
         clauses.sort(key=lambda c: len(ff.get_array_index_calls(c)[1]))
@@ -44,16 +49,16 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
         if logic.split('_')[-1].startswith('A'):
             LOGGER.debug("Renaming array stores")
             clause, constraints = ff.rename_arrays(clause)
-            LOGGER.info("Added %d new arrays" % len(constraints))
+            LOGGER.info("Added %d new arrays", len(constraints))
             clause = And(*constraints, clause) # Make sure to render constraints first
             ldecl_arr.extend(map(lambda c: c.args()[1],constraints))
 
         symbs = set()
 
         try:
-            LOGGER.debug("Converting clause %d/%d." % (c,len(clauses)))
+            LOGGER.debug("Converting clause %d/%d.", c,len(clauses))
             result = converter.convert_to_string(symbs,clause)
-        except Exception as e:
+        except ValueError as e:
             LOGGER.warning("Could not convert clause: %s", str(e))
             if continue_on_error:
                 if clause not in core:
@@ -76,9 +81,9 @@ def add_parsed_cons(check_neg:bool, clauses:list, parsed_cons:OrderedDict, claus
     else:
         parsed_cons[cons_in_c] = ""
 
-def add_used_variables(variables: set, ldecl_arr: t.List[FNode], symbs: t.Set[str]):
+def add_used_variables(variables: dict, ldecl_arr: list[FNode], symbs: t.Set[str]):
     for symb in symbs:
-        decls = list(map(lambda x: converter.clean_string(x), ldecl_arr))
+        decls = list(map(converter.clean_string, ldecl_arr))
         if symb in decls:
             decl = symb
         elif 'c' in decls and symb == '__original_smt_name_was_c__':
@@ -134,13 +139,13 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
 def check_indices(symbol: str,maxArity: int,maxId :int, cons_in_c: str):
     if maxArity == 0:
         return set([symbol]) if symbol in cons_in_c else set()
-    for id in range(maxId):
-        var = symbol + '_' + str(id)
+    for index in range(maxId):
+        var = symbol + '_' + str(index)
         res = set([var]) if var in cons_in_c else set()
         res = res.union(check_indices(var, maxArity-1,maxId,cons_in_c))
     return res    
 
-def read_file(file_path: str, limit = 0) -> SmtFileData:
+def read_file(file_path: str, limit : int = 0, negate_formula : bool = False) -> SmtFileData:
     parser = SmtLibParser()
     script = parser.get_script_fname(file_path)
     decl_arr = list()
@@ -150,6 +155,7 @@ def read_file(file_path: str, limit = 0) -> SmtFileData:
             # if (str)(arg) != "model_version":
             decl_arr.append(arg)
     formula = script.get_strict_formula()
+    formula = formula if not negate_formula else Not(formula)
     if limit > 0:
         formula, new_decls = ff.daggify(formula, limit)
         decl_arr.extend(new_decls)
@@ -164,7 +170,7 @@ def get_logic_from_script(script):
     else:
         formula = script.get_strict_formula()
         logic = str(get_logic(formula))
-        LOGGER.info('Logic not found in script. Using logic from formula: '  + logic)
+        LOGGER.info('Logic not found in script. Using logic from formula: %s', logic)
     return logic
 
 def conjunction_to_clauses(formula: FNode):
@@ -176,7 +182,7 @@ def conjunction_to_clauses(formula: FNode):
         clauses.add(formula)
     return clauses
 
-def write_to_file(formula : FNode, file: str):
+def write_to_file(formula : FNode | t.Iterable, file: str):
     if isinstance(formula,t.Iterable):
         formula = And(*formula)
     return write_smtlib(formula, file)
@@ -186,19 +192,19 @@ class Graph:
     def __init__(self):
         self.graph = defaultdict(list)
 
-    def add_edge(self, node, neighbour):
+    def add_edge(self, node: str, neighbour:str):
         self.graph[node].append(neighbour)
 
-    def get_edges(self, node):
+    def get_edges(self, node: str):
         return self.graph[node]
 
-    def separate_helper(self, node, visited: set):
+    def separate_helper(self, node: str, visited: set[str]):
         group = {node}
         current = {node}
         while len(current) != 0:
             new = set()
-            for node in current:
-                for neighbour in self.graph[node]:
+            for currnode in current:
+                for neighbour in self.graph[currnode]:
                     if neighbour not in visited:
                         new.add(neighbour)
             visited.update(new)
@@ -207,42 +213,42 @@ class Graph:
         return group
 
 
-    def separate(self):
+    def separate(self) -> list[str]:
         visited = set()
-        groups = list()
+        groups = []
         for node in self.graph:
             if node not in visited:
                 group = self.separate_helper(node, visited)
                 groups.append(group)
         return groups
 
-def independent_formulas(conds: OrderedDict, variables: 'dict[str,str]'):
+def independent_formulas(conds: dict[str,bool], variables: dict[str,str]) -> tuple[list[list],list[dict]]:
     formula = Graph()
     for cond in conds:
         formula.add_edge(cond,cond)
-        vars = extract_vars(cond, variables)
+        cond_vars = extract_vars(cond, variables)
         for other in conds:
-            if len(vars.keys() & extract_vars(other, variables).keys()) > 0:
+            if len(cond_vars.keys() & extract_vars(other, variables).keys()) > 0:
                 formula.add_edge(cond, other)
     groups = [sorted(g, key=lambda cond: list(conds.keys()).index(cond)) for g in formula.separate()]
-    vars_by_groups = list()
+    vars_by_groups = []
     for group in groups:
-        used_vars = dict()
+        used_vars = {}
         for cond in group:
             used_vars.update(extract_vars(cond, variables))
         vars_by_groups.append(used_vars)
     return groups, vars_by_groups
 
-def extract_vars(cond: t.List[str], variables: t.Dict[str,str]):    
-    vars = dict()
+def extract_vars(cond: str, variables: dict[str,str]):    
+    used_variables = {}
     for var, vartype in variables.items():
         if var + " " in cond or var + ")" in cond or var.split('[')[0] in cond:
-            vars[var] = vartype
-    return vars
+            used_variables[var] = vartype
+    return used_variables
 
-def get_negated(conds: dict, group: t.Set[str], vars: t.Dict[str,str], numb: int):
-    negated_groups = list()
-    new_vars = dict()
+def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: int):
+    negated_groups = []
+    new_vars = {}
     n = 0
     for cond in group:
         if conds[cond] == True:
@@ -253,8 +259,8 @@ def get_negated(conds: dict, group: t.Set[str], vars: t.Dict[str,str], numb: int
             negated_group = set()
             for cond in group:
                 if conds[cond] == True and len(negated) <= i and cond not in negated:
-                        negated_group.add("(!" + cond + ")")
-                        negated.add(cond)
+                    negated_group.add("(!" + cond + ")")
+                    negated.add(cond)
                 else:
                     negated_group.add(cond)
             negated_groups.append(negated_group)
@@ -275,27 +281,28 @@ def get_negated(conds: dict, group: t.Set[str], vars: t.Dict[str,str], numb: int
                     break
             new_group.add(cond_neg)
             for j, cond in enumerate(group):
-                cond_vars = sorted(list(extract_vars(cond, vars).keys()),key=len,reverse=True)
+                cond_vars = sorted(list(extract_vars(cond, variables).keys()),key=len,reverse=True)
                 for v in cond_vars:
                     new_var = "__neg_%d_%d__%s" % (i,j,v)
                     cond = cond.replace("(%s)" % v.split('[')[0], "(%s)" % new_var.split('[')[0])
-                    new_vars[new_var] = vars[v]
+                    new_vars[new_var] = variables[v]
                 new_group.add(cond)
             negated_groups.append(new_group)
-    vars.update(new_vars)
-    return negated_groups, vars 
+    variables.update(new_vars)
+    return negated_groups, variables
 
-def get_subgroup(groups: t.List[set], vars_by_groups: t.List[t.Dict[str,str]], seed: int):
+def get_subgroup(groups: list[list], vars_by_groups: t.List[t.Dict[str,str]], seed: int)\
+    -> tuple[list[str],dict[str,str]] :
     if len(groups) == 0:
-        return set(),dict()
+        return [],{}
     # get a subset of a randomly selected independent group
     random.seed(seed)
     rand = random.randint(0, len(groups)-1)
-    vars = dict()
+    variables = {}
     subgroup = groups[rand]
     for cond in subgroup:
-        vars.update(extract_vars(cond, vars_by_groups[rand]))
-    return subgroup, vars
+        variables.update(extract_vars(cond, vars_by_groups[rand]))
+    return subgroup, variables
 
 def get_minimum_array_size_from_file(smt_file: str):
     formula = read_file(smt_file).formula

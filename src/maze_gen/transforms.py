@@ -1,13 +1,16 @@
-import random,logging
-
-from storm.smt.smt_object import smtObject
-from storm.fuzzer.fuzzer import generate_mutants
-from storm.parameters import get_parameters_dict
+import random
+import logging
+import typing as t
 import math as m
 
-from z3 import *
-from pysmt.shortcuts import *
-from smt2 import parser
+from pysmt.shortcuts import And, TRUE
+
+from storm.smt.smt_object import smtObject # pylint: disable=import-error
+from storm.fuzzer.fuzzer import generate_mutants # pylint: disable=import-error
+from storm.parameters import get_parameters_dict # pylint: disable=import-error
+from smt2 import parser # pylint: disable=import-error
+
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -26,8 +29,11 @@ def make_const(variables: dict, mc: int):
         const = symbols.pop(random.randrange(0,len(symbols)))
         variables[const] = 'const ' + variables[const]
 
-def coshuffle(list1: list,list2: list) -> 'tuple[list, list]':
-    temp = list(zip(list1,list2)) #shuffle groups and vars together
+ListAElemT = t.TypeVar('ListAElemT')
+ListBElemT = t.TypeVar('ListBElemT')
+
+def coshuffle(list_a: list[ListAElemT],list_b: list[ListBElemT]) -> tuple[list[ListAElemT], list[ListBElemT]]:
+    temp = list(zip(list_a,list_b)) #shuffle groups and vars together
     random.shuffle(temp)
     r1, r2 = zip(*temp)
     return list(r1), list(r2)
@@ -38,31 +44,34 @@ def parse_transformations(t_type: str) -> dict:
     storm = False
     sat = True
     well_defined = False
-    make_const = 0
-    keepId = t_type == 'id'
+    mc = 0
+    keep_id = t_type == 'id'
     dc = 0
     dag = 0
     last = False
-    for t in transformations:
-        if t == 'sh':
+    neg = False
+    for transformation in transformations:
+        if transformation == 'sh':
             shuffle = True
-        elif t == 'storm':
+        elif transformation == 'storm':
             storm = True
-        elif t == 'wd':
+        elif transformation == 'wd':
             well_defined = True
-        elif t.startswith('dc'):
-            dc = int(t[2:])
-        elif t == 'keepId':
-            keepId = True
-        elif t.startswith('mc'):
-            make_const = int(t[2:])
-        elif t == 'unsat':
+        elif transformation.startswith('dc'):
+            dc = int(transformation[2:])
+        elif transformation == 'keepId':
+            keep_id = True
+        elif transformation.startswith('mc'):
+            mc = int(transformation[2:])
+        elif transformation == 'unsat':
             sat = False
-        elif t.startswith('dag'):
-            dag = int(t[3:])
-        elif t == 'last':
+        elif transformation.startswith('dag'):
+            dag = int(transformation[3:])
+        elif transformation == 'last':
             last = True
-    return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keepId, 'wd' : well_defined, 'mc' : make_const, 'sat' : sat, 'dag': dag, 'last': last}
+        elif transformation == 'neg':
+            neg = True
+    return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keep_id, 'wd' : well_defined, 'mc' : mc, 'sat' : sat, 'dag': dag, 'last': last, 'neg': neg}
 
 def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: bool = True) -> list:
     LOGGER.info("Running Storm.")
