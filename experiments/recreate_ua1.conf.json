@@ -1,9 +1,9 @@
 {
-	"verbosity": "summary",
+	"verbosity": "all",
 	"repeats" : 5,
 	"avg" : 1,
 	"mazes" : [-1],
-	"duration" : [300],
+	"duration" : [600],
 	"workers" : 5,
 	"memory" : 4,
 	"transforms" : [15],

@@ -11,9 +11,10 @@
 	"maze_gen" : "local",
 	"expected_result": "error",
 	"gen_time" : 1000,
+	"neg":[1,0], 
 	"tool" : {
-		"cpa-release": {
-			"variant" : ["kInduction"]
+		"ultimate-release": {
+			"variant" : ["ut", "ua", "ugc", "uk"]
 		}
 	},
 	"avg": 1,
@@ -40,7 +41,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen","CVE-neg_gen"],
-		"s": "/home/markus/MasterThesis/seeds/bench_1081.smt2",
+		"s": "/home/markus/MasterThesis/seeds/bench_8477.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
