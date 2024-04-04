@@ -1,7 +1,10 @@
-import os, logging
-from ..runner import *
-from ..maze_gen.smt2 import parser as sp
+""" Implements minimization algorithm 
+"""
+import os
+import logging
 from math import ceil
+from ..runner import maze_gen, commands, docker
+from ..maze_gen.smt2 import parser as sp
 
 LOGGER = logging.getLogger(__name__)
 
@@ -11,23 +14,22 @@ class Minimizer:
             run = argv[0][:-1] if argv[0].endswith(',') else argv[0]
             args = run.split(',')
             if len(args) == 16:
-                self.tool,self.variant,self.flags,id,u,a,w,h,c,t,s,g,_,r,self.timeout,self.err = args
+                self.tool,self.batch_id,self.variant,self.flags,index,u,a,w,h,c,t,g,s,r,timeout,self.err = args
             else:
-                self.tool,self.variant,self.flags,id,u,a,w,h,c,t,g,s,r,self.timeout,self.err = args
+                self.tool,self.variant,self.flags,index,u,a,w,h,c,t,g,s,r,timeout,self.err = args
 
-            self.timeout = ceil(float(self.timeout)) + 60 # Add a minute for buffer
+            self.timeout = ceil(float(timeout)) + 60 # Add a minute for buffer
             self.seeddir = argv[1]
             self.outdir = argv[2]
             self.gen = argv[3]
-            self.params= {'m':int(id),'a':a,'w':int(w),'h':int(h),'c':int(c),'t':('last_' + t).strip('_'),'g':g,'s':os.path.join(self.seeddir,s+('' if s.endswith('.smt2') else '.smt2')),'r':int(r)}
+            self.params= {'m':int(index),'a':a,'w':int(w),'h':int(h),'c':int(c),'t':('last_' + t).strip('_'),'g':g,'s':os.path.join(self.seeddir,s+('' if s.endswith('.smt2') else '.smt2')),'r':int(r)}
             if u == '1':
                 self.params['u'] = ''
-            self.maze = maze_gen.get_maze_names(self.params)[self.params['m']-1]
         else:
-            self.maze = argv[0]
+            maze = argv[0]
             self.seeddir = argv[1]
             self.outdir = argv[2]
-            self.timeout = argv[3]
+            self.timeout = int(argv[3])
             self.gen = argv[4]
             self.err = argv[5]
             self.tool = argv[6]
@@ -35,7 +37,7 @@ class Minimizer:
             if len(argv) >= 8:
                 self.variant = argv[7]
                 self.flags = ' '.join(argv[8:])
-            self.params= self.get_params()
+            self.params= self.get_params(maze)
         self.expected_result = 'safe' if self.err in ('fp','tn') else 'error'
         self.core = set()
 
@@ -46,7 +48,7 @@ class Minimizer:
         commands.run_cmd("mkdir -p %s" % os.path.join(self.outdir,'runs'))
 
         if not self.result_is_err(False):
-            logging.error('Original maze not a %s' % self.err)
+            logging.error('Original maze not a %s', self.err)
             return
 
         self.minimize_maze()
@@ -134,24 +136,24 @@ class Minimizer:
         constraints = self.core.union(clauses)
         if not seed.endswith('.smt2'):
             seed += '.smt2'
-        sp.write_to_file(constraints,seed)            
+        sp.write_to_file(constraints,seed)
         self.params['s'] = seed
-        self.maze = maze_gen.get_maze_names(self.params)[max(0,self.params['m']-1)]
 
 
     def is_err(self):
-        resdir = os.path.join(self.outdir,self.maze, self.maze)
+        maze = maze_gen.get_maze_names(self.params)[max(0,self.params['m']-1)]
+        resdir = os.path.join(self.outdir,maze,maze) # IDK why it's twice but thats just how it is
         for file in os.listdir(resdir):
-                if len(file.split('_')) == 2: # Still false negative
-                    print(file)
-                    commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(self.outdir,'runs')))
-                    commands.run_cmd('rm -r %s' % os.path.join(self.outdir,self.maze))
-                    if self.err in file: 
-                        return True
+            if len(file.split('_')) == 2: # Still false negative
+                print(file)
+                commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(self.outdir,'runs')))
+                commands.run_cmd('rm -r %s' % os.path.join(self.outdir,maze))
+                if self.err in file: 
+                    return True
         return False
 
-    def get_params(self, smt_path = ''):
-        self.maze = self.maze.split('/')[-1][:-2] # Cut .c
+    def get_params(self, maze, smt_path = ''):
+        self.maze = maze.split('/')[-1][:-2] # Cut .c
         self.params= maze_gen.get_params_from_maze(self.maze,smt_path=smt_path)  
         return self.params
 
@@ -164,6 +166,7 @@ class Minimizer:
             self.params['m'] = 0
         else:
             self.params['m'] = 1
+
 def read_mutant(mutant: str):
     file_data = sp.read_file(mutant)
     return list(file_data.clauses), file_data.logic
