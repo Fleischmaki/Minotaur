@@ -23,24 +23,24 @@ def error(flag: int, *info):
 
 def set_well_defined(wd: bool):
     global GENERATE_WELL_DEFINED
-    GENERATE_WELL_DEFINED = wd 
+    GENERATE_WELL_DEFINED = wd
 
 def binary_to_decimal(binary: str, unsigned : bool = True) -> str:
     if len(binary) > 64:
         error(1, "BV width > 64: ",binary)
-    val = str(BV(binary).constant_value() if unsigned else BV(binary).bv_signed_value())
+    val = str(BV(binary).constant_value() if unsigned else BV(binary).bv_signed_value()) + 'U'
     if len(binary) > 32:
-        val += 'ULL' if unsigned else 'LL'
-    return val 
+        val += 'LL'
+    return val
 
 def bits_to_type(num_bits: int) -> str: # type: ignore
     if num_bits <= 8:
         return "char"
-    elif num_bits <= 16:
+    if num_bits <= 16:
         return "short"
-    elif num_bits <= 32:
+    if num_bits <= 32:
         return "int"
-    elif num_bits <= 64:
+    if num_bits <= 64:
         return "long"
     error(1, "BV width > 64:", num_bits)
 
@@ -62,14 +62,14 @@ def write_or_convert(symbs: set[str],node: FNode | str,cons: io.TextIOBase):
 
 def write_signed(symbs,node: FNode,cons, text: 'FNode | str', always=True):
     width = ff.get_bv_width(node)
-    scast = bits_to_stype(width)  
-    if always or width in (32,64) or (len(node.args()) != 0 and (not all(map(is_signed, node.args())) or not all(map(lambda n: ff.get_bv_width(n)<=width,node.args())))):
-        if not GENERATE_WELL_DEFINED or width == 64:
-            cons.write(f'({scast}) ')
-        else:
+    scast = bits_to_stype(width)
+    if always or width not in (32,64) or (len(node.args()) != 0 and (not all(map(is_signed, node.args())) or not all(map(lambda n: ff.get_bv_width(n)<=width,node.args())))):
+        if GENERATE_WELL_DEFINED or width not in (8,16,32):
             cons.write('scast_helper(')
+        else:
+            cons.write(f'({scast})')
     write_or_convert(symbs,text,cons)
-    if GENERATE_WELL_DEFINED and (always or width in (32,64) or (len(node.args()) != 0 and (not all(map(is_signed, node.args())) or not all(map(lambda n: ff.get_bv_width(n)<=width,node.args()))))):
+    if width not in (8,16,32) or (GENERATE_WELL_DEFINED and (always or width in (32,64) or (len(node.args()) != 0 and (not all(map(is_signed, node.args())) or not all(map(lambda n: ff.get_bv_width(n)<=width,node.args())))))):
         cons.write(f', {width})')
 
 def write_unsigned(symbs, node: FNode, cons, text: 'FNode | str', always=True):
@@ -319,7 +319,7 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
     elif node.is_bv_neg():
         (s,) = node.args()
         base = binary_to_decimal("1" + "0" * (ff.get_bv_width(s)))
-        write_unsigned(symbs,node,cons,base)
+        cons.write(f"{base}")
         cons.write(' - ')
         write_unsigned(symbs,node,cons,s)
     elif node.is_bv_rol():
