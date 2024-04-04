@@ -39,7 +39,7 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
         continue_on_error = False
     parsed_cons = OrderedDict()
     variables = {}
-    
+
     if GENERATE_WELL_DEFINED:
         clauses.sort(key=lambda c: len(ff.get_array_index_calls(c)[1]))
 
@@ -110,7 +110,7 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
 
     if 'BV' not in logic and GENERATE_WELL_DEFINED:
         LOGGER.warning("Can only guarantee well-definedness on bitvectors")
-    
+
     if logic.split('_')[-1].startswith('A'):
         array_size, array_constraints = ff.constrain_array_size(formula)
         if GENERATE_WELL_DEFINED:
@@ -119,15 +119,15 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
     else:
         array_size = -1
         array_constraints = []
-    
+
     if 'IA' in logic:
         LOGGER.info("Generating integer constraints")
         constraints.update(ff.get_integer_constraints(formula))
-    
+
     if not GENERATE_WELL_DEFINED:
         LOGGER.info("Generating divsion constraints")
         constraints.update(ff.get_division_constraints(formula))
-    
+
     if len(constraints) > len(array_constraints):
         LOGGER.info("Checking satisfiability with global constraints")
         if not is_sat(And(*constraints, formula), solver_name='z3'):
@@ -136,14 +136,14 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
     
     return clauses,array_size
 
-def check_indices(symbol: str,maxArity: int,maxId :int, cons_in_c: str):
-    if maxArity == 0:
+def check_indices(symbol: str,max_arity: int,max_id :int, cons_in_c: str):
+    if max_arity == 0:
         return set([symbol]) if symbol in cons_in_c else set()
-    for index in range(maxId):
+    for index in range(max_id):
         var = symbol + '_' + str(index)
         res = set([var]) if var in cons_in_c else set()
-        res = res.union(check_indices(var, maxArity-1,maxId,cons_in_c))
-    return res    
+        res = res.union(check_indices(var, max_arity-1,max_id,cons_in_c))
+    return res
 
 def read_file(file_path: str, limit : int = 0, negate_formula : bool = False) -> SmtFileData:
     parser = SmtLibParser()
@@ -239,7 +239,7 @@ def independent_formulas(conds: dict[str,bool], variables: dict[str,str]) -> tup
         vars_by_groups.append(used_vars)
     return groups, vars_by_groups
 
-def extract_vars(cond: str, variables: dict[str,str]):    
+def extract_vars(cond: str, variables: dict[str,str]): 
     used_variables = {}
     for var, vartype in variables.items():
         if var + " " in cond or var + ")" in cond or var.split('[')[0] in cond:
@@ -251,14 +251,14 @@ def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: i
     new_vars = {}
     n = 0
     for cond in group:
-        if conds[cond] == True:
+        if conds[cond]:
             n = n + 1
     if n >= numb:
         negated = set()
         for i in range(numb):
             negated_group = set()
             for cond in group:
-                if conds[cond] == True and len(negated) <= i and cond not in negated:
+                if conds[cond] and len(negated) <= i and cond not in negated:
                     negated_group.add("(!" + cond + ")")
                     negated.add(cond)
                 else:
@@ -267,7 +267,7 @@ def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: i
     elif n == 0:
         new_vars['c'] = 'signed char' # If we don't have any clauses to negate, revert to choice
         for i in range(numb):
-            cond_neg = '(c %s %d)' % ('>=' if i == numb-1 else '==', i)
+            cond_neg = f"(c {'>=' if i == numb-1 else '=='} {i})"
             negated_groups.append([cond_neg])
         return negated_groups, new_vars
 
@@ -276,15 +276,15 @@ def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: i
             new_group = set()
             # negate one of the original and add same conds for new var
             for cond in group:
-                if conds[cond] == True:
+                if conds[cond]:
                     cond_neg = "(!" + cond + ")"
                     break
             new_group.add(cond_neg)
             for j, cond in enumerate(group):
                 cond_vars = sorted(list(extract_vars(cond, variables).keys()),key=len,reverse=True)
                 for v in cond_vars:
-                    new_var = "__neg_%d_%d__%s" % (i,j,v)
-                    cond = cond.replace("(%s)" % v.split('[')[0], "(%s)" % new_var.split('[')[0])
+                    new_var = f"__neg_{i}_{j}__{v}"
+                    cond = cond.replace(f"({v.split('[')[0]})", f"({new_var.split('[')[0]})")
                     new_vars[new_var] = variables[v]
                 new_group.add(cond)
             negated_groups.append(new_group)

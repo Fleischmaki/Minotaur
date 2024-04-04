@@ -81,7 +81,10 @@ def write_unsigned(symbs, node: FNode, cons, text: 'FNode | str', always=True):
 
 def write_cast(symbs, node: FNode, cons, text: 'FNode | str', always=False):
     if node.get_type().is_bv_type() or (node.get_type().is_array_type() and node.get_type().elem.type().is_bv_type()) or node.is_theory_relation() and node.arg(0).get_type().is_bv_type():
-        write_signed(symbs, node, cons,text, always) if is_signed(node) else write_unsigned(symbs, node, cons,text, always)
+        if is_signed(node):
+            write_signed(symbs, node, cons,text, always)
+        else:
+            write_unsigned(symbs, node, cons,text, always)
     else:
         write_or_convert(symbs,text,cons)
     
@@ -337,7 +340,7 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         var = clean_string(str(node))
         if dim == 0 and node.get_type().is_bv_type():
             cons.write(get_unsigned_cast(node))
-        cons.write(var)
+        cons.write(f'({var})')
         if dim == 0 and node.get_type().is_bv_type() and not has_matching_type(ff.get_bv_width(node)):
             cons.write(')')
         symbs.add(var)
