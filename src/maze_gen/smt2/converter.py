@@ -64,12 +64,12 @@ def write_signed(symbs,node: FNode,cons, text: 'FNode | str', always=True):
     width = ff.get_bv_width(node)
     scast = bits_to_stype(width)
     if always or width not in (32,64) or (len(node.args()) != 0 and (not all(map(is_signed, node.args())) or not all(map(lambda n: ff.get_bv_width(n)<=width,node.args())))):
-        if GENERATE_WELL_DEFINED or width not in (8,16,32):
+        if GENERATE_WELL_DEFINED or not has_matching_type(width):
             cons.write('scast_helper(')
         else:
             cons.write(f'({scast})')
     write_or_convert(symbs,text,cons)
-    if width not in (8,16,32) or (GENERATE_WELL_DEFINED and (always or width in (32,64) or (len(node.args()) != 0 and (not all(map(is_signed, node.args())) or not all(map(lambda n: ff.get_bv_width(n)<=width,node.args())))))):
+    if not has_matching_type(width) or (GENERATE_WELL_DEFINED and (always or width in (32,64) or (len(node.args()) != 0 and (not all(map(is_signed, node.args())) or not all(map(lambda n: ff.get_bv_width(n)<=width,node.args())))))):
         cons.write(f', {width})')
 
 def write_unsigned(symbs, node: FNode, cons, text: 'FNode | str', always=True):
@@ -95,7 +95,7 @@ def get_unsigned_cast(node: FNode, always=False) -> str:
         return ''
     if has_matching_type(width):
         return '(' + bits_to_utype(width) + ') '
-    return '(%s) (%s & ' % (bits_to_utype(width),binary_to_decimal('1'*width))
+    return f"({bits_to_utype(width)}) ({binary_to_decimal('1'*width)} & "
     
 
 def type_to_c(ntype: node_type) -> str:
@@ -118,7 +118,7 @@ def type_to_c(ntype: node_type) -> str:
 def convert_helper(symbs: t.Set[str],node: FNode, cons: io.TextIOBase, op: str, always_cast_args=False):
     (l, r) = node.args()
     write_cast(symbs,node,cons,l, always=always_cast_args)
-    cons.write(" %s " % op)
+    cons.write(f" {op} ")
     write_cast(symbs,node,cons,r, always=always_cast_args)
 
 def check_shift_size(node: FNode) -> None:
@@ -147,7 +147,7 @@ def div_helper(symbs: t.Set[str],node: FNode, cons: io.TextIOBase):
         write_cast(symbs,node,cons,l)
         cons.write(',')
         write_cast(symbs,node,cons,r)
-        cons.write(',%s,)' % width)
+        cons.write(f',{width})')
         if not has_matching_type(width):
             cons.write(')')
 
@@ -318,10 +318,11 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         convert(symbs,n, cons)
     elif node.is_bv_neg():
         (s,) = node.args()
-        base = binary_to_decimal("1" + "0" * (ff.get_bv_width(s)))
+        base = binary_to_decimal("1" * (ff.get_bv_width(s)))
         cons.write(f"{base}")
         cons.write(' - ')
         write_unsigned(symbs,node,cons,s)
+        cons.write('+ 1U')
     elif node.is_bv_rol():
         rotate_helper(symbs, node, cons, "<<")
     elif node.is_bv_ror():
