@@ -266,10 +266,9 @@ def write_summary(conf,out_dir, target,tag,runtime):
         commands.run_cmd(REMOVE_CMD % out_path)
         if conf['verbosity'] == 'bug_only':
             return
-    offset = 0 if 'keepId' in params['t'] else 1
     with open(out_dir + '/summary.csv', 'a') as f:
         u = '0' if 'u' not in params.keys() else '1'
-        f.write(tool + ',' + str(batch_id) + ',' + variant + ',' + flags + ',' + str(maze_gen.get_params_from_maze(maze)['m'] + offset) + ',' + u + ',') # TODO this is a liiiitle bit hacky
+        f.write(tool + ',' + str(batch_id) + ',' + variant + ',' + flags + ',' + str(maze_gen.get_params_from_maze(maze)['m']) + ',' + u + ',') # TODO this is a liiiitle bit hacky
         for key, value in params.items():
             if key == 's':
                 f.write(str(params['s'].split('/')[-1] + ','))
