@@ -87,7 +87,8 @@ def write_cast(symbs, node: FNode, cons, text: 'FNode | str', always=False):
     
 def get_unsigned_cast(node: FNode, always=False) -> str:
     width = ff.get_bv_width(node)
-    if  not always and width in (32,64) and (len(node.args()) == 0 or (not all(map(is_signed, node.args())) and all(map(lambda n: ff.get_bv_width(n)<=width,node.args())))):
+    if not always and width in (32,64) and (len(node.args()) == 0 or \
+            (not all(map(is_signed, node.args())) and all(map(lambda n: ff.get_bv_width(n)<=width,filter(lambda n: n.get_type().is_bv_type(),node.args()))))): #TODO think about this
         return ''
     if has_matching_type(width):
         return '(' + bits_to_utype(width) + ') '
