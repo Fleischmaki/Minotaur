@@ -2,7 +2,7 @@
 Minotaur is a generative black-box fuzzer for software model checkers, based on [STORM](https://github.com/mariachris/storm) and [Fuzzle](https://github.com/SoftSec-KAIST/Fuzzle)
 
 ## About
-Minotaur uses sat/unsat SMT-Files to generate programs that are unsafe/safe by construction. Optionally, [STORM](https://github.com/mariachris/storm)'s mutation algorithm can be used to create several variants for each seed. Optionally, a minimizer can be used to drop unneccessary clauses, which results in concise explanations for PA bugs.  
+Minotaur uses sat/unsat SMT-Files to generate programs that are unsafe/safe by construction. Optionally, [STORM](https://github.com/mariachris/storm)'s mutation algorithm can be used to create several variants for each seed. A minimizer can be used to drop unneccessary clauses for found seeds, which results in concise explanations for PA bugs.  
 ```mermaid
 flowchart LR
     Klee --> Storm
@@ -42,7 +42,7 @@ Alternatively, first generate the maze and then run `python3 Minotaur --m maze.c
 
 ### Recreate an experiment 
 Before recreating experiments, build the necessary experiments with ./Minotaur/scripts/build_experiment_dockers.sh
-To run an experiment simply run `python3 Minotaur --e experiment_name outdir`. Experiment configurations are stored in the [experiments](Minotaur/experiments) folder.
+To run an experiment run `python3 Minotaur --e experiment_name outdir`. Experiment configurations are stored in the [experiments](Minotaur/experiments) folder.
 
 ## Bugs found by Minotaur
 ### Soundness Bugs
@@ -57,6 +57,7 @@ Ultimate Automizer/Gemcutter | [fixed](https://github.com/ultimate-pa/ultimate/i
 ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1363) | Type Casts
 ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1392) | Type Casts
 CPA -InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1194) | Modulo Operator
+Seahorn - bpf | [closed (without fixing)](https://github.com/seahorn/seahorn/issues/545)
 ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1565) | Boolean Intervals
 ### Precision Issues
 Tool | Status | Type
