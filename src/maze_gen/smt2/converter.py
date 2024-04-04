@@ -261,9 +261,9 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         new_width = ff.get_bv_width(node)
         (l,) = node.args()
         old_width = ff.get_bv_width(l)
-        if not (old_width < 32 and new_width == 32) and not (32 < old_width and old_width < 64 and new_width == 64):
+        if not (old_width < 32 and new_width == 32) and not (32 < old_width < 64 and new_width == 64):
             cons.write('(')
-            cons.write(get_unsigned_cast(node))
+            cons.write(get_unsigned_cast(node, True))
             convert(symbs,l, cons)
             cons.write(')')
             if not has_matching_type(new_width):
