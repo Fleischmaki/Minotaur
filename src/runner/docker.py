@@ -1,4 +1,6 @@
-import subprocess, os, logging, time
+import subprocess
+import os
+import logging
 from . import commands, maze_gen
 
 LOGGER = logging.getLogger(__name__)
@@ -22,7 +24,7 @@ def spawn_cmd_in_docker(container, cmd_str, timeout=-1):
         cmd_prefix = DOCKER_COMMAND + ' exec %s timeout %ds /bin/bash -c' %  (container, timeout)
     cmd_args = cmd_prefix.split()
     cmd_args += [cmd_str]
-    LOGGER.info('Executing (in container %s): %s' % (container, ' '.join(cmd_args[3:])))
+    LOGGER.info('Executing (in container %s): %s', container, ' '.join(cmd_args[3:]))
     try:
         return subprocess.Popen(cmd_args)
     except Exception as e:
@@ -38,7 +40,7 @@ def get_user(tool): # Could not create user in seahorn docker
         return 'usea'
     return 'maze'
 
-def get_container(tool,name):
+def get_container(tool: str,name: str | int):
     return tool + '-' + str(name)
 
 def clean_name(name):
@@ -76,8 +78,8 @@ def copy_docker_output(tool, name, out_path, user):
     if not os.path.isdir(out_path):
         return commands.run_cmd(CP_CMD % (cont, user, 'outputs', out_path))
     if os.path.isdir(os.path.join(out_path,'src')):
-        for dir in ['src','smt','png','txt','smt','bin']:
-            commands.run_cmd(CP_CMD % (cont, user, os.path.join('outputs',dir,'.'), os.path.join(out_path, dir)))
+        for res_dir in ['src','smt','png','txt','smt','bin']:
+            commands.run_cmd(CP_CMD % (cont, user, os.path.join('outputs',res_dir,'.'), os.path.join(out_path, res_dir)))
     return commands.run_cmd(CP_CMD % (cont, user, 'outputs/.', out_path))
 
 def kill_docker(tool,name):

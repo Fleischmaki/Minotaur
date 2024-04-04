@@ -5,8 +5,8 @@ from . import docker, commands
 
 GENERATE_CMD = '%s/scripts/generate.sh -o %s %s'
 
-def get_params_from_maze(maze,smt_path = ''):
-    params = dict()
+def get_params_from_maze(maze: str,smt_path = '') -> dict:
+    params = {}
     params['a'], size, params['r'], _, *params['t'], params['m'], params['c']= maze.split('percent')[0].split('_')
     *params['g'],_, params['b'] = maze.split('percent')[1][1:].split('_')
 
@@ -30,16 +30,16 @@ def get_maze_names(params):
         generator = '%s_gen' % params['s'].split('/')[-1][0:-5]
     else:
         generator = params['g']
-    min = 0 if 'keepId' in params['t'] else 1
+    min_transform = 0 if 'keepId' in params['t'] else 1
     return ['%s_%sx%s_%s_0_%s_t%d_%spercent_%s_ve.c' 
             %  (params['a'], params['w'], params['h'],params['r'], params['t'],i,params['c'], generator)
-              for i in range(min,params['m'] + 1)]
+              for i in range(min_transform,params['m'] + 1)]
 
-def generate_maze_in_docker(params, index = 0, timeout=-1):
+def generate_maze_in_docker(params, name: str | int = '0', timeout=-1):
     params['o'] = docker.HOST_NAME
     param_string = get_string_from_params(params)
     cmd = './Minotaur/scripts/generate.sh ' + param_string
-    return docker.spawn_cmd_in_docker(docker.get_container('gen', index),  cmd, timeout=timeout)
+    return docker.spawn_cmd_in_docker(docker.get_container('gen', name),  cmd, timeout=timeout)
 
 def setup_generation_docker(params, outdir, index):
     commands.run_cmd('mkdir -p ' + outdir + ' ' + ' '.join([os.path.join(outdir, i) for i in ['src','smt','sln','png','txt','bin','smt/' + params['r']]]) )

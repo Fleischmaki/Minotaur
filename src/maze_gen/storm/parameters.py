@@ -75,6 +75,6 @@ def get_parameters_dict(replication_mode, bug_number):
         print("#######" + colored(" Getting the normal fuzzing parameters", "magenta", attrs=["bold"]))
         print(str(parameters))
         return parameters
-    else:
-        print("Please enter a valid bug number")
+    print("Please enter a valid bug number")
+    return {}
 
