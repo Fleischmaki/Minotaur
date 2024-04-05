@@ -8,7 +8,8 @@ import typing as t
 from collections import defaultdict, OrderedDict, namedtuple
 
 from pysmt.smtlib.parser import SmtLibParser
-from pysmt.shortcuts import get_unsat_core, is_sat, write_smtlib, And, Not
+from pysmt.shortcuts import is_sat, write_smtlib, And, Not, get_env
+from pysmt.solvers.z3 import Z3Solver
 from pysmt.oracles import get_logic
 from pysmt.smtlib.commands import SET_LOGIC
 from pysmt.fnode import FNode
@@ -73,6 +74,15 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
 
     return parsed_cons, variables, array_size
 
+def get_unsat_core(clauses, logic):
+    print('NOTE: Finding unsat core')
+    solver = Z3Solver(get_env(),logic,unsat_cores_mode='all')
+    solver.add_assertions(clauses)
+    solver.solve()
+    core = set(solver.get_unsat_core())
+    print("Done")
+    return core
+
 def add_parsed_cons(check_neg:bool, clauses:list, parsed_cons:OrderedDict, clause:FNode, cons_in_c: str):
     # if "model_version" not in cons_in_c:
     if check_neg:
@@ -135,15 +145,6 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
         LOGGER.info("Done.")
     
     return clauses,array_size
-
-def check_indices(symbol: str,max_arity: int,max_id :int, cons_in_c: str):
-    if max_arity == 0:
-        return set([symbol]) if symbol in cons_in_c else set()
-    for index in range(max_id):
-        var = symbol + '_' + str(index)
-        res = set([var]) if var in cons_in_c else set()
-        res = res.union(check_indices(var, max_arity-1,max_id,cons_in_c))
-    return res
 
 def read_file(file_path: str, limit : int = 0, negate_formula : bool = False) -> SmtFileData:
     parser = SmtLibParser()
@@ -305,5 +306,6 @@ def get_subgroup(groups: list[list], vars_by_groups: t.List[t.Dict[str,str]], se
     return subgroup, variables
 
 def get_minimum_array_size_from_file(smt_file: str):
+    
     formula = read_file(smt_file).formula
     return ff.constrain_array_size(formula)[0]
