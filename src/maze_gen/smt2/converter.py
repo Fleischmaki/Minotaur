@@ -65,6 +65,8 @@ def write_signed(symbs,node: FNode,cons, text: 'FNode | str', always=True):
     scast = bits_to_stype(width)
     if always or width not in (32,64) or (len(node.args()) != 0 and (not all(map(is_signed, node.args())) or not all(map(lambda n: ff.get_bv_width(n)<=width,node.args())))):
         if GENERATE_WELL_DEFINED or not has_matching_type(width):
+            if width != 64:
+                cons.write(f'({scast})')
             cons.write('scast_helper(')
         else:
             cons.write(f'({scast})')
@@ -141,7 +143,7 @@ def div_helper(symbs: t.Set[str],node: FNode, cons: io.TextIOBase):
             helper = 'div_helper'
         else:
             helper = 'sdiv_helper'
-        cons.write(get_unsigned_cast(node))
+        cons.write(get_unsigned_cast(node, always=True))
         cons.write(helper)
         cons.write('(')
         write_cast(symbs,node,cons,l)
