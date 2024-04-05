@@ -1,5 +1,8 @@
-from src.tools import *
-import sys, logging
+""" Main entry point, switch functionality and set log_level
+"""
+import sys
+import logging
+from src.tools import test, minimize, generate, experiment, check_files
 LOGGER = logging.getLogger(__name__)
 
 if __name__ == '__main__':
@@ -12,19 +15,19 @@ if __name__ == '__main__':
         argv = sys.argv[2:]
     log = argv[0]
     if not log.startswith("--"):
-        log = logging.INFO
+        LOG = logging.INFO
     else:
-        log = log[2:]
-        if log == 'E':
-            log = logging.ERROR
-        elif log == 'W':
-            log = logging.WARNING
-        elif log == 'I':
-            log = logging.INFO
-        elif log == 'D':
-            log = logging.DEBUG
+        LOG = log[2:]
+        if LOG == 'E':
+            LOG = logging.ERROR
+        elif LOG == 'W':
+            LOG = logging.WARNING
+        elif LOG == 'I':
+            LOG = logging.INFO
+        elif LOG == 'D':
+            LOG = logging.DEBUG
         argv = argv[1:]
-    logging.basicConfig(level=log, format='%(levelname)s: %(message)s', style='%')
+    logging.basicConfig(level=LOG, format='%(levelname)s: %(message)s', style='%')
 
     if mode == "t":
         test.load(argv)
@@ -35,6 +38,6 @@ if __name__ == '__main__':
     elif mode == "e":
         experiment.load(argv)
     elif mode == "c":
-        check_files.load(argv) 
+        check_files.load(argv)
     else:
         LOGGER.error("Invalid mode")
