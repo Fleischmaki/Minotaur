@@ -153,9 +153,6 @@ MIN=1
 if [[ "$T_TYPE" == *"keepId"* ]]; then
     MIN=0
 fi
-if [[ "$T_TYPE" == *"last"* ]]; then
-    MIN=$T_NUMB
-fi
 for (( T_INDEX=$MIN; T_INDEX<=$T_NUMB; T_INDEX++ ))
 do
     NAME_P=$NAME"0_"$T_TYPE"_t"$T_INDEX$NAME_EXT;
@@ -167,7 +164,13 @@ do
             mv $NAME$INDEX"_"$T_TYPE"_t"$T_INDEX".txt" $OUTPUT_DIR/txt
         fi
     done
-    mv $NAME_P".c" $OUTPUT_DIR/src
+    if [[ "$T_TYPE" == *"last"* ]]; then
+        if [[ $T_INDEX == $T_NUMB ]]; then
+            mv $NAME_P".c" $OUTPUT_DIR/src
+        fi
+    else
+        mv $NAME_P".c" $OUTPUT_DIR/src
+    fi
 done
 for (( INDEX = 0; INDEX < $NUMB; INDEX++ ))
 do
