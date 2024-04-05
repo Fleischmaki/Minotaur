@@ -11,7 +11,7 @@ from pysmt.solvers.z3 import Z3Solver
 
 
 LOGGER = logging.getLogger(__name__)
-MAXIMUM_ARRAY_SIZE = 2**10 - 1 
+MAXIMUM_ARRAY_SIZE = 2**10 - 1
 
 def get_bv_width(node: FNode) -> int:
     """Calculate bit width of a node"""
@@ -31,9 +31,9 @@ def get_bv_width(node: FNode) -> int:
         if(node.is_bv_sext() or node.is_bv_zext()):
             res = width + node.bv_extend_step()
         else:
-            res = r.bv_width()  
+            res = r.bv_width()
     elif len(node.args()) == 2:
-        (l,r) = node.args() 
+        (l,r) = node.args()
         if node.is_bv_concat():
             res = get_bv_width(l) + get_bv_width(r)
         elif l.is_bv_constant() or l.is_symbol or l.is_function_application() or l.is_ite() or l.is_select():
@@ -115,45 +115,14 @@ def get_division_constraints(formula: FNode):
     divisions = get_nodes(formula, (lambda f : f.is_div() or f.is_bv_udiv() or f.is_bv_sdiv() or f.is_bv_urem() or f.is_bv_srem()))
     return [Not(Equals(BV(0,get_bv_width(div)),div)) for div in map(lambda division : division.args()[1], divisions)]
 
-
-def check_indices(symbol: str,maxArity: int,maxId :int, cons_in_c: str):
-    if maxArity == 0:
-        return set([symbol]) if symbol in cons_in_c else set()
-    for index in range(maxId):
-        var = symbol + '_' + str(index)
-        res = set([var]) if var in cons_in_c else set()
-        res = res.union(check_indices(var, maxArity-1,maxId,cons_in_c))
-    return res
-
 def get_array_index_calls(formula: FNode):
+    """ Collect all array calls and maximum index for formula
+    """
     return get_array_calls_helper(formula, set())
 
-def constrain_array_size(formula: FNode):
-    LOGGER.info("Calculating array size.")
-    min_index, array_ops = get_array_index_calls(formula)
-    if len(array_ops) == 0:
-        LOGGER.info("No arrays found")
-        return 0, set()
-    if not is_sat(formula, solver_name = "z3"):
-        formula = Not(formula)
-    max_dim = max(map(lambda op : get_array_dim(op.args()[0]),array_ops))
-    sat = False
-    assertions = set()
-    array_size = max(min_index,2)
-    
-    while not sat:
-        LOGGER.debug("Checking size: %d",  array_size)
-        if (math.pow(array_size,max_dim)) > MAXIMUM_ARRAY_SIZE:  
-            raise ValueError("Minimum array size too large")
-        assertions = get_array_constraints(array_ops, array_size)
-        new_formula = And(*assertions, formula)
-        sat = is_sat(new_formula, solver_name = "z3")
-        array_size *= 2
-    array_size //= 2
-    LOGGER.info("Sat on size %d.", array_size)
-    return array_size, assertions
-
 def get_array_calls_helper(formula: FNode, visited_nodes: set):
+    """Helper for get_array_index_callse
+    """
     visited_nodes.add(formula.node_id())
     calls = []
     min_size = 1
@@ -168,23 +137,57 @@ def get_array_calls_helper(formula: FNode, visited_nodes: set):
             min_size = max(min_size, sub_min)
     return min_size, calls
 
+def constrain_array_size(formula: FNode):
+    """ Compute a minimal array size for the formula
+    Returns the minimal array_size and the list of generated constraints 
+    """
+    LOGGER.info("Calculating array size.")
+    min_index, array_ops = get_array_index_calls(formula)
+    if len(array_ops) == 0:
+        LOGGER.info("No arrays found")
+        return 0, set()
+    if not is_sat(formula, solver_name = "z3"):
+        formula = Not(formula)
+    max_dim = max(map(lambda op : get_array_dim(op.args()[0]),array_ops))
+    sat = False
+    assertions = set()
+    array_size = max(min_index,2)
+
+    while not sat:
+        LOGGER.debug("Checking size: %d",  array_size)
+        if (math.pow(array_size,max_dim)) > MAXIMUM_ARRAY_SIZE:  
+            raise ValueError("Minimum array size too large")
+        assertions = get_array_constraints(array_ops, array_size)
+        new_formula = And(*assertions, formula)
+        sat = is_sat(new_formula, solver_name = "z3")
+        array_size *= 2
+    array_size //= 2
+    LOGGER.info("Sat on size %d.", array_size)
+    return array_size, assertions
+
 def get_array_dim(node: FNode):
+    """ Returns dimension of an array, or 0 if it is not an array
+    """
     dim = 0
-    curr_type = node.get_type() 
+    curr_type = node.get_type()
     while curr_type.is_array_type():
         curr_type = curr_type.elem_type
         dim += 1
     return dim
 
 def get_array_constraints(array_ops, array_size):
+    """Helper"""
     return {And(i < array_size, i >= 0) for i in map(lambda x: x.args()[1], array_ops)}
 
-
 def get_integer_constraints(formula: FNode):
+    """ Collect constraints that no integer expression in the formula overflows
+    """
     integer_operations = get_nodes(formula, lambda f: f.get_type() is INT)
     return {(GT(i, Int(-(2**63)))) for i in integer_operations}.union((LT(i, Int(2**63 - 1))) for i in integer_operations)
 
-def extract_vars(cond: t.List[str], variables: t.Dict[str,str]):    
+def extract_vars(cond: t.List[str], variables: t.Dict[str,str]):
+    """ Find all variables appearing in a condition
+    """
     variables = {}
     for variable, vartype in variables.items():
         if variable + " " in cond or variable + ")" in cond or variable.split('[')[0] in cond:
@@ -192,6 +195,9 @@ def extract_vars(cond: t.List[str], variables: t.Dict[str,str]):
     return variables
 
 def daggify(formula: FNode, limit: int):
+    """ Replace subexpression that occur often with new variables
+    :param limit:   How often a subexpression needs to occur before it is replaced
+    """
     node_queue = [formula]
     seen = {}
     subs = {}
@@ -204,7 +210,7 @@ def daggify(formula: FNode, limit: int):
                     if not (sub.is_constant() or sub.is_symbol() or sub.is_function_application() or sub.is_not()):
                         var = FreshSymbol(sub.get_type())
                         # Compute fixpoint over substitution
-                        sub = calculate_substitution_fixpoint(subs, sub)
+                        sub = compute_substitution_fixpoint(subs, sub)
                         subs.update({sub: var})
                         formula = formula.substitute(subs)
             else:
@@ -213,10 +219,13 @@ def daggify(formula: FNode, limit: int):
     formula = And(*[EqualsOrIff(sub,var) for (sub,var) in subs.items()], formula)
     return formula, set(subs.values())
 
-def calculate_substitution_fixpoint(subs: dict, sub: FNode):
-    old = sub
-    sub = old.substitute(subs)
-    while old != sub:
-        old = sub
-        sub = sub.substitute(subs)
-    return sub
+def compute_substitution_fixpoint(current_subs: dict, new_sub: FNode):
+    """ Add a new substitution to a list of substitutions and compute fixpoint
+    Ensures that the new subsitution is in turn applied to all previous ones, if possible
+    """
+    old = new_sub
+    new_sub = old.substitute(current_subs)
+    while old != new_sub:
+        old = new_sub
+        new_sub = new_sub.substitute(current_subs)
+    return new_sub

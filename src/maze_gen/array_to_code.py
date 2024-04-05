@@ -1,4 +1,6 @@
-import sys, os
+import sys
+import os
+import logging
 import random
 import importlib
 import transforms
@@ -256,6 +258,7 @@ def main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, uni
             render_program(c_file, graph.graph, size, generator, solution, bugtype, smt_files[t_index],transforms.parse_transformations(""))
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s', style='%')
     seed = int(sys.argv[1])
     bugtype = sys.argv[2]
     t_type = sys.argv[3]
