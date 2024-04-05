@@ -75,7 +75,7 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
 
 def add_parsed_cons(check_neg:bool, clauses:list, parsed_cons:OrderedDict, clause:FNode, cons_in_c: str):
     # if "model_version" not in cons_in_c:
-    if check_neg == True:
+    if check_neg:
         neg_sat = ff.is_neg_sat(clause, clauses)
         parsed_cons[cons_in_c] = neg_sat
     else:
@@ -271,7 +271,7 @@ def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: i
             negated_groups.append([cond_neg])
         return negated_groups, new_vars
 
-    else: 
+    else:
         for i in range(numb):
             new_group = set()
             # negate one of the original and add same conds for new var
