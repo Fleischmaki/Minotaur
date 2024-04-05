@@ -49,7 +49,7 @@ class Generator:
             logic_def += ("\n\n//Helper functions for division and casts\n")
             logic_def += ("""long scast_helper(unsigned long i, unsigned char width){
     if((i & (1ULL << (width-1))) > 0){
-        return ((long)i - ((1LL << width-1) - 1 << 1) - 1);
+        return ((long)i - ((1LL << width-1) - 1 << 1) - 2);
     }
     return i;
 }\n""")
