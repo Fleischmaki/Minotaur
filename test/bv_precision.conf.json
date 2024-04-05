@@ -1,12 +1,13 @@
 {
 	"verbosity": "bug",
-	"repeats" : 500,
-	"duration" : 60,
+	"repeats" : -1,
+	"duration" : 20,
 	"workers" : 120,
 	"memory" : 4,
 	"transforms" : 15,
 	"maze_gen" : "container",
 	"expected_result": "safe",
+	"batch_size" : 180,
 	"tool" : { 
 		"cpa" : {
 			"variant" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution", "invariantGeneration", "smg2","bmc"]
@@ -44,11 +45,12 @@
 						"--interval-analysis-eval-assumptions", "--interval-analysis-arithmetic","--interval-analysis-bitwise", "--interval-analysis-modular",
 						"--interval-analysis-narrowing", "--interval-analysis-extrapolate-under-approximate"],
 			"choose" : {
-				"" : ["--z3", "--boolector", "--cvc", "--mathsat", "--yices", "--bitwuzla", "--bv"],
+				"" : ["--z3", "--boolector", "--mathsat", "--yices", "--bv"],
 				"--incremental-bmc" : [0,""," --falsification"],
 				"--tuple" : [0,"-node-flattener", "-sym-flattener"],
 				"--k-induction": [0,""," --bidirectional"],
-				"--interval-analysis": [0,"", "-wrapped"],
+				"--interval-analysis": [0,"", "-wrapped","-extrapolate","-ibex-contractor","-simplify","-no-contract","-eval-assumptions", "-arithmetic","-bitwise", "-modular",
+				"-narrowing"],
 				"--smt-during-symex": [0,""," --smt-symex-guard"," --smt-symex-assert"]
 			}
 		}
@@ -76,7 +78,7 @@
 			"dag" : [0,2,3,4]
 		},
 		"g": ["CVE_gen","CVE-neg_gen"],
-		"s": "/home/mfleischmann/unsat_seeds",
+		"s": "/home/mfleisch/unsat_seeds",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
