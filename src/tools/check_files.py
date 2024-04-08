@@ -1,20 +1,29 @@
-import os, io, logging
+""" Checks SMT2-files for good potential candidates  
+"""
+import os
+import io
+import logging
 from src.maze_gen.smt2 import parser, formula_transforms as ff, converter
 from src.maze_gen.storm.smt.smt_object import smtObject
-from pysmt.shortcuts import *
+from pysmt.shortcuts import reset_env, is_sat, And
 
 LOGGER = logging.getLogger(__name__)
 
-def check_files(file_path, resfile):
+def check_files(file_path: str, resfile: str) -> None:
+    """Performs various checks on SMT2 files to see if they are valid.
+    :param file_path:   Input files. If a directory, recursively check all smt2 files
+                        in the directory and subdirectory.
+    :param resfile:     Valid files will be written to this path
+    """
     parser.set_well_defined(False)
     if os.path.isdir(file_path):
-        LOGGER.info("Going into dir %s\n" % file_path)
+        LOGGER.info("Going into dir %s\n", file_path)
         for file in sorted(os.listdir(file_path)):
             check_files(os.path.join(file_path,file), resfile)
         return
     if not file_path.endswith('.smt2'):
         return
-    LOGGER.info("Checking file " + file_path)
+    LOGGER.info("Checking file %s", file_path)
     try:
         # Check that satisfiability is easily found
         # (else everything will take a long time to run)
@@ -47,7 +56,7 @@ def check_files(file_path, resfile):
             LOGGER.info("Done.")
 
         # Check that it is satisfiable on bounded arrays
-        if str(logic).split('_')[-1].startswith('A'):
+        if str(logic).rsplit('_', maxsplit=1)[-1].startswith('A'):
             LOGGER.info("Check array size:")
             parser.get_minimum_array_size_from_file(file_path)
             LOGGER.info("Done.")
@@ -65,12 +74,12 @@ def check_files(file_path, resfile):
         LOGGER.info("")
         LOGGER.info("Done.")
 
-    except Exception as e:
-        LOGGER.warning("Error in " + file_path + ': ' + str(e))
+    except (ValueError, RecursionError) as e:
+        LOGGER.warning("Error in %s: %s", file_path, str(e))
         return
-        
-    f = open(resfile, 'a')
-    f.write(file_path + '\n')
-    f.close()
+    with open(resfile, 'a') as f:
+        f.write(file_path + '\n')
+
 def load(argv):
+    """Call via __main.py__"""
     check_files(argv[0],argv[1])
