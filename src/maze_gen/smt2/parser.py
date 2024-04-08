@@ -59,7 +59,7 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
         try:
             LOGGER.debug("Converting clause %d/%d.", c,len(clauses))
             result = converter.convert_to_string(symbs,clause)
-        except ValueError as e:
+        except (ValueError, RecursionError) as e:
             LOGGER.warning("Could not convert clause: %s", str(e))
             if continue_on_error:
                 if clause not in core:
@@ -306,6 +306,8 @@ def get_subgroup(groups: list[list], vars_by_groups: t.List[t.Dict[str,str]], se
     return subgroup, variables
 
 def get_minimum_array_size_from_file(smt_file: str):
-    
+    """Computes the minimum array size for an SMT_File
+    :param smt_file: Path to the file
+    """
     formula = read_file(smt_file).formula
     return ff.constrain_array_size(formula)[0]
