@@ -21,9 +21,18 @@ LOGGER = logging.getLogger(__name__)
 
 SmtFileData = namedtuple('SmtFileData',['decl_arr','formula', 'logic', 'clauses'])
 
-def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well_defined=True, generate_sat = True, limit=0, negate_formula=False)\
+def parse(file_path: str, transformations: dict, check_neg: bool, continue_on_error = True)\
     -> tuple[OrderedDict[str,bool],dict[str,str],int]:
+    """Parses an smt file, converts it into C clauses and extracts the corresponding variables
+    :returns:   An OrderedDict containing the resulting C-expressions as keys and value indicating whether the negated expression is also sat
+                A dict containing variable names as keys and their respecitve types in C as values
+                The minimal array size for the clauses to be valid
+    """
     sys.setrecursionlimit(10000)
+    generate_well_defined=transformations['wd']
+    generate_sat=transformations['sat']
+    limit=transformations['dag']
+    negate_formula=transformations['neg']
     set_well_defined(generate_well_defined)
     LOGGER.info("Converting %s: ", file_path)
     decl_arr, formula, logic, formula_clauses = read_file(file_path, limit, negate_formula)
@@ -75,6 +84,7 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
     return parsed_cons, variables, array_size
 
 def get_unsat_core(clauses, logic):
+    """Copmutes the unsat core"""
     print('NOTE: Finding unsat core')
     solver = Z3Solver(get_env(),logic,unsat_cores_mode='all')
     solver.add_assertions(clauses)
@@ -83,15 +93,16 @@ def get_unsat_core(clauses, logic):
     print("Done")
     return core
 
-def add_parsed_cons(check_neg:bool, clauses:list, parsed_cons:OrderedDict, clause:FNode, cons_in_c: str):
-    # if "model_version" not in cons_in_c:
-    if check_neg:
+def add_parsed_cons(check_neg:bool, clauses:list, parsed_cons:OrderedDict, clause:FNode, cons_in_c: str): 
+    """Add condition to the list of conditions""" # TODO weird functions
+    if check_neg: 
         neg_sat = ff.is_neg_sat(clause, clauses)
         parsed_cons[cons_in_c] = neg_sat
     else:
         parsed_cons[cons_in_c] = ""
 
 def add_used_variables(variables: dict, ldecl_arr: list[FNode], symbs: t.Set[str]):
+    """Add a variable to the variable dict"""
     for symb in symbs:
         decls = list(map(converter.clean_string, ldecl_arr))
         if symb in decls:
@@ -115,6 +126,7 @@ def set_well_defined(generate_well_defined: bool):
     converter.set_well_defined(generate_well_defined)
 
 def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
+    """Check whether the translated formula is going to have valid soltuions"""
     constraints = set()
     clauses = list(formula_clauses)
 
@@ -147,6 +159,7 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
     return clauses,array_size
 
 def read_file(file_path: str, limit : int = 0, negate_formula : bool = False) -> SmtFileData:
+    """Read an SMTfile and extract important fields"""
     parser = SmtLibParser()
     script = parser.get_script_fname(file_path)
     decl_arr = list()
@@ -166,6 +179,7 @@ def read_file(file_path: str, limit : int = 0, negate_formula : bool = False) ->
     return SmtFileData(decl_arr,formula,logic,clauses)
 
 def get_logic_from_script(script):
+    """Read logic from an pysmt script, or guess minimal logic if none is provided"""
     if script.contains_command(SET_LOGIC):
         logic = str(script.filter_by_command_name(SET_LOGIC).__next__().args[0])
     else:
@@ -175,6 +189,7 @@ def get_logic_from_script(script):
     return logic
 
 def conjunction_to_clauses(formula: FNode):
+    """Transform top-level conjuncts of a formula into a set of clauses"""
     clauses = set()
     if formula.is_and():
         for node in formula.args():
@@ -183,13 +198,17 @@ def conjunction_to_clauses(formula: FNode):
         clauses.add(formula)
     return clauses
 
-def write_to_file(formula : FNode | t.Iterable, file: str):
+def write_to_file(formula : FNode | t.Iterable[FNode], file: str):
+    """Write a formula to a file
+    :param formula: If an iterable is provided, takes a conjunction of those clauses
+    """
     if isinstance(formula,t.Iterable):
         formula = And(*formula)
     return write_smtlib(formula, file)
 
 
 class Graph:
+    """Graph helper for separating variable disjoint subformulas"""
     def __init__(self):
         self.graph = defaultdict(list)
 
