@@ -47,7 +47,7 @@ def main(dest_dir,expected_result,verbosity):
         #elif ('UNKNOWN' in resfile):
         #    save_tc(file_dir, respath, start_time, end_time, 'uk', copy_content = False)
         # TimeoutH
-        elif ('ERROR' or 'Unexpected case:' in resfile):
+        elif ('ERROR' in resfile or 'Unexpected case:' in resfile):
             save_tc(file_dir, respath, start_time, end_time, 'er', copy_content = verbosity in ('error','all'))
         else:
             save_tc(file_dir, respath, start_time, end_time, 'to', copy_content = False)
