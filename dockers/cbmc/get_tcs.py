@@ -28,7 +28,7 @@ def main(dest_dir,expected_result):
             start_time = os.path.getmtime(start_file)
             end_file = os.path.join(WORKDIR, '.end%s' % name)
             end_time = os.path.getmtime(end_file)       
-            resfile = open(respath, "r").read()
+            resfile = open(respath, "r").read().strip()
             file_dir = os.path.join(dest_dir,name) 
             os.system('mkdir -p %s' % file_dir)
         except Exception as e:
