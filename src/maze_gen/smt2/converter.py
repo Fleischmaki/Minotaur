@@ -122,7 +122,7 @@ def write_signed(symbs,parent: FNode,cons, node: FNode, always=True):
         else:
             cons.write(f'({scast})')
     convert(symbs,node,cons)
-    if (always or needs_signed_cast) and (GENERATE_WELL_DEFINED or not has_matching_type(width)):
+    if (always or needs_signed_cast(parent)) and (GENERATE_WELL_DEFINED or not has_matching_type(width)):
         cons.write(f', {width})')
 
 
@@ -132,7 +132,7 @@ def write_unsigned(symbs, parent: FNode, cons, node: FNode, always=True):
     width = ff.get_bv_width(parent)
     cons.write(get_unsigned_cast(parent, always))
     convert(symbs,node,cons)
-    if (always or needs_unsigned_cast) and not has_matching_type(width):
+    if (always or needs_unsigned_cast(parent)) and not has_matching_type(width):
         cons.write(')')
 
 def write_cast(symbs, parent: FNode, cons, node: FNode, always=False):
@@ -216,7 +216,7 @@ def div_helper(symbs: t.Set[str],node: FNode, cons: io.TextIOBase):
         cons.write(',')
         write_cast(symbs,node,cons,r)
         cons.write(f',{width})')
-        if not has_matching_type(width):
+        if needs_unsigned_cast(node) and not has_matching_type(width):
             cons.write(')')
 
 
@@ -231,7 +231,7 @@ def div_helper(symbs: t.Set[str],node: FNode, cons: io.TextIOBase):
         cons.write(f" {op} ")
         write_cast(symbs,node,cons,r)
         cons.write(')')
-        if not has_matching_type(width):
+        if needs_unsigned_cast(node) and not has_matching_type(width):
             cons.write(')')
 
 
@@ -350,15 +350,13 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
             cons.write(get_unsigned_cast(node, always=True))
             write_unsigned(symbs,l, cons,l)
             cons.write(')')
-            if not has_matching_type(new_width):
-                cons.write(')')
         else:
             write_unsigned(symbs,l,cons,l)
     elif node.is_bv_concat():
         (l,r) = node.args()
         write_unsigned(symbs,node,cons,l)
         cons.write(f' << {ff.get_bv_width(r)} | ')
-        write_unsigned(symbs,node,cons,r)        
+        write_unsigned(symbs,node,cons,r)
     elif node.is_bv_extract():
         ext_start = node.bv_extract_start()
         ext_end = node.bv_extract_end()
@@ -437,7 +435,7 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
             cons.write(f"+({size}*")
             convert(symbs,p,cons)
             cons.write(")")
-        if 'BV' in str(node.get_type()) and not has_matching_type(ff.get_bv_width(node)): 
+        if 'BV' in str(node.get_type()) and not has_matching_type(ff.get_bv_width(node)) and needs_unsigned_cast(node):
             cons.write(')')
     elif node.is_store():
         (a, p, v) = node.args()
