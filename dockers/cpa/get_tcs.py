@@ -21,7 +21,7 @@ def save_tc(dest_dir, tc_path, start_time, end_time, sig, expected_result='error
 WORKDIR = '/home/maze/workspace'
 OUTDIR = '/home/maze/workspace/outputs'
 
-def main(dest_dir,expected_result,verbosity)           
+def main(dest_dir,expected_result,verbosity):
     # Create destination directory
     os.system('mkdir -p %s' % dest_dir)
     for file in filter(lambda f: 'res' in f, os.listdir(OUTDIR)):
@@ -40,7 +40,7 @@ def main(dest_dir,expected_result,verbosity)
             continue
 
         # True positives
-        if ('FALSE' in resfile):
+        if ('FALSE' or 'Error path found' in resfile):
             save_tc(file_dir, respath, start_time, end_time, 'positive', expected_result)
 
         # False negatives

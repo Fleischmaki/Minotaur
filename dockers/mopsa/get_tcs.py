@@ -18,7 +18,7 @@ def save_tc(dest_dir, tc_path, start_time, end_time, sig, copy_content=True):
 WORKDIR = '/home/maze/workspace'
 OUTDIR = '/home/maze/workspace/outputs'
 
-def main(dest_dir,expected_result,verbosity)           
+def main(dest_dir,expected_result,verbosity):
     # Create destination directory
     os.system('mkdir -p %s' % dest_dir)
     for file in filter(lambda f: 'res' in f, os.listdir(OUTDIR)):
