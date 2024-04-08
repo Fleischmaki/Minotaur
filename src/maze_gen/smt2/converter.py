@@ -81,38 +81,35 @@ def is_signed(node: FNode) -> str:
     """
     return node.is_bv_sle() or node.is_bv_slt() or node.is_bv_ashr() or node.is_bv_sext() or node.is_bv_srem() or node.is_bv_sdiv()
 
-def write_or_convert(symbs: set[str],node: FNode | str,cons: io.TextIOBase):
-    """ Write or convert a node or string
-    """
-    if isinstance(node,FNode):
-        convert(symbs,node,cons)
-    else:
-        cons.write(node)
-
 def needs_signed_cast(node: FNode) -> bool:
     """ Checks if a node needs children to be recast. This is the case if:
-            - width non-standard or < 32 (avoiding automatic upcasting)
-            - some children (if any) are not signed
-            - some children (if any) are larger
+        - width non-standard or < 32 (avoiding automatic upcasting)
+        - is a constant or symbol or similar
+        - some children (if any) are not signed
+        - some children (if any) are larger
     """
     width = ff.get_bv_width(node)
-    return width not in (32,64) or (len(node.args()) != 0 and ( \
+    return width not in (32,64) or \
+        len(node.args()) == 0 or \
+        all(map(lambda n: n.is_bv_constant() or n.is_symbol(), node.args())) or \
         not all(map(is_signed, node.args())) or \
-        not all(map(lambda n: ff.get_bv_width(n)<=width,filter(lambda n: n.get_type().is_bv_type(),node.args())))))
-
+        not all(map(lambda n: ff.get_bv_width(n)<=width,filter(lambda n: n.get_type().is_bv_type(),node.args()))) 
 
 def needs_unsigned_cast(node: FNode):
     """ Checks if a node needs children to be recast. This is the case if:
         - width non-standard or < 32 (avoiding automatic upcasting)
+        - is a constant or symbol or similar
         - all children (if any) are signed
         - some children (if any) are larger
     """
     width = ff.get_bv_width(node)
-    return width not in (32,64) or (len(node.args()) == 0 and (\
+    return width not in (32,64) or \
+        len(node.args()) == 0 or \
+        all(map(lambda n: n.is_bv_constant() or n.is_symbol(), node.args())) or \
         all(map(is_signed, node.args())) or \
-        not all(map(lambda n: ff.get_bv_width(n)<=width,filter(lambda n: n.get_type().is_bv_type(),node.args())))))  #TODO think about this filter
+        not all(map(lambda n: ff.get_bv_width(n)<=width,filter(lambda n: n.get_type().is_bv_type(),node.args())))
 
-def write_signed(symbs,parent: FNode,cons, text: 'FNode | str', always=True):
+def write_signed(symbs,parent: FNode,cons, node: FNode, always=True):
     """ Writes a node as a signed integer
     """
     width = ff.get_bv_width(parent)
@@ -124,21 +121,24 @@ def write_signed(symbs,parent: FNode,cons, text: 'FNode | str', always=True):
             cons.write('scast_helper(')
         else:
             cons.write(f'({scast})')
-    write_or_convert(symbs,text,cons)
+    convert(symbs,node,cons)
     if not has_matching_type(width) or (GENERATE_WELL_DEFINED and (always or needs_signed_cast)):
         cons.write(f', {width})')
 
 
-def write_unsigned(symbs, parent: FNode, cons, node: 'FNode | str', always=True):
+def write_unsigned(symbs, parent: FNode, cons, node: FNode, always=True):
     """ Writes a node as an unsigned integer
     """
     width = ff.get_bv_width(parent)
-    cons.write(get_unsigned_cast(parent, always))
-    write_or_convert(symbs,node,cons)
-    if not has_matching_type(width):
-        cons.write(')')
+    if node.is_bv_constant() or node.is_symbol():
+        convert(symbs,node,cons)
+    else:
+        cons.write(get_unsigned_cast(parent, always))
+        convert(symbs,node,cons)
+        if not has_matching_type(width):
+            cons.write(')')
 
-def write_cast(symbs, parent: FNode, cons, node: 'FNode | str', always=False):
+def write_cast(symbs, parent: FNode, cons, node: FNode, always=False):
     """ Writes a node as the type needed by the parent
     """
     if parent.get_type().is_bv_type() or (parent.get_type().is_array_type() and parent.get_type().elem.type().is_bv_type()) or parent.is_theory_relation() and parent.arg(0).get_type().is_bv_type():
@@ -147,7 +147,7 @@ def write_cast(symbs, parent: FNode, cons, node: 'FNode | str', always=False):
         else:
             write_unsigned(symbs, parent, cons,node, always)
     else:
-        write_or_convert(symbs,node,cons)
+        convert(symbs,node,cons)
 
 
 def get_unsigned_cast(node: FNode, always=False) -> str:
@@ -350,13 +350,13 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         old_width = ff.get_bv_width(l)
         if not (old_width < 32 and new_width == 32) and not (32 < old_width < 64 and new_width == 64):
             cons.write('(')
-            cons.write(get_unsigned_cast(node, True))
-            convert(symbs,l, cons)
+            cons.write(get_unsigned_cast(node, always=True))
+            write_unsigned(symbs,l, cons,l)
             cons.write(')')
             if not has_matching_type(new_width):
                 cons.write(')')
         else:
-            convert(symbs, l, cons)
+            write_unsigned(symbs,l,cons,l)
     elif node.is_bv_concat():
         (l,r) = node.args()
         write_unsigned(symbs,node,cons,l)
@@ -422,11 +422,7 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         dim = ff.get_array_dim(node)
         cons.write("*"*(dim-1))
         var = clean_string(str(node))
-        if dim == 0 and node.get_type().is_bv_type():
-            cons.write(get_unsigned_cast(node))
         cons.write(f'({var})')
-        if dim == 0 and node.get_type().is_bv_type() and not has_matching_type(ff.get_bv_width(node)):
-            cons.write(')')
         symbs.add(var)
     elif node.is_select():
         (a, p) = node.args()
