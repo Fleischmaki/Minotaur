@@ -35,8 +35,8 @@ def parse(file_path: str, check_neg: bool, continue_on_error=True, generate_well
         clauses = list(ff.get_array_constraints(array_calls, array_size)) + list(formula_clauses)
     try:
         core = set() if generate_sat else get_unsat_core(clauses, logic)
-    except pysmt.exceptions.SolverStatusError:
-        LOGGER.warning("Could not find core, will abort if any clause fails")
+    except pysmt.exceptions.SolverStatusError as e:
+        LOGGER.warning("Could not find core, will abort if any clause fails: %s", e)
         continue_on_error = False
     parsed_cons = OrderedDict()
     variables = {}
