@@ -64,9 +64,9 @@ def run_docker(duration, tool, name, variant='', flags='', batch_id=0):
     cmd = ' '.join(map(str,[script, src_path, duration,variant,flags]))
     return spawn_cmd_in_docker(get_container(tool,name), cmd)
 
-def collect_docker_results(tool,name, expected_result='error'):
+def collect_docker_results(tool,name, expected_result='error', verbosity='all'):
     user = get_user(tool)
-    cmd = 'python3 /home/%s/tools/get_tcs.py /home/%s/workspace/outputs %s' % (user,user,expected_result)
+    cmd = f'python3 /home/{user}/tools/get_tcs.py /home/{user}/workspace/outputs {expected_result} {verbosity}'
     return spawn_cmd_in_docker(get_container(tool,name), cmd)
 
 def copy_docker_results(tool, name , out_path):
@@ -100,6 +100,6 @@ def run_pa(tool,variant,flags, name, params,outdir, memory = 4,  timeout=1, gen=
         batchfile.write('%s/%s' % (HOST_NAME, maze))
     spawn_docker(memory,name,tool,os.path.join(outdir,'src')).wait()
     run_docker(timeout, tool, name, variant,flags).wait()
-    collect_docker_results(tool,name,expected_result).wait()
+    collect_docker_results(tool,name,expected_result,'all').wait()
     copy_docker_results(tool,name,os.path.join(outdir, maze))
     kill_docker(tool,name).wait()

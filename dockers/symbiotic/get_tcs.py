@@ -1,6 +1,6 @@
 import os, sys
 
-def save_tc(dest_dir, tc_path, start_time, end_time, sig, expected_result='error'):
+def save_tc(dest_dir, tc_path, start_time, end_time, sig, expected_result='error', copy_content=True):
     elapsed_time = end_time - start_time
     if sig == '':
         sig = 'tc'
@@ -11,13 +11,17 @@ def save_tc(dest_dir, tc_path, start_time, end_time, sig, expected_result='error
 
     name = '%011.5f_%s' % (elapsed_time, sig)
     file_path = os.path.join(dest_dir, name)
-    os.system('mv %s %s' % (tc_path, file_path))
+    if copy_content:
+        os.system('mv %s %s' % (tc_path, file_path))
+    else:
+        os.system('touch %s' % (file_path))
+        os.system('rm %s' % (tc_path))
 
 
 WORKDIR = '/home/maze/workspace'
 OUTDIR = '/home/maze/workspace/outputs'
 
-def main(dest_dir,expected_result):           
+def main(dest_dir,expected_result,verbosity)           
     # Create destination directory
     os.system('mkdir -p %s' % dest_dir)
     for file in filter(lambda f: 'res' in f, os.listdir(OUTDIR)):
@@ -45,16 +49,17 @@ def main(dest_dir,expected_result):
 
         # Crashes/Errors
         elif ('RESULT: unknown' in resfile):
-            save_tc(file_dir, respath, start_time, end_time, 'uk')
+            save_tc(file_dir, respath, start_time, end_time, 'uk', copy_content = False)
 
         elif ('RESULT: ERROR' in resfile):
-            save_tc(file_dir, respath, start_time, end_time, 'er')
+            save_tc(file_dir, respath, start_time, end_time, 'er', copy_content = verbosity in ('error','all'))
 
         # Timeout
         else: 
-            save_tc(file_dir, respath, start_time, end_time, 'to')
+            save_tc(file_dir, respath, start_time, end_time, 'to', copy_content = False)
 
 if __name__ == '__main__':
     dest_dir = sys.argv[1]    
     expected_result = sys.argv[2]
-    main(dest_dir, expected_result)
+    verbosity = sys.argv[3]
+    main(dest_dir,expected_result,verbosity)

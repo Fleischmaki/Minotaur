@@ -228,7 +228,7 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
     procs = []
     for i in range(get_containers_needed(conf,works)):
         target = works[i*conf['batch_size']]
-        procs.append(docker.collect_docker_results(target.tool, target.index, conf['expected_result']))
+        procs.append(docker.collect_docker_results(target.tool, target.index, conf['expected_result'],conf['verbosity']))
     commands.wait_for_procs(procs)
     time.sleep(5)
 
