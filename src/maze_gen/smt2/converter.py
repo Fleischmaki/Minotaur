@@ -122,7 +122,7 @@ def write_signed(symbs,parent: FNode,cons, node: FNode, always=True):
         else:
             cons.write(f'({scast})')
     convert(symbs,node,cons)
-    if not has_matching_type(width) or (GENERATE_WELL_DEFINED and (always or needs_signed_cast)):
+    if (always or needs_signed_cast) and (GENERATE_WELL_DEFINED or not has_matching_type(width)):
         cons.write(f', {width})')
 
 
@@ -132,7 +132,7 @@ def write_unsigned(symbs, parent: FNode, cons, node: FNode, always=True):
     width = ff.get_bv_width(parent)
     cons.write(get_unsigned_cast(parent, always))
     convert(symbs,node,cons)
-    if not has_matching_type(width):
+    if (always or needs_unsigned_cast) and not has_matching_type(width):
         cons.write(')')
 
 def write_cast(symbs, parent: FNode, cons, node: FNode, always=False):
@@ -486,8 +486,10 @@ def rotate_helper(symbs: t.Set[str], node: FNode, cons: io.TextIOBase, op: str):
     cons.write(f' {op} ({i}-{m}) )')
 
 def clean_string(s: str | FNode):
+    """Makes sure that the string is a valid varibale name in C"""
+    s = str(s)
     if s == 'c':
         return '__original_smt_name_was_c__'
-    s = str(s)
+    if 'func' in s:
+        s = '__' + s
     return re.sub('[^A-Za-z0-9_]+','_',s)
-
