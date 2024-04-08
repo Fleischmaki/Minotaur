@@ -10,6 +10,8 @@ from pysmt.typing import PySMTType as node_type
 
 from . import formula_transforms as ff
 
+ARRAY_SIZE_STRING = "ARRAY_SIZE"
+
 T = t.TypeVar('T')
 def deflatten(args: t.List[T], op: t.Callable[[T,T],T]) -> T:
     """ Deflattens functions with many parameters by applying it two at a time
@@ -170,8 +172,8 @@ def type_to_c(ntype: node_type) -> str:
         return type_to_c(ntype.return_type) # type: ignore
     if ntype.is_array_type():
         if ntype.elem_type.is_array_type(): # type: ignore
-            return f'{type_to_c(ntype.elem_type)}[ARRAY_SIZE]' # type: ignore
-        return 'long[ARRAY_SIZE]'
+            return f'{type_to_c(ntype.elem_type)}[{ARRAY_SIZE_STRING}]' # type: ignore
+        return f'long[{ARRAY_SIZE_STRING}]'
     error(0, ntype)
     return ''
 
@@ -250,7 +252,7 @@ def get_array_size_from_dim(dim: int) -> str:
     """
     if dim <= 0:
         return '1'
-    return ('ARRAY_SIZE*'*dim)[:-1]
+    return (f'{ARRAY_SIZE_STRING}*'*dim)[:-1]
 
 
 def get_array_size(node: FNode):
@@ -493,3 +495,62 @@ def clean_string(s: str | FNode):
     if 'func' in s:
         s = '__' + s
     return re.sub('[^A-Za-z0-9_]+','_',s)
+
+def get_bv_helpers(well_defined = True) -> str:
+    """Returns helper functions for BV translation
+    :param well_defined: Also return helpers for well_definedness 
+    """
+    res = "\n\n//Helper functions for division and casts\n"
+    res +=  """long scast_helper(unsigned long i, unsigned char width){
+    if((i & (1ULL << (width-1))) > 0){
+        return (long)((((1ULL << (width-1)) - 1 << 1) + 1) - i) * (-1) - 1;
+    }
+    return i;\n}\n"""
+
+    if well_defined:
+        res += """unsigned long sdiv_helper(long l, long r, int width){
+    if(r == 0){
+        if(l >= 0)
+            return -1ULL >> (64-width); // Make sure we shift with 0s
+        return 1;
+    } else if ((r == -1) && (l == ((-0x7FFFFFFFFFFFFFFFLL-1) >> (64-width))))
+        return 0x8000000000000000ULL;
+    return l / r;\n}
+unsigned long div_helper(unsigned long l, unsigned long r, int width){
+    if(r == 0)
+        return -1ULL >> (64-width);
+    return l / r;\n}
+unsigned long srem_helper(long l, long r, int width){
+    if(r == 0)
+        return l;
+    return l % r;\n}
+unsigned long rem_helper(unsigned long l, unsigned long r, int width){
+    if(r == 0)
+        return l;
+    return l % r;\n}\n"""
+    return res
+
+def get_array_helpers(size):
+    """Returns helper functions for Array translation
+    :param size: Array size for the program
+    """
+    res = "\n\n//Array support\n"
+    res += f"#define {ARRAY_SIZE_STRING} {size}\n"
+    res += """long* value_store(long* a,long pos,long v){
+    a[pos] = v;
+    return a;\n}\n"""
+    res += """long* array_store(long* a,long pos,long* v, int size){
+    for (int i=0;i<size;i++){
+        a[pos*size+i] = v[i];
+    }
+    return a;\n}\n"""
+    res += ("""int array_comp(long* a1, long* a2, int size){
+    for(int i = 0; i < size; i++){
+    \tif(a1[i] != a2[i]) return 0;
+    }
+    return 1;\n}\n""")
+    res += ("""void init(long* array,int size){
+    for(int i = 0; i < size; i++){
+    \tarray[i] = __VERIFIER_nondet_long();
+    }\n}""")
+    return res
