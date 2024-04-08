@@ -43,7 +43,7 @@ def main(dest_dir,expected_result):
         #elif ('UNKNOWN' in resfile):
         #    save_tc(file_dir, respath, start_time, end_time, 'uk')
         # TimeoutH
-        elif ('ERROR' in resfile):
+        elif ('ERROR' or 'Unexpected case:' in resfile):
             save_tc(file_dir, respath, start_time, end_time, 'er')
         else:
             save_tc(file_dir, respath, start_time, end_time, 'to')
