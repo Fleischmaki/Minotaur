@@ -130,13 +130,10 @@ def write_unsigned(symbs, parent: FNode, cons, node: FNode, always=True):
     """ Writes a node as an unsigned integer
     """
     width = ff.get_bv_width(parent)
-    if node.is_bv_constant() or node.is_symbol():
-        convert(symbs,node,cons)
-    else:
-        cons.write(get_unsigned_cast(parent, always))
-        convert(symbs,node,cons)
-        if not has_matching_type(width):
-            cons.write(')')
+    cons.write(get_unsigned_cast(parent, always))
+    convert(symbs,node,cons)
+    if not has_matching_type(width):
+        cons.write(')')
 
 def write_cast(symbs, parent: FNode, cons, node: FNode, always=False):
     """ Writes a node as the type needed by the parent
