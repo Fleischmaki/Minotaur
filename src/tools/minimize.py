@@ -38,7 +38,7 @@ class Minimizer:
                 self.variant = argv[7]
                 self.flags = ' '.join(argv[8:])
             self.params= self.get_params(maze)
-        self.expected_result = 'safe' if self.err in ('fp','tn') else 'error'
+        self.expected_result = 'safe' if self.err in ('fp','tn') or 'unsat' in self.params['t'] else 'error'
         self.core = set()
 
 
@@ -59,7 +59,7 @@ class Minimizer:
         if self.expected_result == 'safe':
             clauses, self.core = self.separate_unsat_core(clauses,logic)
 
-        clauses = self.drop_batches(clauses)            
+        clauses = self.drop_batches(clauses)
         clauses = self.drop_individual(clauses)
 
         self.set_seed('min',clauses)
@@ -89,8 +89,8 @@ class Minimizer:
 
     def drop_batches(self, clauses: list):
         keep_first_half = True
-        misses_bug = True 
-        min_clauses = 1 if self.expected_result == 'unsafe' else 0
+        misses_bug = True
+        min_clauses = 1 if self.expected_result == 'error' else 0
         while (len(clauses) > min_clauses) and (misses_bug or not keep_first_half):
             half = len(clauses) // 2
             new_clauses = clauses[:half] if keep_first_half else clauses[half+1:]
@@ -99,7 +99,7 @@ class Minimizer:
             misses_bug = self.result_is_err()
             if misses_bug:
                 clauses = new_clauses
-                logging.info("Discarded %s half of constraints" % 'first' if keep_first_half else 'second')
+                logging.info("Discarded %s half of constraints", 'first' if keep_first_half else 'second')
                 keep_first_half = True
             else:
                 keep_first_half = not(keep_first_half)
@@ -108,7 +108,7 @@ class Minimizer:
     def drop_individual(self, clauses: list):
         empty_clauses = 0
         for i in range(len(clauses)):
-            if len(clauses) == 1 and self.expected_result == 'unsafe':
+            if len(clauses) == 1 and self.expected_result == 'error':
                 break
             commands.run_cmd('mkdir -p %s' % os.path.join(self.outdir,'seeds'))
             pos = i - empty_clauses
