@@ -416,6 +416,8 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
     elif node.is_symbol():
         dim = ff.get_array_dim(node)
         cons.write("*"*(dim-1))
+        if (dim == 1):
+            cons.write("&")
         var = clean_string(str(node))
         cons.write(f'({var})')
         symbs.add(var)
