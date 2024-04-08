@@ -61,6 +61,7 @@ Seahorn - bpf | [closed (without fixing)](https://github.com/seahorn/seahorn/iss
 ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1565) | Boolean Intervals
 ESBMC --cvc4 | [fixed](https://github.com/esbmc/esbmc/issues/1770) | SMT translation
 CPA -invariantGenearation | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1208) | Division
+ESBMC | [confirmed](https://github.com/esbmc/esbmc/issues/1771) | 
 ### Precision Issues
 Tool | Status | Type
  -- | -- | --
