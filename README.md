@@ -46,29 +46,29 @@ To run an experiment run `python3 Minotaur --e experiment_name outdir`. Experime
 
 ## Bugs found by Minotaur
 ### Soundness Bugs
- Tool | Status | Type
- -- | -- | --
- CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1114) | Overflow
-Ultimate | [fixed](https://github.com/ultimate-pa/ultimate/issues/642#issuecomment-1661186726) | Overflow
-CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1130) | Bitwise Operations
-CPA - Intervallanalysis | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1132#note_1544904422) | Overflow
-Symbiotic | [open](https://github.com/staticafi/symbiotic/issues/247) | ??
-Ultimate Automizer/Gemcutter | [fixed](https://github.com/ultimate-pa/ultimate/issues/646) | Bitwise Operators
-ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1363) | Type Casts
-ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1392) | Type Casts
-CPA -InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1194) | Modulo Operator
-Seahorn - bpf | [closed (without fixing)](https://github.com/seahorn/seahorn/issues/545)
-ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1565) | Boolean Intervals
-ESBMC --cvc4 | [fixed](https://github.com/esbmc/esbmc/issues/1770) | SMT translation
-CPA -invariantGenearation | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1208) | Division
-ESBMC | [confirmed](https://github.com/esbmc/esbmc/issues/1771) | 
+Nr.  | Tool | Status | Type
+| --  | -- | -- | -- |
+1 | CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1114) | Overflow
+2 | Ultimate | [fixed](https://github.com/ultimate-pa/ultimate/issues/642#issuecomment-1661186726) | Overflow
+3 |CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1130) | Bitwise Operations
+4 |CPA - Intervallanalysis | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1132#note_1544904422) | Overflow
+5 |Symbiotic | [open](https://github.com/staticafi/symbiotic/issues/247) | ??
+6 |Ultimate Automizer/Gemcutter | [fixed](https://github.com/ultimate-pa/ultimate/issues/646) | Bitwise Operators
+7 |ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1363) | Type Casts
+8 |ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1392) | Type Casts
+9 |CPA -InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1194) | Modulo Operator
+10 |Seahorn - bpf | [closed (without fixing)](https://github.com/seahorn/seahorn/issues/545)
+11 |ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1565) | Boolean Intervals
+12 |ESBMC --cvc4 | [fixed](https://github.com/esbmc/esbmc/issues/1770) | SMT translation
+13 |CPA -invariantGenearation | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1208) | Division
+14 |ESBMC | [confirmed](https://github.com/esbmc/esbmc/issues/1771) | 
 ### Precision Issues
-Tool | Status | Type
- -- | -- | --
- MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/150) | Type Casts
- MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/157) | ITE value propagation
- SeaHorn | [open](https://github.com/seahorn/seahorn/issues/546) |
- SeaHorn | [open](https://github.com/seahorn/seahorn/issues/550) |
+Nr. |Tool | Status | Type
+| -- | -- | -- | -- |
+1 | MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/150) | Type Casts
+2 | MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/157) | ITE value propagation
+3 | SeaHorn | [open](https://github.com/seahorn/seahorn/issues/546) |
+4 | SeaHorn | [open](https://github.com/seahorn/seahorn/issues/550) |
 ### Other
 Tool | Status | Type
  -- | -- | --
