@@ -109,7 +109,7 @@ def needs_unsigned_cast(node: FNode):
     """
     width = ff.get_bv_width(node)
     return width not in (32,64) or (len(node.args()) == 0 and (\
-        not all(map(is_signed, node.args())) or \
+        all(map(is_signed, node.args())) or \
         not all(map(lambda n: ff.get_bv_width(n)<=width,filter(lambda n: n.get_type().is_bv_type(),node.args())))))  #TODO think about this filter
 
 def write_signed(symbs,parent: FNode,cons, text: 'FNode | str', always=True):
