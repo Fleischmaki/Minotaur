@@ -181,13 +181,12 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     f.write("\n\n//Actual program")
     function_begin_format = """\nvoid func_{}(){{\n{}"""
     function_format = """\t{} ({}) {{
-    \t\tfunc_{}();
-    \t}}
-    """
+    \tfunc_{}();
+    }}\n"""
+
     function_end = """\telse {
-    \t\t//should not happen
-    \t}
-    }\n"""
+    \t//should not happen
+    }\n}\n"""
     function_deadend = """}\n"""
 
     for idx in range(size):
@@ -196,16 +195,15 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
         if valid_edges == 0:
             f.write(function_deadend)
             continue
-        else:
-            edge_counter = 0
-            for neighbour in graph[idx]:
-                if edge_counter == 0:
-                    f.write(function_format.format(
-                        'if', guard[idx][edge_counter], neighbour))
-                else:
-                    f.write(function_format.format(
-                        'else if', guard[idx][edge_counter], neighbour))
-                edge_counter += 1
+        edge_counter = 0
+        for neighbour in graph[idx]:
+            if edge_counter == 0:
+                f.write(function_format.format(
+                    'if', guard[idx][edge_counter], neighbour))
+            else:
+                f.write(function_format.format(
+                    'else if', guard[idx][edge_counter], neighbour))
+            edge_counter += 1
         f.write(function_end)
 
     f.write("""\nint main(){
