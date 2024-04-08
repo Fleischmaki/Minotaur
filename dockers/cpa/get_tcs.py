@@ -40,7 +40,7 @@ def main(dest_dir,expected_result,verbosity):
             continue
 
         # True positives
-        if ('FALSE' or 'Error path found' in resfile):
+        if ('FALSE' in resfile):
             save_tc(file_dir, respath, start_time, end_time, 'positive', expected_result)
 
         # False negatives
