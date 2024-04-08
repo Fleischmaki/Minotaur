@@ -3,19 +3,14 @@ FROM minotaur-base
 WORKDIR /home/maze/tools
 
 RUN apt-get update && apt-get install -y \
-    gcc-multilib \
     rsync \
     cmake \
-    make \
-    curl \
-    build-essential \ 
     npm \
-    python3 \
 && rm -rf /var/lib/apt/lists/*
 
 RUN git clone https://github.com/staticafi/symbiotic
 WORKDIR /home/maze/tools/symbiotic
-RUN yes | scripts/install-ubuntu.sh 
+RUN apt-get update && yes | scripts/install-ubuntu.sh 
 RUN ./build.sh 
 
 ### Set up directory structure
