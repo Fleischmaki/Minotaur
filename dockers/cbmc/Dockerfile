@@ -12,7 +12,7 @@ WORKDIR /home/maze/tools
 RUN git clone https://github.com/diffblue/cbmc.git
 WORKDIR /home/maze/tools/cbmc
 RUN git submodule update --init
-RUN cmake -S . -Bbuild -Denable_coverage=True -DCMAKECXX_FLAGS="--coverage O0" -DCMAKE_FLAGS="--coverage O0" -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+RUN cmake -S . -Bbuild -Denable_coverage=True -DCMAKE_CXX_FLAGS="--coverage O0" -DCMAKE_C_FLAGS="--coverage O0" -DCMAKE_EXE_LINKER_FLAGS="--coverage"
 RUN cmake --build build
 
 RUN pip3 install gcovr
