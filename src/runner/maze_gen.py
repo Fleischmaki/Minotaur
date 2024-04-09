@@ -6,6 +6,9 @@ from . import docker, commands
 GENERATE_CMD = '%s/scripts/generate.sh -o %s %s'
 
 def get_params_from_maze(maze: str,smt_path = '') -> dict:
+    """ Extracts maze parameters from the maze name.
+    :param smt_path: Directory of the seed file, if one is used.
+    """
     params = {}
     params['a'], size, params['r'], _, *params['t'], params['m'], params['c']= maze.split('percent')[0].split('_')
     *params['g'],_, params['b'] = maze.split('percent')[1][1:].split('_')
@@ -25,38 +28,47 @@ def get_params_from_maze(maze: str,smt_path = '') -> dict:
     return params
 
 
-def get_maze_names(params):
-    if params['g'] in ('CVE_gen', 'CVE-neg_gen'):
-        generator = '%s_gen' % params['s'].split('/')[-1][0:-5]
+def get_maze_names(p):
+    """ Returns the maze name assosiated with the given parameters.
+        If transformatinons are perforemd, returns one name per transformation.
+        :param p: Maze parameters"""
+    if p['g'] in ('CVE_gen', 'CVE-neg_gen'):
+        generator = f"{p['s'].split('/')[-1][0:-5]}_gen" 
     else:
-        generator = params['g']
-    min_transform = 0 if 'keepId' in params['t'] else 1
-    return ['%s_%sx%s_%s_0_%s_t%d_%spercent_%s_ve.c' 
-            %  (params['a'], params['w'], params['h'],params['r'], params['t'],i,params['c'], generator)
-              for i in range(min_transform,params['m'] + 1)]
+        generator = p['g']
+    min_transform = 0 if 'keepId' in p['t'] else 1
+    return [f"{p['a']}_{p['w']}x{p['h']}_{p['r']}_0_{p['t']}_t{i}_{p['c']}percent_{generator}_ve.c"\
+            for i in range(min_transform,p['m'] + 1)]
 
 def generate_maze_in_docker(params, name: str | int = '0', timeout=-1):
+    """Generate a maze in a running docker container"""
     params['o'] = docker.HOST_NAME
     param_string = get_string_from_params(params)
     cmd = './Minotaur/scripts/generate.sh ' + param_string
     return docker.spawn_cmd_in_docker(docker.get_container('gen', name),  cmd, timeout=timeout)
 
 def setup_generation_docker(params, outdir, index):
+    """Spawn a container for maze generation and setup seed and output structure.
+    :param params: Generation parameters
+    :param outdir: Output directory
+    :param index: Maze name"""
     commands.run_cmd('mkdir -p ' + outdir + ' ' + ' '.join([os.path.join(outdir, i) for i in ['src','smt','sln','png','txt','bin','smt/' + params['r']]]) )
     docker.spawn_docker(1, index, 'gen', outdir).wait()
     if params['s'] is not None:
         docker.set_docker_seed(params['s'], index, 'gen').wait()
 
 def get_string_from_params(params):
+    """Generate a string for generate.sh from a parameter dictionary"""
     param_string = ''
     for param, value in params.items():
         if param == 's':
             value = '/home/maze/' + params['s'].split('/')[-1]
-        param_string += '-%s %s ' % (param, value)
+        param_string += f'-{param} {value} '
     return param_string
 
 def get_params_from_string(param_string):
-    params = dict()
+    """Read the parameters from string form into a dictionary"""
+    params = {}
     options = param_string.split(' ')
     i = 0
     while i < len(options):

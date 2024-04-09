@@ -15,6 +15,7 @@ LOGGER = logging.getLogger(__name__)
 
 REMOVE_CMD = 'rm -r %s'
 CP_CMD = 'cp %s %s'
+
 Target = namedtuple(typename='Target',field_names=['maze','tool','index','params','variant','flags'])
 
 
@@ -23,18 +24,13 @@ def load_config(path):
         txt = f.read()
     conf = json.loads(txt)
 
-    if 'verbosity' not in conf.keys():
-        conf['verbosity'] = 'all'
-    if 'maze_gen' not in conf.keys():
-        conf['maze_gen'] = 'local'
-    if 'expected_result' not in conf.keys():
-        conf['expected_result'] = 'error'
-    if 'abort_on_error' not in conf.keys():
-        conf['abort_on_error'] = False
-    if 'batch_size' not in conf.keys():
-        conf['batch_size'] = 1
-    if 'gen_time' not in conf.keys():
-        conf['gen_time'] = 120
+    set_default(conf,'verbosity','all')
+    set_default(conf,'maze_gen','local')
+    set_default(conf,'expected_result','error')
+    set_default(conf,'abort_on_error',False)
+    set_default(conf,'batch_size',1)
+    set_default(conf,'gen_time',120)
+    set_default(conf,'coverage',False)
 
     assert conf['repeats'] != 0
     assert conf['duration'] > 0
@@ -56,7 +52,7 @@ def pick_values(head: str, value: dict  | list,tail: str) -> str | None:
             if head == '' and tail == '':
                 return None
             return ''
-        elif choice == 1:
+        if choice == 1:
             body = ''
         else:
             body = str(choice)
@@ -189,7 +185,7 @@ class Target_Generator():
     def fetch_maze_params(self):                                                                 
         return [get_random_params(self.conf) for _ in range(min(self.repeats,ceil(ceil(self.conf['workers']/len(self.conf['tool']))*self.conf['batch_size']/max(1,self.conf['transforms']))))] # NUMNB_BATCHES*SIZE / MAZES_PER_PARAMS
 
-def fetch_works(conf: dict, gen: Target_Generator):
+def fetch_works(conf: dict, gen: Target_Generator) -> tuple[list[Target], list[Target]]:
     new_targets = list(it.islice(gen, 0, conf['workers']*conf['batch_size']))
     return list(map(lambda w: w[1],new_targets)), list(map(lambda w : w[1], filter(lambda w: w[0], new_targets)))
 
@@ -237,7 +233,8 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
         out_path = os.path.join(out_dir, w.tool, str(w.index))
         os.system(f'mkdir -p {out_path}')
         docker.copy_docker_results(w.tool, w.index, out_path)
-        docker.kill_docker(w.tool, w.index)
+        if not conf['coverage']: 
+            docker.kill_docker(w.tool, w.index)
     time.sleep(5)
 
 
@@ -282,7 +279,7 @@ def write_summary(conf,out_dir, target,tag,runtime):
         commands.run_cmd(REMOVE_CMD % out_path)
 
 
-def write_summary_header(conf, out_dir):
+def write_summary_header(conf, out_dir) -> None:
     with open(out_dir + '/summary.csv', 'w') as f:
         f.write('tool,batch,variant,flags,id,u,')
         for key in conf['parameters'].keys():
@@ -290,7 +287,7 @@ def write_summary_header(conf, out_dir):
                 f.write(str(key)+',')
         f.write('runtime,status\n')
 
-def cleanup(completed: 'list[Target]'):
+def cleanup(completed: 'list[Target]') -> None:
     procs = []
     while(len(completed) > 0):
         target = completed.pop()
@@ -298,14 +295,39 @@ def cleanup(completed: 'list[Target]'):
         procs.append(commands.spawn_cmd(REMOVE_CMD % get_batch_file(target.index)))
     commands.wait_for_procs(procs)
 
-def get_minotaur_root():
+def get_minotaur_root() -> str:
     mainfile = sys.modules['__main__'].__file__ # pylint: disable=no-member 
     return os.path.dirname(os.path.realpath('' if mainfile is None else mainfile))
+
+def store_coverage(conf,works: list[Target], out_dir: str) -> None:
+    procs = []
+    for i in range(get_containers_needed(conf,works)):
+        work = works[i*conf['batch_size']]
+        procs.append(docker.collect_coverage_info(work.tool,work.index,f"{work.tool}_{work.index}.cov"))
+    commands.wait_for_procs(procs)
+
+    for i in range(get_containers_needed(conf,works)):
+        work = works[i * conf['batch_size']]
+        docker.copy_docker_results(work.tool, work.index,os.path.join(out_dir,'cov'), docker_dir=docker.COVERAGE_DIR)
+
+def merge_coverage(conf,out_dir: str) -> None:
+    for tool in conf['tool']:
+        files = []
+        resfiles = os.listdir(os.path.join(out_dir,'cov'))
+        for file in resfiles:
+                if tool in file:
+                    files.append(os.path.join(out_dir, 'cov', file)) # For some reason filter + lambda does not work for this
+                    file_string = ' --json-add-tracefile '.join(files)
+                    outfile = f"{tool}_{len(files)}batches.json"
+                    cmd = f"python3 -m gcovr --json-add-tracefile {file_string} --json-summary-pretty > {os.path.join('res', 'cov', outfile)}"
+                    commands.run_cmd(cmd)
 
 def main(conf, out_dir):
     os.system(f'mkdir -p {out_dir}')
     if 'seed' in conf.keys():
         random.seed(conf['seed'])
+    if conf['coverage']:
+        os.system(f"mkdir -p {os.path.join(out_dir, 'cov')}")
 
     write_summary_header(conf, out_dir)
     done = False
@@ -317,8 +339,13 @@ def main(conf, out_dir):
         run_tools(conf, works)
         done = store_outputs(conf, out_dir, works)
         cleanup(to_remove)
+        if conf['coverage']:
+            store_coverage(conf,works,out_dir)
 
+    if conf['coverage']:
+        merge_coverage(conf,out_dir)
     commands.run_cmd(REMOVE_CMD % get_temp_dir())
+
 
 def load(argv):
     conf_path = os.path.join(get_minotaur_root(),'test',argv[0] + '.conf.json')

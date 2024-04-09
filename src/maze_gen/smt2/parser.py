@@ -59,7 +59,8 @@ def parse(file_path: str, transformations: dict, check_neg: bool, continue_on_er
         if logic.split('_')[-1].startswith('A'):
             LOGGER.debug("Renaming array stores")
             clause, constraints = ff.rename_arrays(clause)
-            LOGGER.info("Added %d new arrays", len(constraints))
+            if len(constraints) > 0:
+                LOGGER.info("Added %d new arrays", len(constraints)//2)
             clause = And(*constraints, clause) # Make sure to render constraints first
             ldecl_arr.extend(map(lambda c: c.args()[1],constraints))
 
@@ -146,9 +147,9 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
         LOGGER.info("Generating integer constraints")
         constraints.update(ff.get_integer_constraints(formula))
 
-    if not GENERATE_WELL_DEFINED:
-        LOGGER.info("Generating divsion constraints")
-        constraints.update(ff.get_division_constraints(formula))
+    # if not GENERATE_WELL_DEFINED:
+    #     LOGGER.info("Generating divsion constraints")
+    #     constraints.update(ff.get_division_constraints(formula))
 
     if len(constraints) > len(array_constraints):
         LOGGER.info("Checking satisfiability with global constraints")

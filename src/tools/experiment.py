@@ -30,6 +30,8 @@ def load_config(path: str) -> dict:
         conf['avg'] = 1
     if 'gen_time' not in conf.keys():
         conf['gen_time'] = 30000
+    if 'coverage' not in conf.keys():
+        conf['coverage'] = False
 
     assert conf['repeats'] > 0
     assert conf['workers'] > 0
@@ -49,28 +51,29 @@ def load(argv):
     outdir = argv[1]
 
     commands.run_cmd(f'mkdir -p {outdir}')
-    resfile = open(os.path.join(outdir, 'times'), 'w')
-    resfile.write("run_nr, time\n")   
+    with open(os.path.join(outdir, 'times'), 'w') as resfile:
+        resfile.write("run_nr, time\n")
 
-    runs = conf['repeats']
-    conf['repeats'] = conf['mazes']
+        runs = conf['repeats']
+        conf['repeats'] = conf['mazes']
 
-    variable_keys = list(map(lambda kv: kv[0],(filter(lambda kv: isinstance(kv[1], list), conf.items()))))
-    LOGGER.info("Found the following variable keys %s", str(variable_keys))
+        variable_keys = list(map(lambda kv: kv[0],(filter(lambda kv: isinstance(kv[1], list), conf.items()))))
+        LOGGER.info("Found the following variable keys %s", str(variable_keys))
 
-    for i in range(runs):
-        curr_conf = dict(conf)
-        for key in variable_keys:
-            set_param_value(curr_conf, conf, key, i)
-        times = []
-        LOGGER.info("Starting experiment %d", i)
-        for j in range(conf['avg']):
-            start = time.time()
-            LOGGER.debug("Staring run %d/%d of experiment %d", j, conf['avg'],i)
-            test.main(curr_conf, os.path.join(outdir, f'run{i}_{j}'))
-            end = time.time()
-            times.append(end-start)
-        resfile.write(f"{i},{sum(times)/len(times)}\n")
+        for i in range(runs):
+            curr_conf = dict(conf)
+            for key in variable_keys:
+                set_param_value(curr_conf, conf, key, i)
+            times = []
+            LOGGER.info("Starting experiment %d", i)
+            for j in range(conf['avg']):
+                start = time.time()
+                LOGGER.debug("Staring run %d/%d of experiment %d", j, conf['avg'],i)
+                test.main(curr_conf, os.path.join(outdir, f'run{i}_{j}'))
+                end = time.time()
+                times.append(end-start)
+            resfile.write(f"{i},{sum(times)/len(times)}\n")
+
 
 def set_param_value(new_conf: dict, old_conf: dict, key: str, i: int):
     """ Set new_conf[key] to i-th value of old_conf[key]
