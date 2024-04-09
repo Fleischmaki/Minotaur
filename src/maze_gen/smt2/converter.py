@@ -416,7 +416,7 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         cons.write(value)
     elif node.is_symbol():
         dim = ff.get_array_dim(node)
-        cons.write("*"*(dim-1))
+        cons.write("*"*dim)
         if dim == 1:
             cons.write("&")
         var = clean_string(str(node))
@@ -443,7 +443,7 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
             convert(symbs,p,cons)
             cons.write(")")
         if 'BV' in str(node.get_type()) and not has_matching_type(ff.get_bv_width(node)) and needs_unsigned_cast(node):
-            cons.write(')')
+            cons.write(")")
     elif node.is_store():
         (a, p, v) = node.args()
         a_dim = ff.get_array_dim(a)
