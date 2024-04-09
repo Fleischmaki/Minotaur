@@ -9,7 +9,7 @@ from pysmt.shortcuts import reset_env, is_sat, And
 
 LOGGER = logging.getLogger(__name__)
 
-def check_files(file_path: str, resfile: str) -> None:
+def check_files(file_path: str, resfile: str, sat: str) -> None:
     """Performs various checks on SMT2 files to see if they are valid.
     :param file_path:   Input files. If a directory, recursively check all smt2 files
                         in the directory and subdirectory.
@@ -19,7 +19,7 @@ def check_files(file_path: str, resfile: str) -> None:
     if os.path.isdir(file_path):
         LOGGER.info("Going into dir %s\n", file_path)
         for file in sorted(os.listdir(file_path)):
-            check_files(os.path.join(file_path,file), resfile)
+            check_files(os.path.join(file_path,file), resfile, sat)
         return
     if not file_path.endswith('.smt2'):
         return
@@ -29,7 +29,7 @@ def check_files(file_path: str, resfile: str) -> None:
         # (else everything will take a long time to run)
         LOGGER.info("Check sat:")
         so = smtObject(file_path,'temp')
-        so.check_satisfiability(20)
+        so.check_satisfiability(20, sat)
         if so.orig_satisfiability == 'timeout':
             raise ValueError('Takes too long to process')
         LOGGER.info("Done.")
@@ -42,9 +42,9 @@ def check_files(file_path: str, resfile: str) -> None:
         filedata = parser.read_file(file_path)
         formula = filedata.formula
         logic = filedata.logic
-        clauses = filedata.clauses 
+        clauses = filedata.clauses
         if len(formula.get_atoms()) < 5:
-            raise ValueError("Not enough atoms") 
+            raise ValueError("Not enough atoms")
         LOGGER.info("Done")
 
 
@@ -82,4 +82,4 @@ def check_files(file_path: str, resfile: str) -> None:
 
 def load(argv):
     """Call via __main.py__"""
-    check_files(argv[0],argv[1])
+    check_files(argv[0],argv[1],argv[2] == 'True')

@@ -78,7 +78,7 @@ def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: 
     if n <= 0:
         return []
     smt_obj = smtObject(smt_file, mutant_path, generate_sat)
-    smt_obj.check_satisfiability(10*60)
+    smt_obj.check_satisfiability(10*60, 'sat' if generate_sat else 'unsat')
     if smt_obj.orig_satisfiability == "timeout":
         LOGGER.warning("Could not fuzz file: timeout")
         return [smt_file] * n

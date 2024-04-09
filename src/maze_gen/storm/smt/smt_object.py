@@ -82,20 +82,21 @@ class smtObject(object):
         return self.total_number_of_assertions
 
 
-    def check_satisfiability(self, timeout):
+    def check_satisfiability(self, timeout, desire="sat"):
+        wrong_result = "unsat" if desire == "sat" else "sat"
         self.orig_satisfiability = check_satisfiability(self.orig_ast, timeout)
         # SAT
-        if self.orig_satisfiability == "sat":
+        if self.orig_satisfiability == desire:
             print(colored(self.path_to_orig_smt_file, "blue", attrs=["bold"]) + ": " + colored(self.orig_satisfiability, "green", attrs=["bold"]))
         # UNSAT
-        if self.orig_satisfiability == "unsat":
+        if self.orig_satisfiability == wrong_result:
             print(colored(self.path_to_orig_smt_file, "blue", attrs=["bold"]) + ": " + colored(self.orig_satisfiability, "red", attrs=["bold"]), end="")
             self.negated_ast = Not(convert_ast_to_expression(self.orig_ast))
-            if check_satisfiability(self.negated_ast, timeout) == "timeout":
-                print(colored("   timeout on unsat -> sat file", "red"))
+            if check_satisfiability(self.negated_ast, timeout) == "timeout" or wrong_result:
+                print(colored(f"   timeout on {wrong_result} -> {desire} file", "red"))
                 self.valid = False
             else:
-                print(colored("   successfully converted unsat -> sat", "green"))
+                print(colored(f"   successfully converted {wrong_result} -> {desire}", "green"))
         # TIMEOUT
         if self.orig_satisfiability == "timeout":
             print(colored(self.path_to_orig_smt_file, "blue", attrs=["bold"]) + ": " + colored(self.orig_satisfiability, "red", "on_white"))
