@@ -1,0 +1,61 @@
+{
+	"verbosity": "all",
+	"repeats" : 10,
+	"transforms" : 16,
+	"duration" : 20,
+	"workers" : 4,
+	"memory" : 3,
+	"gen_time": 300,
+	"batch_size": 16,
+	"maze_gen": "local",
+	"coverage": 1,
+	"tool" : { 
+		"cbmc": {
+			"variant" : ["--boolector","--mathsat","--cvc4","--yices","--z3"],
+			"choose" : {
+				"--paths " : [0,"fifo","lifo"],
+				"--" : [0,"full-slice","reachability-slice","reachability-slice-fb"]
+			},
+			"toggle" : ["--refine"]
+		},
+		"esbmc": {
+			"variant" : [""],
+			"toggle" : ["array-flattener","--unwind 1024"],
+			"choose" : {
+				"" : ["--cvc","--z3", "--boolector", "--mathsat", "--yices"],
+				"--incremental-bmc" : [0,""," --falsification"],
+				"--tuple" : [0,"-node-flattener", "-sym-flattener"],
+				"--k-induction": [0,""," --bidirectional"],
+				"--interval-analysis": [0,"", "-wrapped","-extrapolate","-ibex-contractor","-simplify","-no-contract","-eval-assumptions", "-arithmetic","-bitwise", "-modular",
+				"-narrowing"],
+				"--smt-during-symex": [0,""," --smt-symex-guard"," --smt-symex-assert"]
+			}
+		}
+	},
+	"parameters" : {
+		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
+		"w" : {
+			"min" : 4,
+			"max" : 7
+		},
+		"h" : {
+			"min" : 4,
+			"max" : 7
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 0
+		},
+		"t" : {
+			"storm" : [1],
+			"keepId" : [0]
+		},
+		"u" : [1],
+		"g": ["CVE_gen"],
+		"s": "/home/markus/MinotaurProject/seeds",
+		"r": {
+			"min": 0,
+			"max" : 65536
+		}	
+	}
+}
