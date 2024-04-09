@@ -147,9 +147,9 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
         LOGGER.info("Generating integer constraints")
         constraints.update(ff.get_integer_constraints(formula))
 
-    # if not GENERATE_WELL_DEFINED:
-    #     LOGGER.info("Generating divsion constraints")
-    #     constraints.update(ff.get_division_constraints(formula))
+    if not GENERATE_WELL_DEFINED:
+        LOGGER.info("Generating divsion constraints")
+        constraints.update(ff.get_division_constraints(formula))
 
     if len(constraints) > len(array_constraints):
         LOGGER.info("Checking satisfiability with global constraints")
