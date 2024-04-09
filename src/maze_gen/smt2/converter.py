@@ -83,20 +83,6 @@ def is_signed(node: FNode) -> str:
     """
     return node.is_bv_sle() or node.is_bv_slt() or node.is_bv_ashr() or node.is_bv_sext() or node.is_bv_srem() or node.is_bv_sdiv()
 
-def needs_signed_cast(node: FNode) -> bool:
-    """ Checks if a node needs children to be recast. This is the case if:
-        - width non-standard or < 32 (avoiding automatic upcasting)
-        - is a constant or symbol or similar
-        - some children (if any) are not signed
-        - some children (if any) are larger
-    """
-    width = ff.get_bv_width(node)
-    return width not in (32,64) or \
-        len(node.args()) == 0 or \
-        all(map(lambda n: n.is_bv_constant() or n.is_symbol(), node.args())) or \
-        not all(map(is_signed, node.args())) or \
-        not all(map(lambda n: ff.get_bv_width(n)<=width,filter(lambda n: n.get_type().is_bv_type(),node.args()))) 
-
 def needs_unsigned_cast(node: FNode):
     """ Checks if a node needs children to be recast. This is the case if:
         - width non-standard or < 32 (avoiding automatic upcasting)
@@ -109,6 +95,39 @@ def needs_unsigned_cast(node: FNode):
         len(node.args()) == 0 or \
         all(map(lambda n: n.is_bv_constant() or n.is_symbol(), node.args())) or \
         all(map(is_signed, node.args())) or \
+        not all(map(lambda n: ff.get_bv_width(n)<=width,filter(lambda n: n.get_type().is_bv_type(),node.args())))
+
+def get_unsigned_cast(node: FNode, always=False) -> str:
+    """ Returns the neede cast. Need to close a bracket ) if non-standard width ist used
+    """
+    width = ff.get_bv_width(node)
+    if not always and not needs_unsigned_cast(node):
+        return ''
+    if has_matching_type(width):
+        return '(' + bits_to_utype(width) + ') '
+    return f"({bits_to_utype(width)}) ({binary_to_decimal('1'*width)} & "
+
+def write_unsigned(symbs, parent: FNode, cons, node: FNode, always=True):
+    """ Writes a node as an unsigned integer
+    """
+    width = ff.get_bv_width(parent)
+    cons.write(get_unsigned_cast(parent, always))
+    convert(symbs,node,cons)
+    if (always or needs_unsigned_cast(parent)) and not has_matching_type(width):
+        cons.write(')')
+
+def needs_signed_cast(node: FNode) -> bool:
+    """ Checks if a node needs children to be recast. This is the case if:
+        - width non-standard or < 32 (avoiding automatic upcasting)
+        - is a constant or symbol or similar
+        - some children (if any) are not signed
+        - some children (if any) are larger
+    """
+    width = ff.get_bv_width(node)
+    return width not in (32,64) or \
+        len(node.args()) == 0 or \
+        all(map(lambda n: n.is_bv_constant() or n.is_symbol(), node.args())) or \
+        not all(map(is_signed, node.args())) or \
         not all(map(lambda n: ff.get_bv_width(n)<=width,filter(lambda n: n.get_type().is_bv_type(),node.args())))
 
 def write_signed(symbs,parent: FNode,cons, node: FNode, always=True):
@@ -127,16 +146,6 @@ def write_signed(symbs,parent: FNode,cons, node: FNode, always=True):
     if (always or needs_signed_cast(parent)) and (GENERATE_WELL_DEFINED or not has_matching_type(width)):
         cons.write(f', {width})')
 
-
-def write_unsigned(symbs, parent: FNode, cons, node: FNode, always=True):
-    """ Writes a node as an unsigned integer
-    """
-    width = ff.get_bv_width(parent)
-    cons.write(get_unsigned_cast(parent, always))
-    convert(symbs,node,cons)
-    if (always or needs_unsigned_cast(parent)) and not has_matching_type(width):
-        cons.write(')')
-
 def write_cast(symbs, parent: FNode, cons, node: FNode, always=False):
     """ Writes a node as the type needed by the parent
     """
@@ -149,17 +158,8 @@ def write_cast(symbs, parent: FNode, cons, node: FNode, always=False):
         convert(symbs,node,cons)
 
 
-def get_unsigned_cast(node: FNode, always=False) -> str:
-    """ Returns the neede cast. Need to close a bracket ) if non-standard width ist used
-    """
-    width = ff.get_bv_width(node)
-    if not always and not needs_unsigned_cast(node):
-        return ''
-    if has_matching_type(width):
-        return '(' + bits_to_utype(width) + ') '
-    return f"({bits_to_utype(width)}) ({binary_to_decimal('1'*width)} & "
 
-def type_to_c(ntype: node_type) -> str:
+def type_to_c(ntype: node_type) -> str: # type: ignore
     """ Get corresponding C type for pySMT type 
     """
     if ntype.is_int_type():
@@ -175,7 +175,6 @@ def type_to_c(ntype: node_type) -> str:
             return f'{type_to_c(ntype.elem_type)}[{ARRAY_SIZE_STRING}]' # type: ignore
         return f'long[{ARRAY_SIZE_STRING}]'
     error(0, ntype)
-    return ''
 
 def convert_helper(symbs: t.Set[str],node: FNode, cons: io.TextIOBase, op: str, always_cast_args=False):
     """ Helper for normal binary convert operations
@@ -277,7 +276,7 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
                 convert(symbs,l,cons)
                 cons.write(",")
                 convert(symbs,r,cons)
-                cons.write(",%s))" % get_array_size(l))
+                cons.write(f",{get_array_size(l)}))")
                 return
             error(1, "Cannot compare array with non-array", node)
         convert_helper(symbs,node, cons, " == ")
@@ -418,14 +417,18 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
     elif node.is_symbol():
         dim = ff.get_array_dim(node)
         cons.write("*"*(dim-1))
-        if (dim == 1):
+        if dim == 1:
             cons.write("&")
         var = clean_string(str(node))
+        if dim == 0 and not has_matching_type(ff.get_bv_width(node)):
+            cons.write(get_unsigned_cast(node, always=True))
         cons.write(f'({var})')
+        if dim == 0 and not has_matching_type(ff.get_bv_width(node)):
+            cons.write(')')
         symbs.add(var)
     elif node.is_select():
         (a, p) = node.args()
-        if 'BV' in str(node.get_type()): 
+        if 'BV' in str(node.get_type()):
             ucast = get_unsigned_cast(node)
             cons.write(ucast)
         dim = ff.get_array_dim(a)
