@@ -52,7 +52,7 @@ def main(dest_dir,expected_result,verbosity):
 
         # Timeout
         else: 
-            save_tc(file_dir, respath, start_time, end_time, 'to', copy_content = False)
+            save_tc(file_dir, respath, start_time, end_time, 'to', copy_content = verbosity == 'all')
 
 if __name__ == '__main__':
     dest_dir = sys.argv[1]    

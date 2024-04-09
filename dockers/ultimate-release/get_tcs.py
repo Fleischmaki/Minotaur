@@ -45,10 +45,10 @@ def main(dest_dir,expected_result,verbosity):
             save_tc(file_dir, respath, start_time, end_time, 'negative', expected_result)
 
         elif ('UNKNOWN' in resfile):
-            save_tc(file_dir, respath, start_time, end_time, 'uk', copy_content = False)
+            save_tc(file_dir, respath, start_time, end_time, 'uk', copy_content = verbosity == 'all')
         # Timeout
         elif ('Killed' in resfile):  # Killed by 15
-            save_tc(file_dir, respath, start_time, end_time, 'to', copy_content = False)
+            save_tc(file_dir, respath, start_time, end_time, 'to', copy_content = verbosity == 'all')
         else:
             save_tc(file_dir, respath, start_time, end_time, 'er', copy_content = verbosity in ('error','all'))
 

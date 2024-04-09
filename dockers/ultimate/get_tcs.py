@@ -48,7 +48,7 @@ def main(dest_dir,expected_result,verbosity):
             save_tc(file_dir, respath, start_time, end_time, 'negative', expected_result)
 
         elif (len(resfile) == 0 or 'RESULT: Ultimate could not prove your program: Timeout' in resfile): 
-            save_tc(file_dir, respath, start_time, end_time, 'to', copy_content = False)
+            save_tc(file_dir, respath, start_time, end_time, 'to', copy_content = verbosity == 'all')
 
         # Crashes/Errors
         elif ("ShortDescription: Unsupported Syntax" in resfile or \
@@ -59,7 +59,7 @@ def main(dest_dir,expected_result,verbosity):
             save_tc(file_dir, respath, start_time, end_time, 'er', copy_content = verbosity in ('error','all'))
 
         else:
-            save_tc(file_dir, respath, start_time, end_time, 'uk', copy_content = False)
+            save_tc(file_dir, respath, start_time, end_time, 'uk', copy_content = verbosity == 'all')
 
         # Timeout
 
