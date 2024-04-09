@@ -416,9 +416,9 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         cons.write(value)
     elif node.is_symbol():
         dim = ff.get_array_dim(node)
-        cons.write("*"*dim)
+        cons.write("*"*(dim-1))
         if dim == 1:
-            cons.write("&")
+            cons.write("(long *)")
         var = clean_string(str(node))
         if dim == 0 and not has_matching_type(ff.get_bv_width(node)):
             cons.write(get_unsigned_cast(node, always=True))
@@ -506,7 +506,7 @@ def get_bv_helpers(well_defined = True) -> str:
     res = "\n\n//Helper functions for division and casts\n"
     res +=  """long scast_helper(unsigned long i, unsigned char width){
     if((i & (1ULL << (width-1))) > 0){
-        return (long)((((1ULL << (width-1)) - 1 << 1) + 1) - i) * (-1) - 1;
+        return (long)(((((1ULL << (width-1)) - 1) << 1) + 1) - i) * (-1) - 1;
     }
     return i;\n}\n"""
 
