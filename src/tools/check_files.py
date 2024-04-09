@@ -5,7 +5,7 @@ import io
 import logging
 from src.maze_gen.smt2 import parser, formula_transforms as ff, converter
 from src.maze_gen.storm.smt.smt_object import smtObject
-from pysmt.shortcuts import reset_env, is_sat, And
+from pysmt.shortcuts import reset_env, is_sat, And, Not
 
 LOGGER = logging.getLogger(__name__)
 
@@ -30,8 +30,10 @@ def check_files(file_path: str, resfile: str, sat: str) -> None:
         LOGGER.info("Check sat:")
         so = smtObject(file_path,'temp')
         so.check_satisfiability(20, sat)
-        if so.orig_satisfiability == 'timeout':
+        if so.get_final_satisfiability() == "timeout":
             raise ValueError('Takes too long to process')
+        if so.get_final_satisfiability() != sat:
+            raise ValueError(f"Can't generate {sat} file from this")
         LOGGER.info("Done.")
 
 
@@ -40,7 +42,7 @@ def check_files(file_path: str, resfile: str, sat: str) -> None:
         #Check number of atoms
         LOGGER.info("Check atoms:")
         filedata = parser.read_file(file_path)
-        formula = filedata.formula
+        formula = filedata.formula if not so.valid else Not(filedata.formula)
         logic = filedata.logic
         clauses = filedata.clauses
         if len(formula.get_atoms()) < 5:
@@ -51,7 +53,7 @@ def check_files(file_path: str, resfile: str, sat: str) -> None:
         # Check that it is satisfiable on bounded integers
         if 'IA' in str(logic):
             LOGGER.info("Check Integers:")
-            if not is_sat(And(formula, *ff.get_integer_constraints(formula)),solver_name='z3'): 
+            if not is_sat(And(formula, *ff.get_integer_constraints(formula)),solver_name='z3'):
                 raise ValueError('Unsat in range')
             LOGGER.info("Done.")
 
@@ -63,13 +65,13 @@ def check_files(file_path: str, resfile: str, sat: str) -> None:
 
 
         # Check that everything is understood by the parser
-        # and file doesn't get too large          
+        # and file doesn't get too large
         LOGGER.info("Check parser:")
         clauses = parser.conjunction_to_clauses(formula)
         for clause in clauses:
             symbols = set()
             buffer = io.StringIO()
-            converter.convert(symbols,clause, buffer) 
+            converter.convert(symbols,clause, buffer)
             print(".",end ="")
         LOGGER.info("")
         LOGGER.info("Done.")
@@ -82,4 +84,4 @@ def check_files(file_path: str, resfile: str, sat: str) -> None:
 
 def load(argv):
     """Call via __main.py__"""
-    check_files(argv[0],argv[1],argv[2] == 'True')
+    check_files(argv[0],argv[1],argv[2])

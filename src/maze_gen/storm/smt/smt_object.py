@@ -33,6 +33,7 @@ class smtObject(object):
         self.true_constructed_nodes = list()  
         self.false_constructed_nodes = list() if track_truth_values else self.true_constructed_nodes
         self.total_number_of_assertions = 0
+        self.final_satisfiabiliy = None
 
 
         try:
@@ -58,6 +59,8 @@ class smtObject(object):
         return self.dummy_ast
     def get_orig_satisfiability(self):
         return self.orig_satisfiability
+    def get_final_satisfiability(self):
+        return self.final_satisfiabiliy
     def append_true_node(self, node):
         self.true_nodes.append(node)
     def append_false_node(self, node):
@@ -92,14 +95,22 @@ class smtObject(object):
         if self.orig_satisfiability == wrong_result:
             print(colored(self.path_to_orig_smt_file, "blue", attrs=["bold"]) + ": " + colored(self.orig_satisfiability, "red", attrs=["bold"]), end="")
             self.negated_ast = Not(convert_ast_to_expression(self.orig_ast))
-            if check_satisfiability(self.negated_ast, timeout) == "timeout" or wrong_result:
+            self.final_satisfiabiliy = check_satisfiability(self.negated_ast, timeout)
+            if self.final_satisfiabiliy == "timeout":
                 print(colored(f"   timeout on {wrong_result} -> {desire} file", "red"))
+                self.valid = False
+            elif self.final_satisfiabiliy == wrong_result:
+                print(colored(f"   could not convert {wrong_result} -> {desire} file", "red"))
                 self.valid = False
             else:
                 print(colored(f"   successfully converted {wrong_result} -> {desire}", "green"))
+                self.valid = True
         # TIMEOUT
         if self.orig_satisfiability == "timeout":
             print(colored(self.path_to_orig_smt_file, "blue", attrs=["bold"]) + ": " + colored(self.orig_satisfiability, "red", "on_white"))
+        
+        if self.final_satisfiabiliy is None:
+            self.final_satisfiabiliy = self.orig_satisfiability
 
 
     def get_model(self):
