@@ -11,7 +11,7 @@ from pysmt.solvers.z3 import Z3Solver
 
 
 LOGGER = logging.getLogger(__name__)
-MAXIMUM_ARRAY_SIZE = 2**10 - 1
+MAXIMUM_ARRAY_SIZE = 2**7 - 1
 
 def get_bv_width(node: FNode) -> int:
     """Calculate bit width of a node"""

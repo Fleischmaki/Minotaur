@@ -3,7 +3,7 @@ import logging
 import typing as t
 import math as m
 
-from pysmt.shortcuts import And, TRUE
+from pysmt.shortcuts import And, TRUE, Not
 
 from storm.smt.smt_object import smtObject # pylint: disable=import-error
 from storm.fuzzer.fuzzer import generate_mutants # pylint: disable=import-error
@@ -16,7 +16,7 @@ LOGGER = logging.getLogger(__name__)
 
 def remove_constraints(constraints: dict, dc: int):
     curr = len(constraints)
-    rm = m.ceil(curr*(dc/100)) 
+    rm = m.ceil(curr*(dc/100))
     while rm > 0:
         r = random.choice(list(constraints.keys()))
         constraints.pop(r)
@@ -78,13 +78,14 @@ def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: 
     if n <= 0:
         return []
     smt_obj = smtObject(smt_file, mutant_path, generate_sat)
-    smt_obj.check_satisfiability(10*60)
-    if smt_obj.orig_satisfiability == "timeout":
+    smt_obj.check_satisfiability(10*60, 'sat' if generate_sat else 'unsat')
+    if smt_obj.get_final_satisfiability() == "timeout":
         LOGGER.warning("Could not fuzz file: timeout")
         return [smt_file] * n
-    if smt_obj.orig_satisfiability == "sat" and not generate_sat:
+    if smt_obj.get_final_satisfiability() == "sat" and not generate_sat:
         LOGGER.warning("Could not fuzz file: cannot generate unsat files from sat files")
         return [smt_file] * n
+    
     fpars = get_parameters_dict(False, 0)
     fpars['number_of_mutants'] = n
     fpars['max_depth'] = 5 # Reduce the depth, we want simpler formulas
@@ -92,10 +93,12 @@ def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: 
     # Find the logic of the formula
     file_data = parser.read_file(smt_file)
     logic = file_data.logic
-    core = TRUE if generate_sat else And(*parser.get_unsat_core(file_data.clauses, file_data.logic))
+    
+    clauses = [Not(file_data.formula)] if smt_obj.valid else file_data.clauses
+    core = TRUE if generate_sat else And(*parser.get_unsat_core(clauses, file_data.logic))
     
     generate_mutants(smt_obj, mutant_path, fpars['max_depth'],fpars['max_assert'],seed, logic,fpars)
-    mutants = [mutant_path + '/mutant_%s.smt2' % i for i in range(n)]
+    mutants = [mutant_path + f'/mutant_{i}.smt2' for i in range(n)]
     if not generate_sat:
         for mutant in mutants:
             assertions = parser.read_file(mutant).formula
