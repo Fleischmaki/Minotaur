@@ -57,7 +57,7 @@ Nr.  | Tool | Status | Type
 7 |ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1363) | Type Casts
 8 |ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1392) | Type Casts
 9 |CPA -InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1194) | Modulo Operator
-10 |Seahorn - bpf | [closed (without fixing)](https://github.com/seahorn/seahorn/issues/545)
+10 |Seahorn - bpf | [closed (without fixing)](https://github.com/seahorn/seahorn/issues/545) | Bound inference
 11 |ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1565) | Boolean Intervals
 12 |ESBMC --cvc4 | [fixed](https://github.com/esbmc/esbmc/issues/1770) | SMT translation
 13 |CPA -invariantGenearation | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1208) | Division
