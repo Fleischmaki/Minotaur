@@ -215,7 +215,7 @@ def run_tools(conf: dict,works: 'list[Target]'):
     procs = []
     for i in range(get_containers_needed(conf, works)):
         target  = works[i*conf['batch_size']]
-        procs.append(docker.run_docker(duration, target.tool, target.index, target.variant, target.flags, target.index))
+        procs.append(docker.run_docker(duration*conf['batch_size'], target.tool, target.index, target.variant, target.flags, target.index))
     commands.wait_for_procs(procs)
     time.sleep(3) 
 
