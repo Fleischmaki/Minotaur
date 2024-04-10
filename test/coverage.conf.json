@@ -30,6 +30,12 @@
 				"-narrowing"],
 				"--smt-during-symex": [0,""," --smt-symex-guard"," --smt-symex-assert"]
 			}
+		},
+		"seahorn" : {
+			"variant" : ["spf", "bpf", "fpcf", "fpf"],
+			"choose" : {
+				"" : ["--bv-chc --step=large", "--bv-chc --step=small", "--bmc=mono","--bmc=opsem"]
+			}
 		}
 	},
 	"parameters" : {
@@ -52,7 +58,7 @@
 		},
 		"u" : [1],
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MinotaurProject/seeds",
+		"s": "/home/markus/MinotaurProject/klee_smts",
 		"r": {
 			"min": 0,
 			"max" : 65536
