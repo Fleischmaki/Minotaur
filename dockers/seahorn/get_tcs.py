@@ -39,10 +39,10 @@ def main(dest_dir,expected_result,verbosity):
             print("NOTE: Failed to parse file %s: %s" % (file, str(e)))
             continue
         # False negatives
-        if ('unsat' in resfile):
+        if (resfile.strip().endswith('unsat')):
             save_tc(file_dir, respath, start_time, end_time, 'negative', expected_result)
         # True positives
-        elif ('sat' in resfile):
+        elif (resfile.strip().endswith('sat')):
             save_tc(file_dir, respath, start_time, end_time, 'positive', expected_result)
 
         

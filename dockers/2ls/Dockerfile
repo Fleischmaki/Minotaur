@@ -15,11 +15,12 @@ USER maze
 WORKDIR /home/maze/tools
 RUN git clone http://github.com/diffblue/2ls
 WORKDIR /home/maze/tools/2ls
-RUN ./build.sh 
-
+RUN ./build.sh  
+RUN make -C src all CXX=gcc CXXFLAGS="-Wall -Werror -Wno-long-long -Wno-sign-compare -Wno-parentheses -Wno-strict-aliasing -pedantic -Wall -pedantic -Wno-deprecated-declarations -Wswitch-enum -fprofile-arcs -ftest-coverage -O0"
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD run_2ls.sh /home/maze/tools/run_2ls.sh
 
 RUN sudo chmod +x /home/maze/tools/run_2ls.sh
 
 WORKDIR /home/maze/workspace
+
