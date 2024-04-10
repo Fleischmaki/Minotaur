@@ -16,6 +16,8 @@ MAXIMUM_ARRAY_SIZE = 2**7 - 1
 def get_bv_width(node: FNode) -> int:
     """Calculate bit width of a node"""
     res = 0
+    if node.get_type().is_int_type():
+        return 64
     if node.get_type().is_bool_type():
         if node.is_bool_constant() or node.is_symbol():
             res = 1
