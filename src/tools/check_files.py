@@ -25,6 +25,17 @@ def check_files(file_path: str, resfile: str, sat: str) -> None:
         return
     LOGGER.info("Checking file %s", file_path)
     try:
+        env = reset_env()
+        env.enable_infix_notation = True
+        #Check number of atoms
+        LOGGER.info("Check atoms:")
+        filedata = parser.read_file(file_path)
+        logic = filedata.logic
+        clauses = filedata.clauses
+        if len(filedata.formula.get_atoms()) < 5:
+            raise ValueError("Not enough atoms")
+        LOGGER.info("Done")
+
         # Check that satisfiability is easily found
         # (else everything will take a long time to run)
         LOGGER.info("Check sat:")
@@ -36,19 +47,7 @@ def check_files(file_path: str, resfile: str, sat: str) -> None:
             raise ValueError(f"Can't generate {sat} file from this")
         LOGGER.info("Done.")
 
-
-        env = reset_env()
-        env.enable_infix_notation = True
-        #Check number of atoms
-        LOGGER.info("Check atoms:")
-        filedata = parser.read_file(file_path)
         formula = filedata.formula if not so.valid else Not(filedata.formula)
-        logic = filedata.logic
-        clauses = filedata.clauses
-        if len(formula.get_atoms()) < 5:
-            raise ValueError("Not enough atoms")
-        LOGGER.info("Done")
-
 
         # Check that it is satisfiable on bounded integers
         if 'IA' in str(logic):

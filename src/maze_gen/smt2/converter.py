@@ -4,7 +4,7 @@ import re
 import io
 import typing as t
 
-from pysmt.shortcuts import And, BV, Plus, Times, Or, read_smtlib
+from pysmt.shortcuts import And, BV, Plus, Times, Or
 from pysmt.fnode import FNode
 from pysmt.typing import PySMTType as node_type
 
@@ -23,10 +23,6 @@ def deflatten(args: t.List[T], op: t.Callable[[T,T],T]) -> T:
         y = args[i]
         x = op(x,y)
     return x
-
-def str_to_node(node: str) -> FNode:
-    with io.StringIO(node) as buf:
-        return read_smtlib()
 
 def error(flag: int, *info):
     """ Raises an error
