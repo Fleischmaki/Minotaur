@@ -93,9 +93,12 @@ def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: 
     # Find the logic of the formula
     file_data = parser.read_file(smt_file)
     logic = file_data.logic
-    
-    clauses = [Not(file_data.formula)] if smt_obj.valid else file_data.clauses
-    core = TRUE if generate_sat else And(*parser.get_unsat_core(clauses, file_data.logic))
+
+    if generate_sat:
+        core = TRUE
+    else:
+        clauses = [Not(file_data.formula)] if smt_obj.orig_satisfiability != smt_obj.final_satisfiabiliy else file_data.clauses
+        core = And(*parser.get_unsat_core(clauses, file_data.logic))
     
     generate_mutants(smt_obj, mutant_path, fpars['max_depth'],fpars['max_assert'],seed, logic,fpars)
     mutants = [mutant_path + f'/mutant_{i}.smt2' for i in range(n)]

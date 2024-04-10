@@ -92,6 +92,9 @@ class smtObject(object):
         if self.orig_satisfiability == desire:
             print(colored(self.path_to_orig_smt_file, "blue", attrs=["bold"]) + ": " + colored(self.orig_satisfiability, "green", attrs=["bold"]))
         # UNSAT
+        if self.orig_satisfiability == "unsat" and desire == "unsat":
+            self.negated_ast = Not(convert_ast_to_expression(self.orig_ast))
+
         if self.orig_satisfiability == wrong_result:
             print(colored(self.path_to_orig_smt_file, "blue", attrs=["bold"]) + ": " + colored(self.orig_satisfiability, "red", attrs=["bold"]), end="")
             self.negated_ast = Not(convert_ast_to_expression(self.orig_ast))

@@ -70,6 +70,7 @@ class Minimizer:
 
     def separate_unsat_core(self,clauses: list,logic: str):
         core = sp.get_unsat_core(clauses, logic)
+        LOGGER.debug("Found core %s", core)
         return list(filter(lambda c : c not in core, clauses)), core
 
 
