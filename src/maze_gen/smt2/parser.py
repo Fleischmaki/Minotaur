@@ -86,12 +86,12 @@ def parse(file_path: str, transformations: dict, check_neg: bool, continue_on_er
 
 def get_unsat_core(clauses, logic):
     """Copmutes the unsat core"""
-    print('NOTE: Finding unsat core')
+    LOGGER.info('Computing unsat core')
     solver = Z3Solver(get_env(),logic,unsat_cores_mode='all')
     solver.add_assertions(clauses)
-    solver.solve()
+    LOGGER.debug("Solver returned %s", str(solver.solve()))
     core = set(solver.get_unsat_core())
-    print("Done")
+    LOGGER.info("Done")
     return core
 
 def add_parsed_cons(check_neg:bool, clauses:list, parsed_cons:OrderedDict, clause:FNode, cons_in_c: str): 
@@ -267,7 +267,7 @@ def extract_vars(cond: str, variables: dict[str,str]):
             used_variables[var] = vartype
     return used_variables
 
-def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: int):
+def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: int) -> tuple[list[str],dict[str,str]]:
     negated_groups = []
     new_vars = {}
     n = 0
@@ -277,13 +277,14 @@ def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: i
     if n >= numb:
         negated = set()
         for i in range(numb):
-            negated_group = set()
-            for cond in group:
+            negated_group = []
+            for cond in reversed(group):
                 if conds[cond] and len(negated) <= i and cond not in negated:
-                    negated_group.add("(!" + cond + ")")
+                    negated_group.append("(!" + cond + ")")
                     negated.add(cond)
                 else:
-                    negated_group.add(cond)
+                    negated_group.append(cond)
+            negated_group.reverse()
             negated_groups.append(negated_group)
     elif n == 0:
         new_vars['c'] = 'signed char' # If we don't have any clauses to negate, revert to choice
