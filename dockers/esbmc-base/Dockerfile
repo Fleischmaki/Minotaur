@@ -58,7 +58,7 @@ RUN make -j4 && make install
 
 # MathSAT
 WORKDIR /home/maze/tools
-RUN wget http://mathsat.fbk.eu/download.php?file=mathsat-5.5.4-linux-x86_64.tar.gz -O mathsat.tar.gz && tar xf mathsat.tar.gz && mv mathsat-5.5.4-linux-x86_64 mathsat
+RUN wget https://mathsat.fbk.eu/download.php?file=mathsat-5.6.10-linux-x86_64.tar.gz -O mathsat.tar.gz && tar xf mathsat.tar.gz && mv mathsat-5.6.10-linux-x86_64 mathsat
 
 # Yices
 RUN wget https://gmplib.org/download/gmp/gmp-6.1.2.tar.xz && tar xf gmp-6.1.2.tar.xz && rm gmp-6.1.2.tar.xz
