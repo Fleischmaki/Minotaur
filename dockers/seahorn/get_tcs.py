@@ -18,8 +18,8 @@ def save_tc(dest_dir, tc_path, start_time, end_time, sig, expected_result='error
         os.system('rm %s' % (tc_path))
 
 
-WORKDIR = '/home/usea/workspace'
-OUTDIR = '/home/usea/workspace/outputs'
+WORKDIR = '/home/maze/workspace'
+OUTDIR = '/home/maze/workspace/outputs'
 
 def main(dest_dir,expected_result,verbosity):
     # Create destination directory

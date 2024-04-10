@@ -46,11 +46,14 @@ RUN cmake .. -GNinja \
   units/units_z3 && \
   units/units_yices2
 
+RUN pip3 install --upgrade gcovr
+
 ENV PATH "/home/maze/tools/seahorn/build/run/bin:$PATH"
 
 USER maze
 WORKDIR /home/maze/tools
 ADD get_tcs.py /home/maze/tools/get_tcs.py
+ADD get_coverage.sh /home/maze/tools/get_coverage.sh
 ADD run_seahorn.sh /home/maze/tools/run_seahorn.sh
-RUN sudo  chmod +x /home/maze/tools/run_seahorn.sh
+RUN sudo  chmod +x /home/maze/tools/*.sh
 WORKDIR /home/maze/workspace

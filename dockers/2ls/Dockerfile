@@ -15,8 +15,8 @@ USER maze
 WORKDIR /home/maze/tools
 RUN git clone http://github.com/diffblue/2ls
 WORKDIR /home/maze/tools/2ls
-RUN ./build.sh  
-RUN make -C src all CXX=gcc CXXFLAGS="-Wall -Werror -Wno-long-long -Wno-sign-compare -Wno-parentheses -Wno-strict-aliasing -pedantic -Wall -pedantic -Wno-deprecated-declarations -Wswitch-enum -fprofile-arcs -ftest-coverage -O0"
+### Run build script to get dependencies, then build again with coverage
+RUN ./build.sh  &&  make -C src clean && make -C src all CXX=gcc CXX_FLAGS="-Wall -Werror -Wno-long-long -Wno-sign-compare -Wno-parentheses -Wno-strict-aliasing -pedantic -Wall -pedantic -Wno-deprecated-declarations -Wswitch-enum --coverage -O0"
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD run_2ls.sh /home/maze/tools/run_2ls.sh
 

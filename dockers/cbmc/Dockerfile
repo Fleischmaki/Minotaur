@@ -3,8 +3,6 @@ FROM minotaur-esbmc-base
 USER root 
 RUN apt-get update && DEBIANFRONTEND=noninteractive apt-get install -y \
     patch \
-    default-jdk \
-    maven \
 && rm -rf /var/lib/apt/lists/*
 
 USER maze
@@ -12,7 +10,7 @@ WORKDIR /home/maze/tools
 RUN git clone https://github.com/diffblue/cbmc.git
 WORKDIR /home/maze/tools/cbmc
 RUN git submodule update --init
-RUN cmake -S . -Bbuild -Denable_coverage=True -DCMAKE_CXX_OUTPUT_EXTENSION_REPLACE=ON 
+RUN cmake -S . -Bbuild -DWITH_JBMC=OFF -DCMAKE_CXX_FLAGS="--coverage -O0" -DCMAKE_C_FLAGS="--coverage -O0" -DCMAKE_EXE_LINKER_FLAGS="--coverage"
 RUN cmake --build build
 
 RUN pip3 install gcovr

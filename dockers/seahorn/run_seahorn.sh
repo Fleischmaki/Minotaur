@@ -3,7 +3,7 @@
 # Arg1: File containing targets
 # Arg2: Timeout (in minutes)
 
-WORKDIR=/home/usea/workspace
+WORKDIR=/home/maze/workspace
 
 OUTDIR=$WORKDIR/outputs
 mkdir -p $OUTDIR
