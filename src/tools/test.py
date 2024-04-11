@@ -9,6 +9,8 @@ from collections import namedtuple, OrderedDict
 from math import ceil
 import logging
 
+from Minotaur.dockers.cpa.get_tcs import OUTDIR
+
 from ..runner import docker, commands, maze_gen
 
 LOGGER = logging.getLogger(__name__)
@@ -309,6 +311,7 @@ def store_coverage(conf,works: list[Target], out_dir: str) -> None:
     for i in range(get_containers_needed(conf,works)):
         work = works[i * conf['batch_size']]
         docker.copy_docker_results(work.tool, work.index,os.path.join(out_dir,'cov'), docker_dir=docker.COVERAGE_DIR)
+        docker.kill_docker(work.tool, work.index)
 
 def merge_coverage(conf,out_dir: str) -> None:
     for tool in conf['tool']:
@@ -319,7 +322,7 @@ def merge_coverage(conf,out_dir: str) -> None:
                     files.append(os.path.join(out_dir, 'cov', file)) # For some reason filter + lambda does not work for this
                     file_string = ' --json-add-tracefile '.join(files)
                     outfile = f"{tool}_{len(files)}batches.json"
-                    cmd = f"python3 -m gcovr --json-add-tracefile {file_string} --json-summary-pretty > {os.path.join('res', 'cov', outfile)}"
+                    cmd = f"python3 -m gcovr --json-add-tracefile {file_string} --json-summary-pretty > {os.path.join(out_dir, 'cov', outfile)}"
                     commands.run_cmd(cmd)
 
 def main(conf, out_dir):

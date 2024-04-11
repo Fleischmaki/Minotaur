@@ -41,6 +41,10 @@ def set_well_defined(wd: bool):
     global GENERATE_WELL_DEFINED
     GENERATE_WELL_DEFINED = wd
 
+def set_arrays_constant(const: bool):
+    global ALL_ARRAYS_CONSTANT
+    ALL_ARRAYS_CONSTANT = const
+
 def binary_to_decimal(binary: str, unsigned : bool = True) -> str:
     """Takes BV in binary and translated into decimal number
     """
@@ -159,7 +163,7 @@ def write_cast(symbs, parent: FNode, cons, node: FNode, always=False):
 
 
 
-def type_to_c(ntype: node_type) -> str: # type: ignore
+def type_to_c(ntype: node_type, constant_arrays: bool = False) -> str: # type: ignore
     """ Get corresponding C type for pySMT type 
     """
     if ntype.is_int_type():
@@ -171,6 +175,8 @@ def type_to_c(ntype: node_type) -> str: # type: ignore
     if ntype.is_function_type():
         return type_to_c(ntype.return_type) # type: ignore
     if ntype.is_array_type():
+        if constant_arrays:
+            return type_to_c(ntype.elem_type(), constant_arrays) #type: ignore
         if ntype.elem_type.is_array_type(): # type: ignore
             return f'{type_to_c(ntype.elem_type)}[{ARRAY_SIZE_STRING}]' # type: ignore
         return f'long[{ARRAY_SIZE_STRING}]'
@@ -432,7 +438,12 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
             ucast = get_unsigned_cast(node)
             cons.write(ucast)
         dim = ff.get_array_dim(a)
-        convert(symbs, a, cons)
+        if ALL_ARRAYS_CONSTANT:
+            array_name = f'{clean_string(a)}_{p}'
+            cons.write(array_name)
+            symbs.add(array_name)
+        else:
+            convert(symbs, a, cons)
         if dim == 1:
             cons.write("[")
             convert(symbs,p,cons)

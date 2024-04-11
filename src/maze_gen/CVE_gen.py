@@ -46,7 +46,7 @@ class Generator:
         logic_def = ""
         if 'BV' in self.logic:
             logic_def += converter.get_bv_helpers(self.transformations['wd'])
-        if 'A' in self.logic:
+        if 'A' in self.logic and self.array_size > 0:
             logic_def += converter.get_array_helpers(self.array_size)
         return logic_def
 

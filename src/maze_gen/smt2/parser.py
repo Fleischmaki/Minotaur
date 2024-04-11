@@ -36,12 +36,15 @@ def parse(file_path: str, transformations: dict, check_neg: bool, continue_on_er
     set_well_defined(generate_well_defined)
     LOGGER.info("Converting %s: ", file_path)
     decl_arr, formula, logic, formula_clauses = read_file(file_path, limit, negate_formula)
+    all_arrays_constant = False
     if generate_sat:
-        clauses, array_size = run_checks(formula, logic, formula_clauses)
+        clauses, array_size, all_arrays_constant = run_checks(formula, logic, formula_clauses)
     else:
         array_size, array_calls = ff.get_array_index_calls(formula)
         array_size += 1
         clauses = list(ff.get_array_constraints(array_calls, array_size)) + list(formula_clauses)
+    converter.set_arrays_constant(all_arrays_constant)
+
     try:
         core = set() if generate_sat else get_unsat_core(clauses, logic)
     except pysmt.exceptions.SolverStatusError as e:
@@ -79,8 +82,9 @@ def parse(file_path: str, transformations: dict, check_neg: bool, continue_on_er
                 raise e
         LOGGER.debug("Done.")
 
+            
         add_parsed_cons(check_neg, clauses, parsed_cons, clause, result)
-        add_used_variables(variables, ldecl_arr, symbs)
+        add_used_variables(variables, ldecl_arr, symbs, all_arrays_constant)
 
     return parsed_cons, variables, array_size
 
@@ -96,13 +100,13 @@ def get_unsat_core(clauses, logic):
 
 def add_parsed_cons(check_neg:bool, clauses:list, parsed_cons:OrderedDict, clause:FNode, cons_in_c: str): 
     """Add condition to the list of conditions""" # TODO weird functions
-    if check_neg: 
+    if check_neg:
         neg_sat = ff.is_neg_sat(clause, clauses)
         parsed_cons[cons_in_c] = neg_sat
     else:
         parsed_cons[cons_in_c] = ""
 
-def add_used_variables(variables: dict, ldecl_arr: list[FNode], symbs: t.Set[str]):
+def add_used_variables(variables: dict, ldecl_arr: list[FNode], symbs: t.Set[str], constant_arrays:bool):
     """Add a variable to the variable dict"""
     for symb in symbs:
         decls = list(map(converter.clean_string, ldecl_arr))
@@ -114,8 +118,8 @@ def add_used_variables(variables: dict, ldecl_arr: list[FNode], symbs: t.Set[str
             decl = symb.split("_")[0]
         i = decls.index(decl)
         vartype = ldecl_arr[i].get_type()
-        type_in_c = converter.type_to_c(vartype)
-        if vartype.is_array_type():
+        type_in_c = converter.type_to_c(vartype, constant_arrays)
+        if vartype.is_array_type() and not constant_arrays:
             first_bracket = type_in_c.find('[')
             symb += type_in_c[first_bracket:]
             type_in_c = type_in_c[:first_bracket]
@@ -135,7 +139,7 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
         LOGGER.warning("Can only guarantee well-definedness on bitvectors")
 
     if logic.split('_')[-1].startswith('A'):
-        array_size, array_constraints = ff.constrain_array_size(formula)
+        array_size, array_constraints, all_constant = ff.constrain_array_size(formula)
         if GENERATE_WELL_DEFINED:
             clauses.extend(filter(lambda c: len(c.get_free_variables()) > 0, array_constraints))
         constraints.update(array_constraints)
@@ -157,7 +161,7 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
             raise ValueError("Cannot guarantee a valid solution")
         LOGGER.info("Done.")
     
-    return clauses,array_size
+    return clauses,array_size, all_constant
 
 def read_file(file_path: str, limit : int = 0, negate_formula : bool = False) -> SmtFileData:
     """Read an SMTfile and extract important fields"""
@@ -331,4 +335,4 @@ def get_minimum_array_size_from_file(smt_file: str):
     :param smt_file: Path to the file
     """
     formula = read_file(smt_file).formula
-    return ff.constrain_array_size(formula)[0]
+    return ff.constrain_array_size(formula)

@@ -56,12 +56,14 @@ def check_files(file_path: str, resfile: str, sat: str) -> None:
                 raise ValueError('Unsat in range')
             LOGGER.info("Done.")
 
+        arrays_constant = False
         # Check that it is satisfiable on bounded arrays
         if str(logic).rsplit('_', maxsplit=1)[-1].startswith('A'):
             LOGGER.info("Check array size:")
-            parser.get_minimum_array_size_from_file(file_path)
+            arrays_constant = parser.get_minimum_array_size_from_file(file_path)[2]
             LOGGER.info("Done.")
 
+        converter.set_arrays_constant(arrays_constant)
 
         # Check that everything is understood by the parser
         # and file doesn't get too large
