@@ -9,7 +9,6 @@ from collections import namedtuple, OrderedDict
 from math import ceil
 import logging
 
-from Minotaur.dockers.cpa.get_tcs import OUTDIR
 
 from ..runner import docker, commands, maze_gen
 
