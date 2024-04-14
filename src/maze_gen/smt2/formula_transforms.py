@@ -123,7 +123,7 @@ def get_array_index_calls(formula: FNode):
     return get_array_calls_helper(formula, set())
 
 def get_array_calls_helper(formula: FNode, visited_nodes: set):
-    """Helper for get_array_index_callse
+    """Helper for get_array_index_calls
     """
     visited_nodes.add(formula.node_id())
     calls = []
@@ -139,26 +139,50 @@ def get_array_calls_helper(formula: FNode, visited_nodes: set):
             min_size = max(min_size, sub_min)
     return min_size, calls
 
+def get_indices_for_each_array(array_operations: list[FNode]) -> dict[str,set[int]]:
+    """"Get a dict containing the constant indeces used for every array
+    :param array_operations: A list of array operations. Should only use constant indeces.
+    """
+    res = {}
+    for op in array_operations:
+        name = get_array_name(op.args()[0])
+        index = op.args()[1]
+        if get_array_name(op) not in res:
+            res[name] = set()
+        if not(index.is_constant()):
+            raise ValueError("Should not be collecting non-constant indeces")
+        res[name].add(index.constant_value())
+    return res
+
+def label_formula_depth(formula: FNode) -> dict[FNode, int]:
+    if formula.is_constant() or formula.is_symbol():
+        return {formula: 0}
+    depths = {}
+    for sub_formula in formula.args():
+        depths.update(label_formula_depth(sub_formula))
+    depths[formula] = max(map(lambda s: depths[s], formula.args()))
+    return depths
+
 def constrain_array_size(formula: FNode):
     """ Compute a minimal array size for the formula
     Returns the minimal array_size and the list of generated constraints 
     """
     LOGGER.info("Calculating array size.")
     min_index, array_ops = get_array_index_calls(formula)
+    all_constant = all(map(lambda node: node.args()[1].is_constant(), array_ops))
     if len(array_ops) == 0:
         LOGGER.info("No arrays found")
-        return 0, set(), True
+        return -1, set(), -1, True
     if not is_sat(formula, solver_name = "z3"):
         formula = Not(formula)
     max_dim = max(map(lambda op : get_array_dim(op.args()[0]),array_ops))
-    all_constant = all(map(lambda node: node.args()[1].is_constant(), array_ops))
-    sat = all_constant
+    sat = all_constant and min_index <= MAXIMUM_ARRAY_SIZE
     assertions = set()
     array_size = max(min_index,2)
 
     while not sat:
         LOGGER.debug("Checking size: %d",  array_size)
-        if (math.pow(array_size,max_dim)) > MAXIMUM_ARRAY_SIZE:  
+        if (math.pow(array_size,max_dim)) > MAXIMUM_ARRAY_SIZE:
             raise ValueError("Minimum array size too large")
         assertions = get_array_constraints(array_ops, array_size)
         new_formula = And(*assertions, formula)
@@ -166,7 +190,14 @@ def constrain_array_size(formula: FNode):
         array_size *= 2
     array_size //= 2
     LOGGER.info("Sat on size %d.", array_size)
-    return -1 if all_constant else array_size, assertions, all_constant
+    return array_size, assertions, min_index, all_constant
+
+def get_array_name(node: FNode) -> str:
+    """Get the name of an array from a sequence of stores/selects
+    """
+    while not node.is_symbol():
+        node = node.args()[0]
+    return str(node)
 
 def get_array_dim(node: FNode):
     """ Returns dimension of an array, or 0 if it is not an array

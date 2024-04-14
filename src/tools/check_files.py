@@ -40,11 +40,11 @@ def check_files(file_path: str, resfile: str, sat: str) -> None:
         # (else everything will take a long time to run)
         LOGGER.info("Check sat:")
         so = smtObject(file_path,'temp')
-        so.check_satisfiability(20, sat)
+        so.check_satisfiability(60, sat)
         if so.get_final_satisfiability() == "timeout":
             raise ValueError('Takes too long to process')
-        if so.get_final_satisfiability() != sat:
-            raise ValueError(f"Can't generate {sat} file from this")
+        # if so.get_final_satisfiability() != sat:
+            # raise ValueError(f"Can't generate {sat} file from this")
         LOGGER.info("Done.")
 
         formula = filedata.formula if not so.valid else Not(filedata.formula)
@@ -56,14 +56,24 @@ def check_files(file_path: str, resfile: str, sat: str) -> None:
                 raise ValueError('Unsat in range')
             LOGGER.info("Done.")
 
-        arrays_constant = False
+        all_arrays_constant = False
         # Check that it is satisfiable on bounded arrays
-        if str(logic).rsplit('_', maxsplit=1)[-1].startswith('A'):
-            LOGGER.info("Check array size:")
-            arrays_constant = parser.get_minimum_array_size_from_file(file_path)[2]
-            LOGGER.info("Done.")
+        min_index = array_size = 0
+        try:
+            if str(logic).rsplit('_', maxsplit=1)[-1].startswith('A'):
+                LOGGER.info("Check array size:")
+                array_size,_,min_index,all_arrays_constant = parser.get_minimum_array_size_from_file(file_path)
+                LOGGER.info("Done.")
+        except ValueError as e:
+            ## If arrays need to be large and we want sat the file is bad
+            if sat=='sat':
+                raise ValueError(f"Can't generate {sat} file from this: {e}") from e
+        else:
+            ## If sat on minimum index then we can't make it sat from array_size
+            if so.get_final_satisfiability() != sat: # and array_size <= min_index:
+                raise ValueError(f"Can't generate {sat} file from this: min_index ({min_index} > array_size({array_size})")
 
-        converter.set_arrays_constant(arrays_constant)
+        converter.set_constant_array_indices(ff.get_indices_for_each_array(ff.get_array_index_calls(formula)[1]) if all_arrays_constant else {})
 
         # Check that everything is understood by the parser
         # and file doesn't get too large

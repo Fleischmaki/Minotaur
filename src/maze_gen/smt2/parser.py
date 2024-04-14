@@ -43,7 +43,12 @@ def parse(file_path: str, transformations: dict, check_neg: bool, continue_on_er
         array_size, array_calls = ff.get_array_index_calls(formula)
         array_size += 1
         clauses = list(ff.get_array_constraints(array_calls, array_size)) + list(formula_clauses)
-    converter.set_arrays_constant(all_arrays_constant)
+
+    if all_arrays_constant and transformations['ca']:
+        converter.set_constant_array_indices(ff.get_indices_for_each_array(ff.get_array_index_calls(formula)[1]))
+        array_size = -1
+    else:
+        converter.set_constant_array_indices({})
 
     try:
         core = set() if generate_sat else get_unsat_core(clauses, logic)
@@ -115,7 +120,7 @@ def add_used_variables(variables: dict, ldecl_arr: list[FNode], symbs: t.Set[str
         elif 'c' in decls and symb == '__original_smt_name_was_c__':
             decl = 'c'
         else:
-            decl = symb.split("_")[0]
+            decl = "_".join(symb.split("_")[:-1])
         i = decls.index(decl)
         vartype = ldecl_arr[i].get_type()
         type_in_c = converter.type_to_c(vartype, constant_arrays)
@@ -139,13 +144,14 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
         LOGGER.warning("Can only guarantee well-definedness on bitvectors")
 
     if logic.split('_')[-1].startswith('A'):
-        array_size, array_constraints, all_constant = ff.constrain_array_size(formula)
+        array_size, array_constraints, _, all_constant = ff.constrain_array_size(formula)
         if GENERATE_WELL_DEFINED:
             clauses.extend(filter(lambda c: len(c.get_free_variables()) > 0, array_constraints))
         constraints.update(array_constraints)
     else:
         array_size = -1
         array_constraints = []
+        all_constant = False
 
     if 'IA' in logic:
         LOGGER.info("Generating integer constraints")

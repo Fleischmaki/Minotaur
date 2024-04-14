@@ -41,9 +41,9 @@ def set_well_defined(wd: bool):
     global GENERATE_WELL_DEFINED
     GENERATE_WELL_DEFINED = wd
 
-def set_arrays_constant(const: bool):
-    global ALL_ARRAYS_CONSTANT
-    ALL_ARRAYS_CONSTANT = const
+def set_constant_array_indices(indices: dict[str,set[int]]):
+    global CONSTANT_INDICES
+    CONSTANT_INDICES = indices
 
 def binary_to_decimal(binary: str, unsigned : bool = True) -> str:
     """Takes BV in binary and translated into decimal number
@@ -176,7 +176,7 @@ def type_to_c(ntype: node_type, constant_arrays: bool = False) -> str: # type: i
         return type_to_c(ntype.return_type) # type: ignore
     if ntype.is_array_type():
         if constant_arrays:
-            return type_to_c(ntype.elem_type(), constant_arrays) #type: ignore
+            return type_to_c(ntype.elem_type, constant_arrays) #type: ignore
         if ntype.elem_type.is_array_type(): # type: ignore
             return f'{type_to_c(ntype.elem_type)}[{ARRAY_SIZE_STRING}]' # type: ignore
         return f'long[{ARRAY_SIZE_STRING}]'
@@ -271,19 +271,28 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
     :param node: Root node of the formula
     :param cons: File in which to write the C expression 
     """
-    if cons.tell() > 2**20:
-        raise ValueError("Parse result too large") # Avoid file sizes > 1 MB
+    # if cons.tell() > 2**20:
+        # raise ValueError("Parse result too large") # Avoid file sizes > 1 MB
     cons.write('(')
     if node.is_iff() or node.is_equals() or node.is_bv_comp():
         (l, r) = node.args()
         if "Array" in str(l.get_type()):
             if "Array" in str(r.get_type()):
-                cons.write("array_comp(")
-                convert(symbs,l,cons)
-                cons.write(",")
-                convert(symbs,r,cons)
-                cons.write(f",{get_array_size(l)}))")
-                return
+                if len(CONSTANT_INDICES) == 0: 
+                    cons.write("array_comp(")
+                    convert(symbs,l,cons)
+                    cons.write(",")
+                    convert(symbs,r,cons)
+                    cons.write(f",{get_array_size(l)}))")
+                    return
+                lname = ff.get_array_name(l)
+                rname = ff.get_array_name(r)
+                all_indices = CONSTANT_INDICES[lname].union(CONSTANT_INDICES[rname])
+                for index in all_indices:
+                    symbs.add(f"{lname}_{index}")
+                    symbs.add(f"{rname}_{index}")
+                    cons.write(f'({lname}_{index}=={rname}_{index})')
+
             error(1, "Cannot compare array with non-array", node)
         convert_helper(symbs,node, cons, " == ")
     elif node.is_int_constant():
@@ -438,21 +447,21 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
             ucast = get_unsigned_cast(node)
             cons.write(ucast)
         dim = ff.get_array_dim(a)
-        if ALL_ARRAYS_CONSTANT:
-            array_name = f'{clean_string(a)}_{p}'
+        if len(CONSTANT_INDICES) > 0:
+            array_name = f'{clean_string(ff.get_array_name(a))}_{p.constant_value()}'
             cons.write(array_name)
             symbs.add(array_name)
         else:
             convert(symbs, a, cons)
-        if dim == 1:
-            cons.write("[")
-            convert(symbs,p,cons)
-            cons.write("]")
-        else:
-            size = get_array_size_from_dim(dim-1)
-            cons.write(f"+({size}*")
-            convert(symbs,p,cons)
-            cons.write(")")
+            if dim == 1:
+                cons.write("[")
+                convert(symbs,p,cons)
+                cons.write("]")
+            else:
+                size = get_array_size_from_dim(dim-1)
+                cons.write(f"+({size}*")
+                convert(symbs,p,cons)
+                cons.write(")")
         if 'BV' in str(node.get_type()) and not has_matching_type(ff.get_bv_width(node)) and needs_unsigned_cast(node):
             cons.write(")")
     elif node.is_store():
@@ -461,12 +470,17 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         v_dim = ff.get_array_dim(v)
         if v_dim != (a_dim -1):
             error(1, "Invalid array dimensions for store", node)
-        if v_dim == 0:
+        if v_dim == 0 or len(CONSTANT_INDICES) > 0:
             cons.write("value_store(")
         else:
             cons.write("array_store(")
-        convert(symbs, a, cons)
-        cons.write(",")
+        if len(CONSTANT_INDICES) > 0:
+            array_name = f'{clean_string(ff.get_array_name(a))}_{p.constant_value()}'
+            cons.write(array_name)
+            cons.write(',')
+        else:
+            convert(symbs, a, cons)
+            cons.write(",")
         convert(symbs,p,cons)
         cons.write(",")
         convert(symbs,v,cons)

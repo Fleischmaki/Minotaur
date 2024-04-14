@@ -3,12 +3,13 @@ import logging
 import typing as t
 import math as m
 
-from pysmt.shortcuts import And, TRUE, Not
+from pysmt.shortcuts import And, TRUE, Not, is_sat, FALSE
 
+from storm.utils.randomness import Randomness # pylint: disable=import-error
 from storm.smt.smt_object import smtObject # pylint: disable=import-error
 from storm.fuzzer.fuzzer import generate_mutants # pylint: disable=import-error
 from storm.parameters import get_parameters_dict # pylint: disable=import-error
-from smt2 import parser # pylint: disable=import-error
+from smt2 import parser, formula_transforms, formula_builder as fb # pylint: disable=import-error
 
 
 
@@ -50,6 +51,7 @@ def parse_transformations(t_type: str) -> dict:
     dag = 0
     last = False
     neg = False
+    ca = False
     for transformation in transformations:
         if transformation == 'sh':
             shuffle = True
@@ -71,40 +73,55 @@ def parse_transformations(t_type: str) -> dict:
             last = True
         elif transformation == 'neg':
             neg = True
-    return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keep_id, 'wd' : well_defined, 'mc' : mc, 'sat' : sat, 'dag': dag, 'last': last, 'neg': neg}
+        elif transformation == 'neg':
+            ca = True
+    return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keep_id, 'wd' : well_defined, 'mc' : mc, 'sat' : sat, 'dag': dag, 'last': last, 'neg': neg, 'ca': ca}
 
 def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: bool = True) -> list:
-    LOGGER.info("Running Storm.")
     if n <= 0:
         return []
+    LOGGER.info("Running Storm.")
+    file_data = parser.read_file(smt_file)
+
     smt_obj = smtObject(smt_file, mutant_path, generate_sat)
     smt_obj.check_satisfiability(10*60, 'sat' if generate_sat else 'unsat')
     if smt_obj.get_final_satisfiability() == "timeout":
-        LOGGER.warning("Could not fuzz file: timeout")
-        return [smt_file] * n
-    if smt_obj.get_final_satisfiability() == "sat" and not generate_sat:
-        LOGGER.warning("Could not fuzz file: cannot generate unsat files from sat files")
-        return [smt_file] * n
-    
-    fpars = get_parameters_dict(False, 0)
-    fpars['number_of_mutants'] = n
-    fpars['max_depth'] = 10 # Reduce the depth, we want simpler formulas
-    fpars['max_assert'] = 3
-
-    # Find the logic of the formula
-    file_data = parser.read_file(smt_file)
-    logic = file_data.logic
-
-    if generate_sat:
+        LOGGER.warning("Could not fuzz file: timeout.")
+        if generate_sat:
+            return [smt_file] * n
+        core = FALSE
+    elif smt_obj.get_final_satisfiability() == "sat" and not generate_sat:
+        if not 'A' in file_data.logic:
+            LOGGER.warning("Could not fuzz file: cannot generate unsat files from sat %s files.", file_data.logic)
+            return [smt_file] * n
+        # Try to see if we can get an unsat core from array constraints
+        min_index, calls  = formula_transforms.get_array_index_calls(file_data.formula)
+        core = formula_transforms.get_array_constraints(calls, min_index)
+        LOGGER.info("Formula is sat, trying to build core from array constraints.")
+        if is_sat(core,solver_name='z3',logic=file_data.logic):
+            LOGGER.warning("Could not get core from array constraints, using trivial core.")
+            core = FALSE
+    elif generate_sat:
         core = TRUE
     else:
         clauses = [Not(file_data.formula)] if smt_obj.orig_satisfiability != smt_obj.final_satisfiabiliy else file_data.clauses
         core = And(*parser.get_unsat_core(clauses, file_data.logic))
-    
-    generate_mutants(smt_obj, mutant_path, fpars['max_depth'],fpars['max_assert'],seed, logic,fpars)
+
+    fpars = get_parameters_dict(False, 0)
+    fpars['number_of_mutants'] = n
+    fpars['max_depth'] = 10 # Reduce the depth, we want simpler formulas
+    fpars['max_assert'] = 10
+
+    # Find the logic of the formula
+
+    if generate_sat:
+        generate_mutants(smt_obj, mutant_path, fpars['max_depth'],fpars['max_assert'],seed, file_data.logic,fpars)
+
     mutants = [mutant_path + f'/mutant_{i}.smt2' for i in range(n)]
     if not generate_sat:
+        rand = Randomness(seed) # Need to set the seed once for all mutants
         for mutant in mutants:
-            assertions = parser.read_file(mutant).formula
-            parser.write_to_file(And(core,assertions), mutant)
+            builder = fb.FormulaBuilder(file_data.formula, file_data.logic, fpars['max_depth'], rand)
+            assertions = [builder.get_random_assertion(fpars['max_depth']) for _ in range(fpars['max_assert'])]
+            parser.write_to_file(And(*assertions, core), mutant)
     return mutants 
