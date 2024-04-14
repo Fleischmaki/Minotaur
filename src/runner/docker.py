@@ -92,7 +92,7 @@ def run_docker(duration, tool, name, variant='', flags='', batch_id=0):
     script = f'/home/{user}/tools/run_{tool}.sh'
     src_path = f'{HOST_NAME}/{BATCH_FILE_FORMAT % batch_id}'
     cmd = ' '.join(map(str,[script, src_path, duration,variant,flags]))
-    return spawn_cmd_in_docker(get_container(tool,name), cmd, duration)
+    return spawn_cmd_in_docker(get_container(tool,name), cmd)
 
 def collect_docker_results(tool,name, expected_result='error', verbosity='all'):
     """Collects results of a docker, giving duration and results in simplified format"""

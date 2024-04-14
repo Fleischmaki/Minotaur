@@ -52,7 +52,7 @@ def setup_generation_docker(params, outdir, index):
     :param params: Generation parameters
     :param outdir: Output directory
     :param index: Maze name"""
-    commands.run_cmd('mkdir -p ' + outdir + ' ' + ' '.join([os.path.join(outdir, i) for i in ['src','smt','sln','png','txt','bin','smt/' + params['r']]]) )
+    commands.run_cmd('mkdir -p ' + outdir + ' ' + ' '.join([os.path.join(outdir, i) for i in ['src','smt','sln','png','txt','bin',f"smt/{params['r']}"]]) )
     docker.spawn_docker(1, index, 'gen', outdir).wait()
     if params['s'] is not None:
         docker.set_docker_seed(params['s'], index, 'gen').wait()

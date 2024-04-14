@@ -107,11 +107,11 @@ def get_random_params(conf):
     return res
 
 
-class Target_Generator():
+class TargetGenerator():
     def __init__(self, conf):
         self.conf = conf
         self.repeats = self.conf['repeats'] if self.conf['repeats'] >= 0 else sys.maxsize
-        self.targets = list()
+        self.targets = []
         self.mazes = OrderedDict()
 
     def __iter__(self):
@@ -186,7 +186,7 @@ class Target_Generator():
     def fetch_maze_params(self):                                                                 
         return [get_random_params(self.conf) for _ in range(min(self.repeats,ceil(ceil(self.conf['workers']/len(self.conf['tool']))*self.conf['batch_size']/max(1,self.conf['transforms']))))] # NUMNB_BATCHES*SIZE / MAZES_PER_PARAMS
 
-def fetch_works(conf: dict, gen: Target_Generator) -> tuple[list[Target], list[Target]]:
+def fetch_works(conf: dict, gen: TargetGenerator) -> tuple[list[Target], list[Target]]:
     new_targets = list(it.islice(gen, 0, conf['workers']*conf['batch_size']))
     return list(map(lambda w: w[1],new_targets)), list(map(lambda w : w[1], filter(lambda w: w[0], new_targets)))
 
@@ -216,7 +216,7 @@ def run_tools(conf: dict,works: 'list[Target]'):
     procs = []
     for i in range(get_containers_needed(conf, works)):
         target  = works[i*conf['batch_size']]
-        procs.append(docker.run_docker(duration*conf['batch_size'], target.tool, target.index, target.variant, target.flags, target.index))
+        procs.append(docker.run_docker(duration, target.tool, target.index, target.variant, target.flags, target.index))
     commands.wait_for_procs(procs)
     time.sleep(3) 
 
@@ -321,7 +321,7 @@ def merge_coverage(conf,out_dir: str) -> None:
                     files.append(os.path.join(out_dir, 'cov', file)) # For some reason filter + lambda does not work for this
                     file_string = ' --json-add-tracefile '.join(files)
                     outfile = f"{tool}_{len(files)}batches.json"
-                    cmd = f"python3 -m gcovr --json-add-tracefile {file_string} --json-summary-pretty > {os.path.join(out_dir, 'cov', outfile)}"
+                    cmd = f"python3 -m gcovr --json-add-tracefile {file_string}  --merge-mode-functions=separate --json-summary-pretty &> {os.path.join(out_dir, 'cov', outfile)}"
                     commands.run_cmd(cmd)
 
 def main(conf, out_dir):
@@ -334,7 +334,7 @@ def main(conf, out_dir):
     write_summary_header(conf, out_dir)
     done = False
 
-    gen = Target_Generator(conf)
+    gen = TargetGenerator(conf)
     while gen.has_targets() and not done: # -1 for inifinity
         works, to_remove = fetch_works(conf, gen)
         spawn_containers(conf, works)
