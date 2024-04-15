@@ -67,8 +67,9 @@ Nr. |Tool | Status | Type
 | -- | -- | -- | -- |
 1 | MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/150) | Type Casts
 2 | MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/157) | ITE value propagation
-3 | SeaHorn | [open](https://github.com/seahorn/seahorn/issues/546) |
+3 | SeaHorn | [open](https://github.com/seahorn/seahorn/issues/546) | *inter-procedural analysis
 4 | SeaHorn | [open](https://github.com/seahorn/seahorn/issues/550) |
+5 | CPA | [open](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1211) | 
 ### Other
 Tool | Status | Type
  -- | -- | --
