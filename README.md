@@ -2,12 +2,15 @@
 Minotaur is a generative black-box fuzzer for software model checkers, based on [STORM](https://github.com/mariachris/storm) and [Fuzzle](https://github.com/SoftSec-KAIST/Fuzzle)
 
 ## About
-Minotaur uses sat/unsat SMT-Files to generate programs that are unsafe/safe by construction. Optionally, [STORM](https://github.com/mariachris/storm)'s mutation algorithm can be used to create several variants for each seed. A minimizer can be used to drop unneccessary clauses for found seeds, which results in concise explanations for PA bugs.  
+Minotaur uses sat/unsat SMT-Files to generate programs that are unsafe/safe by construction. Optionally, [STORM](https://github.com/mariachris/storm)'s mutation algorithm can be used to create several satisfiable variants for each seed. UNSAT seeds can also be mutated, as long as the unsat-core remain intact. A minimizer can be used to drop unneccessary clauses for found seeds, which results in concise explanations for PA bugs.  
 ```mermaid
 flowchart LR
     Klee --> Storm
     SMTComp --> Storm
-    Storm --> |Clauses| Generator
+    Storm --> |SAT Clauses| Generator
+    Klee --> UFuzz
+    SMTComp --> UFuzz
+    UFuzz --> |UNSAT Clauses| Generator
     Maze --> |Scaffolding| Fuzzle
     Generator --> |Logic| Fuzzle
     Fuzzle --> |Populate| Code 
@@ -15,6 +18,7 @@ flowchart LR
     SMC --> |Result| Minimizer
     SMC --> |Imprecise/Unsound| Bug 
     Storm --> |Clauses| Minimizer
+    UFuzz  --> |Clauses| Minimizer
     Minimizer --> | Selected Clauses | Generator
     Minimizer --> | Minimized Code | Bug
 ```
@@ -33,16 +37,23 @@ Runs are configured via conf.json files located in the [test](Minotaur/test) fol
 To perform a test using the config file test/conf_name.conf.json run `python3 Minotaur --t conf_name outdir`
 For more info on config files check [config.md](./config.md) and the example config files provided.
 
+### Filter accepted seed files
+Running `python3 Minotaur --c seed_dir outfile {sat,unsat}` will recursively search for compatible smtfiles for sat/unsat seed generation (=> unsafe/safe programs).
+Compatible files will be written to outfile. Files can then be collected, e.g. with `mkdir safe_seeds && for f in $(cat outfile); do cp seed_dir/"$f" safe_seeds; done`.
+
 ### Generate a single maze
 `python3 Minotaur --g {local,container} outdir params...` or ./Minotaur/scripts/generate.sh -o outdir [params...]. For parameter options see [params.md](./params.md)
 
 ### Minimize a maze
-Run `python3 Minotaur --m report seed-dir out-dir {local,container}`, where 'report' the line of the summary.csv file from testing
-Alternatively, first generate the maze and then run `python3 Minotaur --m maze.c seed-dir out-dir timeout {container,local} {fn,fp,er,...} tool [variant] [params]`
+Run `python3 Minotaur --m report seed-dir out-dir {local,container}`, where 'report' the line of the summary.csv file from testing.
+Alternatively, first generate the maze and then run `python3 Minotaur --m maze.c seed-dir out-dir timeout {container,local} {fn,fp,er,...} tool [variant] [params]`.
 
 ### Recreate an experiment 
-Before recreating experiments, build the necessary experiments with ./Minotaur/scripts/build_experiment_dockers.sh
+Before recreating experiments, build the necessary experiments with `./Minotaur/scripts/build_experiment_dockers.sh`.
 To run an experiment run `python3 Minotaur --e experiment_name outdir`. Experiment configurations are stored in the [experiments](Minotaur/experiments) folder.
+
+### Logging
+For all tools the logging level can be set via --LEVEL with LEVEL being one of E(rror), W(arning), I(nfo) or D(ebug). E.g. `python3 --t --D conf outdir` runs tests with log-level `DEBUG`. 
 
 ## Bugs found by Minotaur
 ### Soundness Bugs
