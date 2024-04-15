@@ -173,14 +173,15 @@ def read_file(file_path: str, limit : int = 0, negate_formula : bool = False) ->
     """Read an SMTfile and extract important fields"""
     parser = SmtLibParser()
     script = parser.get_script_fname(file_path)
-    decl_arr = list()
+    decl_arr = []
     decls = script.filter_by_command_name("declare-fun")
     for d in decls:
         for arg in d.args:
             # if (str)(arg) != "model_version":
             decl_arr.append(arg)
     formula = script.get_strict_formula()
-    formula = formula if not negate_formula else Not(formula)
+    if negate_formula:
+        formula = formula if not is_sat(formula, solver_name='z3') else Not(formula)
     if limit > 0:
         formula, new_decls = ff.daggify(formula, limit)
         decl_arr.extend(new_decls)

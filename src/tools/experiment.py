@@ -81,5 +81,5 @@ def set_param_value(new_conf: dict, old_conf: dict, key: str, i: int):
     new_conf[key] = old_conf[key][i % len(old_conf[key])]
     if key == 'transforms' and new_conf['transforms'] == 0:
         new_conf['parameters']['t']['keepId'] = [1]
-    if key == 'neg' and new_conf['neg'] == 1:
+    if key == 'neg' and old_conf['neg'] == 1:
         new_conf['parameters']['t']['neg'] = [1]
