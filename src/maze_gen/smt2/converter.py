@@ -419,12 +419,13 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         cons.write(' - ')
         write_unsigned(symbs,node,cons,s)
         cons.write('+ 1U')
-    elif node.is_bv_rol() or node.is_bv_ror:
+    elif node.is_bv_rol() or node.is_bv_ror():
+        (l,) = node.args()
         width = ff.get_bv_width(node)
         check_shift_size(node)
         cons.write(get_unsigned_cast(node))
         cons.write("rotate_helper(")
-        convert(symbs, node, cons)
+        convert(symbs, l, cons)
         cons.write(f",{node.bv_rotation_step}{width})")
         if not has_matching_type(width) and needs_unsigned_cast(node):
             cons.write(')')  
