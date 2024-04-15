@@ -91,7 +91,7 @@ class FormulaBuilder():
             res.extend([(o,[types.INT, types.INT]) for o in MY_IRA_OPS])
 
         if 'ABV' in self.logic or 'AL' in self.logic or 'AN' in self.logic:
-            arrays_for_out_type = set(filter(lambda at: at.elem_type() == out_type, self.arrays))
+            arrays_for_out_type = set(filter(lambda at: at.elem_type == out_type, self.arrays))
             if len(arrays_for_out_type) > 0:
                 res.extend([(ops.ARRAY_SELECT,[at, out_type]) for at in arrays_for_out_type])
                 if out_type.is_bool_type():
