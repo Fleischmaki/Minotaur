@@ -556,9 +556,11 @@ def get_bv_helpers(well_defined = True) -> str:
         return l;
     return l % r;\n}\n"""
     res += """unsigned long rotate_helper(unsigned long bv, unsigned long ammount, int left, int width){
+    if(ammount == 0)
+        return bv;
     if(left)
-        return (bv << ammount) | (bv >> (ammount-width));
-    return (bv >> ammount) | (bv << (ammount-width));\n}"""
+        return (bv << ammount) | (bv >> (width-ammount));
+    return (bv >> ammount) | (bv << (width-ammount));\n}"""
     return res
 
 def get_array_helpers(size):
