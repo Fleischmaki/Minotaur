@@ -419,10 +419,15 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         cons.write(' - ')
         write_unsigned(symbs,node,cons,s)
         cons.write('+ 1U')
-    elif node.is_bv_rol():
-        rotate_helper(symbs, node, cons, "<<")
-    elif node.is_bv_ror():
-        rotate_helper(symbs, node, cons, ">>")
+    elif node.is_bv_rol() or node.is_bv_ror:
+        width = ff.get_bv_width(node)
+        check_shift_size(node)
+        cons.write(get_unsigned_cast(node))
+        cons.write("rotate_helper(")
+        convert(symbs, node, cons)
+        cons.write(f",{node.bv_rotation_step}{width})")
+        if not has_matching_type(width) and needs_unsigned_cast(node):
+            cons.write(')')  
     elif node.is_bv_constant():
         value =  str(node.constant_value()) + 'U'
         if node.bv_width() > 32:
@@ -504,19 +509,6 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
     cons.write(')')
     return ""
 
-def rotate_helper(symbs: t.Set[str], node: FNode, cons: io.TextIOBase, op: str):
-    """ Helper function for left and right rotates
-    """
-    (l,) = node.args()
-    m = ff.get_bv_width(node)
-    i = node.bv_rotation_step()
-    convert(symbs,l,cons)
-    cons.write('((')
-    convert(symbs,l,cons)
-    cons.write(f' {op} {i}) & ((1 {op} {i}+1) - 1)) | (') # TODO exponential blowup possible
-    convert(symbs,l,cons)
-    cons.write(f' {op} ({i}-{m}) )')
-
 def clean_string(s: str | FNode):
     """Makes sure that the string is a valid varibale name in C"""
     s = str(s)
@@ -545,19 +537,23 @@ def get_bv_helpers(well_defined = True) -> str:
         return 1;
     } else if ((r == -1) && (l == ((-0x7FFFFFFFFFFFFFFFLL-1) >> (64-width))))
         return 0x8000000000000000ULL;
-    return l / r;\n}
-unsigned long div_helper(unsigned long l, unsigned long r, int width){
+    return l / r;\n}"""
+        res += """unsigned long div_helper(unsigned long l, unsigned long r, int width){
     if(r == 0)
         return -1ULL >> (64-width);
-    return l / r;\n}
-unsigned long srem_helper(long l, long r, int width){
+    return l / r;\n}"""
+        res += """unsigned long srem_helper(long l, long r, int width){
     if(r == 0)
         return l;
-    return l % r;\n}
-unsigned long rem_helper(unsigned long l, unsigned long r, int width){
+    return l % r;\n}"""
+        res += """unsigned long rem_helper(unsigned long l, unsigned long r, int width){
     if(r == 0)
         return l;
     return l % r;\n}\n"""
+    res += """unsigned long rotate_helper(unsigned long bv, unsigned long ammount, int left, int width){
+    if(left)
+        return (bv << ammount) | (bv >> (ammount-width));
+    return (bv >> ammount) | (bv << (ammount-width));\n}"""
     return res
 
 def get_array_helpers(size):

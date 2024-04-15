@@ -11,14 +11,14 @@ from storm.utils.randomness import Randomness # pylint: disable=import-error
 
 from  . import formula_transforms
 
-BV_UNARY_OPS = frozenset([ops.BV_NOT, ops.BV_NEG ]) #TODO: FIX ROL;ROR Conversion, ops.BV_ROL,ops.BV_ROR])
+BV_UNARY_OPS = frozenset([ops.BV_NOT, ops.BV_NEG, ops.BV_ROL,ops.BV_ROR])
 BV_BINARY_OPS = frozenset([ ops.BV_AND, ops.BV_OR, ops.BV_XOR, ops.BV_ADD, \
                             ops.BV_SUB, ops.BV_MUL, ops.BV_UDIV,\
                             ops.BV_UREM,  ops.BV_SDIV, ops.BV_SREM])
 OTHER_BV_OPS = frozenset([ops.BV_ZEXT, ops.BV_SEXT, ops.BV_EXTRACT, ops.BV_CONCAT, ops.BV_COMP, ops.BV_LSHL, ops.BV_ASHR, ops.BV_LSHR])
 MY_IRA_OPS = frozenset(filter(lambda t: t not in (ops.BV_TONATURAL, ops.TOREAL),ops.IRA_OPERATORS))
 
-# assert BV_UNARY_OPS | BV_BINARY_OPS | OTHER_BV_OPS == ops.BV_OPERATORS
+assert BV_UNARY_OPS | BV_BINARY_OPS | OTHER_BV_OPS == ops.BV_OPERATORS
 
 
 def get_constants_for_type(node_type: types.PySMTType) -> set[FNode] | FrozenSet[FNode]:
@@ -44,7 +44,7 @@ class FormulaBuilder():
         self.bv_types = set(filter(lambda t: t.is_bv_type(), self.variables_by_type.keys()))
         self.variables_depths = formula_transforms.label_formula_depth(formula)
         self.random = rand
-        self.has_arrays = len(formula_transforms.get_array_index_calls()[1]) > 0
+        self.has_arrays = len(formula_transforms.get_array_index_calls(formula)[1]) > 0
         
     def get_random_assertion(self, max_depth: int):
         return self.build_formula_of_type(types.BOOL, max_depth)
