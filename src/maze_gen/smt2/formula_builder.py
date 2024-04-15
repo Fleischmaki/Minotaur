@@ -68,17 +68,30 @@ class FormulaBuilder():
             res.extend([(o,[types.BOOL, types.BOOL]) for o in filter(lambda o: o != ops.NOT, ops.BOOL_CONNECTIVES)])
             if ('BV' in self.logic):
                 res.extend([(o,[t,t]) for o in ops.BV_RELATIONS for t in self.bv_types])
+                res.extend([(ops.EQUALS,[t,t]) for t in self.bv_types])
             if ('IA' in self.logic):
-                res.extend(ops.IRA_RELATIONS)
                 res.extend([(o,[types.INT,types.INT]) for o in ops.IRA_RELATIONS])
-            return res
+                res.append([(ops.EQUALS,[types.INT,types.INT])])
         if out_type.is_bv_type:
             res.extend([(o,[out_type]) for o in BV_UNARY_OPS])
             res.extend([(o,[out_type, out_type]) for o in BV_BINARY_OPS])
-            return res
         if out_type.is_int_type:
             res.extend([(o,[types.INT, types.INT]) for o in MY_IRA_OPS])
-            return res
+
+        if ('ABV' in self.logic):
+            res.extend([(ops.ARRAY_SELECT,[types.ArrayType(bv_t,out_type),bv_t]) for bv_t in self.bv_types])
+            if out_type.is_bool_type():
+                res.extend([(ops.EQUALS,[types.ArrayType(bv_t,out_type),types.ArrayType(bv_t,out_type)]) for bv_t in self.bv_types])
+            if out_type.is_array_type():
+                    res.extend([(ops.ARRAY_STORE,[types.ArrayType(bv_t,out_type),bv_t,out_type]) for bv_t in self.bv_types])
+
+        if 'AL' in self.logic or 'AN' in self.logic:
+            res.append((ops.ARRAY_SELECT,[types.ArrayType(types.INT,out_type),types.INT]))
+            if out_type.is_bool_type():
+                res.append((ops.ARRAY_SELECT,[types.ArrayType(types.INT,out_type),types.ArrayType(types.INT,out_type)]))
+            if out_type.is_array_type():
+                res.append((ops.ARRAY_SELECT,[types.ArrayType(types.INT,out_type),types.INT,out_type]))
+
         return res
     
     def get_leaves_for_type(self,node_type: types.PySMTType, maximum_depth: int) -> list[FNode]:
