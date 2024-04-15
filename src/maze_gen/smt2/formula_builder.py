@@ -54,8 +54,9 @@ class FormulaBuilder():
     def get_random_assertion(self, max_depth: int):
         """ Build a random boolean formulas of maximum depth 
         """
-        return self.build_formula_of_type(types.BOOL, max_depth)
-    
+        res = self.build_formula_of_type(types.BOOL, max_depth)
+        return res
+
     def build_formula_of_type(self, node_type: types.PySMTType, max_depth: int) -> FNode:
         """ Build a random formula of the given type and depth """
         if max_depth == 0:
@@ -93,11 +94,11 @@ class FormulaBuilder():
         if 'ABV' in self.logic or 'AL' in self.logic or 'AN' in self.logic:
             arrays_for_out_type = set(filter(lambda at: at.elem_type == out_type, self.arrays))
             if len(arrays_for_out_type) > 0:
-                res.extend([(ops.ARRAY_SELECT,[at, out_type]) for at in arrays_for_out_type])
+                res.extend([(ops.ARRAY_SELECT,[at, at.index_type]) for at in arrays_for_out_type])
                 if out_type.is_bool_type():
-                    res.extend([(ops.EQUALS,[types.ArrayType(bv_t,out_type),types.ArrayType(bv_t,out_type)]) for bv_t in self.bv_types])
+                    res.extend([(ops.EQUALS,[at,at]) for at in self.arrays])
                 if out_type.is_array_type():
-                        res.extend([(ops.ARRAY_STORE,[types.ArrayType(bv_t,out_type),bv_t,out_type]) for bv_t in self.bv_types])
+                        res.extend([(ops.ARRAY_STORE,[at,at.index_type,out_type]) for at in self.arrays])
         return res
     
     def get_leaves_for_type(self,node_type: types.PySMTType, maximum_depth: int) -> list[FNode]:
