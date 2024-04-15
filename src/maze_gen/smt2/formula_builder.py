@@ -49,7 +49,7 @@ class FormulaBuilder():
         self.bv_types = set(filter(lambda t: t.is_bv_type(), self.variables_by_type.keys()))
         self.variables_depths = formula_transforms.label_formula_depth(formula)
         self.random = rand
-        self.has_arrays = len(formula_transforms.get_array_index_calls(formula)[1]) > 0
+        self.arrays = set(filter(lambda t: t.is_array_type(), self.variables_by_type.keys()))
         
     def get_random_assertion(self, max_depth: int):
         """ Build a random boolean formulas of maximum depth 
@@ -90,20 +90,14 @@ class FormulaBuilder():
         if out_type.is_int_type():
             res.extend([(o,[types.INT, types.INT]) for o in MY_IRA_OPS])
 
-        if self.has_arrays and 'ABV' in self.logic:
-            res.extend([(ops.ARRAY_SELECT,[types.ArrayType(bv_t,out_type),bv_t]) for bv_t in self.bv_types])
-            if out_type.is_bool_type():
-                res.extend([(ops.EQUALS,[types.ArrayType(bv_t,out_type),types.ArrayType(bv_t,out_type)]) for bv_t in self.bv_types])
-            if out_type.is_array_type():
-                    res.extend([(ops.ARRAY_STORE,[types.ArrayType(bv_t,out_type),bv_t,out_type]) for bv_t in self.bv_types])
-
-        if self.has_arrays and ('AL' in self.logic or 'AN' in self.logic):
-            res.append((ops.ARRAY_SELECT,[types.ArrayType(types.INT,out_type),types.INT]))
-            if out_type.is_bool_type():
-                res.append((ops.ARRAY_SELECT,[types.ArrayType(types.INT,out_type),types.ArrayType(types.INT,out_type)]))
-            if out_type.is_array_type():
-                res.append((ops.ARRAY_SELECT,[types.ArrayType(types.INT,out_type),types.INT,out_type]))
-
+        if 'ABV' in self.logic or 'AL' in self.logic or 'AN' in self.logic:
+            arrays_for_out_type = set(filter(lambda at: at.elem_type() == out_type, self.arrays))
+            if len(arrays_for_out_type) > 0:
+                res.extend([(ops.ARRAY_SELECT,[at, out_type]) for at in arrays_for_out_type])
+                if out_type.is_bool_type():
+                    res.extend([(ops.EQUALS,[types.ArrayType(bv_t,out_type),types.ArrayType(bv_t,out_type)]) for bv_t in self.bv_types])
+                if out_type.is_array_type():
+                        res.extend([(ops.ARRAY_STORE,[types.ArrayType(bv_t,out_type),bv_t,out_type]) for bv_t in self.bv_types])
         return res
     
     def get_leaves_for_type(self,node_type: types.PySMTType, maximum_depth: int) -> list[FNode]:
