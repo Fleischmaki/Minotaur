@@ -198,7 +198,11 @@ def check_shift_size(node: FNode) -> None:
     Shift is valid if it is contant and that ammount <= size of the bv 
     """
     if GENERATE_WELL_DEFINED:
-        (_,r) = node.args()
+        if node.is_bv_rol or node.is_bv_ror:
+            if node.bv_rotation_step() > ff.get_bv_width(node):
+                error(1, "Invalid rotate: ", node)
+            return
+        (_,r)= node.args()
         if not r.is_bv_constant() or r.constant_value() > ff.get_bv_width(node):
             error(1, "Invalid shift: ", node)
 
@@ -426,7 +430,7 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         cons.write(get_unsigned_cast(node))
         cons.write("rotate_helper(")
         convert(symbs, l, cons)
-        cons.write(f",{node.bv_rotation_step}{width})")
+        cons.write(f",{node.bv_rotation_step()},{'1' if node.is_bv_rol() else '0'},{width})")
         if not has_matching_type(width) and needs_unsigned_cast(node):
             cons.write(')')  
     elif node.is_bv_constant():
