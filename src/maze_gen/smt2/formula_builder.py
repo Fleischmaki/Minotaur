@@ -29,7 +29,6 @@ def get_constants_for_type(node_type: types.PySMTType) -> set[FNode] | FrozenSet
     if node_type.is_bv_type():
         width = node_type.width # type: ignore
         return set([sc.BVZero(width), sc.BVOne(width), sc.BV(2**width - 1, width), sc.BV(2**(width-1), width)])
-    # if node_type.is_array_type(): # TODO
     return set()
 
 class FormulaBuilder():
@@ -45,6 +44,7 @@ class FormulaBuilder():
         self.bv_types = set(filter(lambda t: t.is_bv_type(), self.variables_by_type.keys()))
         self.variables_depths = formula_transforms.label_formula_depth(formula)
         self.random = rand
+        self.has_arrays = len(formula_transforms.get_array_index_calls()[1]) > 0
         
     def get_random_assertion(self, max_depth: int):
         return self.build_formula_of_type(types.BOOL, max_depth)
@@ -78,14 +78,14 @@ class FormulaBuilder():
         if out_type.is_int_type:
             res.extend([(o,[types.INT, types.INT]) for o in MY_IRA_OPS])
 
-        if ('ABV' in self.logic):
+        if self.has_arrays and 'ABV' in self.logic:
             res.extend([(ops.ARRAY_SELECT,[types.ArrayType(bv_t,out_type),bv_t]) for bv_t in self.bv_types])
             if out_type.is_bool_type():
                 res.extend([(ops.EQUALS,[types.ArrayType(bv_t,out_type),types.ArrayType(bv_t,out_type)]) for bv_t in self.bv_types])
             if out_type.is_array_type():
                     res.extend([(ops.ARRAY_STORE,[types.ArrayType(bv_t,out_type),bv_t,out_type]) for bv_t in self.bv_types])
 
-        if 'AL' in self.logic or 'AN' in self.logic:
+        if self.has_arrays and ('AL' in self.logic or 'AN' in self.logic):
             res.append((ops.ARRAY_SELECT,[types.ArrayType(types.INT,out_type),types.INT]))
             if out_type.is_bool_type():
                 res.append((ops.ARRAY_SELECT,[types.ArrayType(types.INT,out_type),types.ArrayType(types.INT,out_type)]))

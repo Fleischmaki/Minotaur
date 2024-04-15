@@ -317,12 +317,12 @@ def merge_coverage(conf,out_dir: str) -> None:
         files = []
         resfiles = os.listdir(os.path.join(out_dir,'cov'))
         for file in resfiles:
-                if tool in file:
-                    files.append(os.path.join(out_dir, 'cov', file)) # For some reason filter + lambda does not work for this
-                    file_string = ' --json-add-tracefile '.join(files)
-                    outfile = f"{tool}_{len(files)}batches.json"
-                    cmd = f"python3 -m gcovr --json-add-tracefile {file_string}  --merge-mode-functions=separate --json-summary-pretty &> {os.path.join(out_dir, 'cov', outfile)}"
-                    commands.run_cmd(cmd)
+            if tool in file:
+                files.append(os.path.join(out_dir, 'cov', file)) # For some reason filter + lambda does not work for this
+                file_string = ' --json-add-tracefile '.join(files)
+                outfile = f"{tool}_{len(files)}batches.json"
+                cmd = f"python3 -m gcovr --json-add-tracefile {file_string}  --merge-mode-functions=separate --json-summary-pretty &> {os.path.join(out_dir, 'cov', outfile)}"
+                commands.run_cmd(cmd)
 
 def main(conf, out_dir):
     os.system(f'mkdir -p {out_dir}')

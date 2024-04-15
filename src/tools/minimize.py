@@ -79,7 +79,7 @@ class Minimizer:
             w, h = self.params['w'], self.params['h']
             self.params.update({'u':'', 'w':1, 'h':1})
             if not self.result_is_err():
-                self.params.pop('u') 
+                self.params.pop('u')
                 self.params.update({'w':w,'h':h})
         
     def get_seed(self):
