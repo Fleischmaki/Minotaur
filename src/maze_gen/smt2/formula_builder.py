@@ -22,6 +22,7 @@ assert BV_UNARY_OPS | BV_BINARY_OPS | OTHER_BV_OPS == ops.BV_OPERATORS
 
 
 def get_constants_for_type(node_type: types.PySMTType) -> set[FNode] | FrozenSet[FNode]:
+    """Returns interesting constants of type node_type"""
     if node_type == types.BOOL:
         return frozenset([sc.FALSE(), sc.TRUE()])
     if node_type == types.INT:
@@ -32,7 +33,12 @@ def get_constants_for_type(node_type: types.PySMTType) -> set[FNode] | FrozenSet
     return set()
 
 class FormulaBuilder():
-    def __init__(self, formula: FNode, logic: str, max_depth: int, rand: Randomness):
+    """Builds random formulas using subexpressions from a given seed formula
+    :param formula: Seeds formula
+    :param logic: The logic to use for the built formula
+    :param rand: A source of randomness
+    """
+    def __init__(self, formula: FNode, logic: str, rand: Randomness):
         self.variables_by_type = {}
         for variable in formula_transforms.get_nodes(formula, lambda _: True):
             node_type = variable.get_type()
@@ -40,16 +46,18 @@ class FormulaBuilder():
                 self.variables_by_type[node_type] = set()
             self.variables_by_type[node_type].add(variable)
         self.logic = logic
-        self.max_depth = max_depth
         self.bv_types = set(filter(lambda t: t.is_bv_type(), self.variables_by_type.keys()))
         self.variables_depths = formula_transforms.label_formula_depth(formula)
         self.random = rand
         self.has_arrays = len(formula_transforms.get_array_index_calls(formula)[1]) > 0
         
     def get_random_assertion(self, max_depth: int):
+        """ Build a random boolean formulas of maximum depth 
+        """
         return self.build_formula_of_type(types.BOOL, max_depth)
     
     def build_formula_of_type(self, node_type: types.PySMTType, max_depth: int) -> FNode:
+        """ Build a random formula of the given type and depth """
         if max_depth == 0:
             return self.random.random_choice(self.get_leaves_for_type(node_type, max_depth))
         res = self.random.random_choice(self.get_ops_for_outtype(node_type)\
@@ -62,6 +70,10 @@ class FormulaBuilder():
         return get_env().formula_manager.create_node(next_operation, node_args, payload)
     
     def get_ops_for_outtype(self, out_type: types.PySMTType) -> list[tuple[int,list[types.PySMTType]]]:
+        """ Returns all possible supported operations for a given SMT-Node Type
+            BV Types are restrained to those present in the seed formula
+            Only arrays declared in the seed are used, i.e. no new Arrays are created.
+        """
         res = []
         if out_type == types.BOOL:
             res.append((ops.NOT,[types.BOOL]))
@@ -72,10 +84,10 @@ class FormulaBuilder():
             if ('IA' in self.logic):
                 res.extend([(o,[types.INT,types.INT]) for o in ops.IRA_RELATIONS])
                 res.append([(ops.EQUALS,[types.INT,types.INT])])
-        if out_type.is_bv_type:
+        if out_type.is_bv_type():
             res.extend([(o,[out_type]) for o in BV_UNARY_OPS])
             res.extend([(o,[out_type, out_type]) for o in BV_BINARY_OPS])
-        if out_type.is_int_type:
+        if out_type.is_int_type():
             res.extend([(o,[types.INT, types.INT]) for o in MY_IRA_OPS])
 
         if self.has_arrays and 'ABV' in self.logic:
@@ -95,9 +107,12 @@ class FormulaBuilder():
         return res
     
     def get_leaves_for_type(self,node_type: types.PySMTType, maximum_depth: int) -> list[FNode]:
+        """ Get constants or subexpressions so we don't need to generate subformulas 
+        """
         return list(filter(lambda v: self.variables_depths[v] <= maximum_depth, self.variables_by_type[node_type])) + list(get_constants_for_type(node_type))
     
     def get_payload_for_op(self,op: int, node_type: types.PySMTType, argtypes: list[types.PySMTType]):
+        """ Returns the necessary additional information pySMT needs to create a node """
         if op in (ops.BV_ZEXT, ops.BV_SEXT):
             return (argtypes[0].width, argtypes[0].width - node_type.width) #type: ignore
         if op == ops.BV_CONCAT:
@@ -107,7 +122,7 @@ class FormulaBuilder():
             offset = self.random.get_random_integer(0,diff) # type: ignore # TODO: see what is correct here
             return (diff, offset, argtypes[0].width+offset-1) #type: ignore
         if op in (ops.BV_ROL, ops.BV_ROR):
-            return (node_type.width, self.random.get_random_integer(0,node_type.width-1)) #type: ignore
+            return (argtypes[0].width, self.random.get_random_integer(0,node_type.width-1)) #type: ignore
         if op in ops.BV_OPERATORS:
-            return (node_type.width,) # type: ignore
+            return (argtypes[0].width,) # type: ignore
         return None
