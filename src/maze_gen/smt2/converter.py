@@ -115,6 +115,8 @@ def write_unsigned(symbs, parent: FNode, cons, node: FNode, always=True):
     """ Writes a node as an unsigned integer
     """
     width = ff.get_bv_width(parent)
+    if width < 32:
+        cons.write(f'({bits_to_utype(32)})')
     cons.write(get_unsigned_cast(parent, always))
     convert(symbs,node,cons)
     if (always or needs_unsigned_cast(parent)) and not has_matching_type(width):
