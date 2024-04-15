@@ -80,7 +80,7 @@ def set_docker_seed(path, name, tool):
     cmd = CP_SEED_CMD % (path, get_container(tool,name),get_user(tool), os.path.split(path)[1])
     return commands.spawn_cmd(cmd)
 
-def run_docker(duration, tool, name, variant='', flags='', batch_id=0):
+def run_docker(duration, batch_duration, tool, name, variant='', flags='', batch_id=0):
     """Run a tool docker
     :param duration: Duration per maze
     :param tool: The tool to run
@@ -92,7 +92,7 @@ def run_docker(duration, tool, name, variant='', flags='', batch_id=0):
     script = f'/home/{user}/tools/run_{tool}.sh'
     src_path = f'{HOST_NAME}/{BATCH_FILE_FORMAT % batch_id}'
     cmd = ' '.join(map(str,[script, src_path, duration,variant,flags]))
-    return spawn_cmd_in_docker(get_container(tool,name), cmd)
+    return spawn_cmd_in_docker(get_container(tool,name), cmd, batch_duration)
 
 def collect_docker_results(tool,name, expected_result='error', verbosity='all'):
     """Collects results of a docker, giving duration and results in simplified format"""
@@ -148,7 +148,7 @@ def run_pa(tool,variant,flags, name, params,outdir, memory = 4,  timeout=60, gen
     with (open(os.path.join(outdir, 'src', BATCH_FILE_FORMAT % 0),'w')) as batchfile: 
         batchfile.write(f'{HOST_NAME}/{maze}')
     spawn_docker(memory,name,tool,os.path.join(outdir,'src')).wait()
-    run_docker(timeout, tool, name, variant,flags).wait()
+    run_docker(timeout, timeout, tool, name, variant,flags).wait()
     collect_docker_results(tool,name,expected_result,'all').wait()
     copy_docker_results(tool,name,os.path.join(outdir, maze))
     kill_docker(tool,name).wait()

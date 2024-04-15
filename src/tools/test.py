@@ -32,6 +32,7 @@ def load_config(path):
     set_default(conf,'batch_size',1)
     set_default(conf,'gen_time',120)
     set_default(conf,'coverage',False)
+    set_default(conf,'batch_duration', conf['duration']*conf['batch_size'])
 
     assert conf['repeats'] != 0
     assert conf['duration'] > 0
@@ -216,7 +217,7 @@ def run_tools(conf: dict,works: 'list[Target]'):
     procs = []
     for i in range(get_containers_needed(conf, works)):
         target  = works[i*conf['batch_size']]
-        procs.append(docker.run_docker(duration, target.tool, target.index, target.variant, target.flags, target.index))
+        procs.append(docker.run_docker(duration, conf['batch_duration']*conf['batch_size'], target.tool, target.index, variant=target.variant, flags=target.flags, batch_id=target.index))
     commands.wait_for_procs(procs)
     time.sleep(3) 
 
