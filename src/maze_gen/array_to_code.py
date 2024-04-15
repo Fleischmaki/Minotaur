@@ -1,4 +1,6 @@
-import sys, os
+import sys
+import os
+import logging
 import random
 import importlib
 import transforms
@@ -179,13 +181,12 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
     f.write("\n\n//Actual program")
     function_begin_format = """\nvoid func_{}(){{\n{}"""
     function_format = """\t{} ({}) {{
-    \t\tfunc_{}();
-    \t}}
-    """
+    \tfunc_{}();
+    }}\n"""
+
     function_end = """\telse {
-    \t\t//should not happen
-    \t}
-    }\n"""
+    \t//should not happen
+    }\n}\n"""
     function_deadend = """}\n"""
 
     for idx in range(size):
@@ -194,16 +195,15 @@ def render_program(c_file, graph, size, generator, sln, bugtype, smt_file, trans
         if valid_edges == 0:
             f.write(function_deadend)
             continue
-        else:
-            edge_counter = 0
-            for neighbour in graph[idx]:
-                if edge_counter == 0:
-                    f.write(function_format.format(
-                        'if', guard[idx][edge_counter], neighbour))
-                else:
-                    f.write(function_format.format(
-                        'else if', guard[idx][edge_counter], neighbour))
-                edge_counter += 1
+        edge_counter = 0
+        for neighbour in graph[idx]:
+            if edge_counter == 0:
+                f.write(function_format.format(
+                    'if', guard[idx][edge_counter], neighbour))
+            else:
+                f.write(function_format.format(
+                    'else if', guard[idx][edge_counter], neighbour))
+            edge_counter += 1
         f.write(function_end)
 
     f.write("""\nint main(){
@@ -241,11 +241,10 @@ def generate_maze_chain(mazes, cycle, t_index, unit):
     return size,graph,solution
 
 def main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, unit, smt_file, CVE_name):
-    random.seed(seed)
     transformations = transforms.parse_transformations(t_type)
-    min = 0 if transformations['keepId'] == 1 else 1
+    min = 0 if transformations['keepId'] == 1 else t_numb if transformations['last'] else 1
     if transformations["storm"]:
-        smt_files = [smt_file] + transforms.run_storm(smt_file, os.path.join(output_dir,'smt'), seed, t_numb)
+        smt_files = [smt_file] + transforms.run_storm(smt_file, os.path.join(output_dir,'smt',str(seed)), seed, t_numb, transformations['sat'])
     else:
         smt_files = [smt_file]*(t_numb+1)
     for t_index in range(min, t_numb+1):
@@ -257,6 +256,7 @@ def main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, uni
             render_program(c_file, graph.graph, size, generator, solution, bugtype, smt_files[t_index],transforms.parse_transformations(""))
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s', style='%')
     seed = int(sys.argv[1])
     bugtype = sys.argv[2]
     t_type = sys.argv[3]

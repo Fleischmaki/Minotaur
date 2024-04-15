@@ -1,17 +1,27 @@
-FROM maze-base
+FROM minotaur-base
 
-USER maze
+USER root
 WORKDIR /home/maze/workspace
 
 # Get additional dependencies 
-RUN sudo apt-get update && sudo apt-get -y install \
-    pip \
-&& sudo rm -rf /var/lib/apt/lists/*
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y install \
+    software-properties-common \
+&& rm -rf /var/lib/apt/lists/*
 
+RUN add-apt-repository ppa:deadsnakes/ppa && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y install \
+    python3.11 \
+    python3.11-dev \
+&& rm -rf /var/lib/apt/lists/*
 
-# Install requirements
+USER maze
+RUN sudo update-alternatives --install /usr/bin/python3 pyhton3 /usr/bin/python3.11 1
+
+# Install pip
+RUN wget https://bootstrap.pypa.io/get-pip.py &&  python3 get-pip.py && rm get-pip.py
+
+# # Install requirements
 ADD requirements.txt /home/maze/workspace/requirements.txt
-RUN pip install -r requirements.txt
+RUN /home/maze/.local/bin/pip3 install -r requirements.txt
 RUN python3 -m pysmt install --confirm-agreement --z3
 ADD token.txt /home/maze/workspace/token.txt
 RUN sudo chmod +r token.txt

@@ -1,2 +1,2 @@
-# Contains components for executing commands and dockers
+""" Contains components for running routines """
 __all__ = ['commands', 'docker', 'maze_gen']

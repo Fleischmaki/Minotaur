@@ -1,1 +1,1 @@
-config={"home":"/home/markus/MasterThesis/storm"}
+config={"home":"/home/markus/MinotaurProject/Minotaur/src/maze_gen/storm"}

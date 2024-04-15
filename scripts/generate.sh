@@ -123,8 +123,8 @@ echo "Generator used: "$GEN
 echo "Output directory: "$OUTPUT_DIR
 echo "##############################################"
 
-mkdir -p $OUTPUT_DIR/src $OUTPUT_DIR/bin $OUTPUT_DIR/png $OUTPUT_DIR/txt $OUTPUT_DIR/sln $OUTPUT_DIR/smt
 MAZEGEN_DIR=$(readlink -f $(dirname "$0")/..)/src/maze_gen
+mkdir -p $OUTPUT_DIR/src $OUTPUT_DIR/bin $OUTPUT_DIR/png $OUTPUT_DIR/txt $OUTPUT_DIR/sln $OUTPUT_DIR/smt $OUTPUT_DIR/smt/$SEED
 
 NAME=$ALGORITHM"_"$WIDTH"x"$HEIGHT"_"$SEED"_"
 if [ $UNIT -eq 0 ]; then
@@ -164,7 +164,13 @@ do
             mv $NAME$INDEX"_"$T_TYPE"_t"$T_INDEX".txt" $OUTPUT_DIR/txt
         fi
     done
-    mv $NAME_P".c" $OUTPUT_DIR/src
+    if [[ "$T_TYPE" == *"last"* ]]; then
+        if [[ $T_INDEX == $T_NUMB ]]; then
+            mv $NAME_P".c" $OUTPUT_DIR/src
+        fi
+    else
+        mv $NAME_P".c" $OUTPUT_DIR/src
+    fi
 done
 for (( INDEX = 0; INDEX < $NUMB; INDEX++ ))
 do

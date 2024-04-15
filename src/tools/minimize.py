@@ -1,143 +1,173 @@
+""" Implements minimization algorithm 
+"""
 import os
-from ..runner import *
-from ..maze_gen import smt2_parser as sp
+import logging
 from math import ceil
+from ..runner import maze_gen, commands, docker
+from ..maze_gen.smt2 import parser as sp
 
-def main(params, outdir,timeout,gen,err,tool,variant,flags):
-    commands.run_cmd('mkdir -p %s' % outdir)
-    commands.run_cmd("mkdir -p %s" % os.path.join(outdir,'seeds'))
-    commands.run_cmd("mkdir -p %s" % os.path.join(outdir,'runs'))
+LOGGER = logging.getLogger(__name__)
 
-    if not result_is_err(err,tool, variant, flags, params, outdir, timeout,gen):
-        print('ERROR: Original not maze not a %s' % err)
-        return
+class Minimizer:
+    def __init__(self,argv: 'list[str]'):
+        if ',' in argv[0]:
+            run = argv[0][:-1] if argv[0].endswith(',') else argv[0]
+            args = run.split(',')
+            if len(args) == 16:
+                self.tool,self.batch_id,self.variant,self.flags,index,u,a,w,h,c,t,g,s,r,timeout,self.err = args
+            else:
+                self.tool,self.variant,self.flags,index,u,a,w,h,c,t,g,s,r,timeout,self.err = args
 
-    if not 'u' in params.keys():
-        params.update({'u':''})
-        if not result_is_err(err,tool, variant, flags, params, outdir, timeout, gen):
-            params.pop('u', None) 
+            self.timeout = ceil(float(timeout)) + 60 # Add a minute for buffer
+            self.seeddir = argv[1]
+            self.outdir = argv[2]
+            self.gen = argv[3]
+            self.params= {'m':int(index),'a':a,'w':int(w),'h':int(h),'c':int(c),'t':('last_' + t).strip('_'),'g':g,'s':os.path.join(self.seeddir,s+('' if s.endswith('.smt2') else '.smt2')),'r':int(r)}
+            if u == '1':
+                self.params['u'] = ''
         else:
-            params.update({'w':1,'h':1})
+            maze = argv[0]
+            self.seeddir = argv[1]
+            self.outdir = argv[2]
+            self.timeout = int(argv[3])
+            self.gen = argv[4]
+            self.err = argv[5]
+            self.tool = argv[6]
+            self.variant = self.flags = ''
+            if len(argv) >= 8:
+                self.variant = argv[7]
+                self.flags = ' '.join(argv[8:])
+            self.params= self.get_params(maze)
+        self.expected_result = 'safe' if self.err in ('fp','tn') or 'unsat' in self.params['t'] else 'error'
+        self.core = set()
 
-    mutant = os.path.join(outdir,'smt', 'mutant_%d.smt2' % (params['m'] - 1))
-    clauses = get_clauses(mutant)
 
-    commands.run_cmd('rm -r %s' % os.path.join(outdir, 'src'))
-    keep_first_half = True
-    misses_bug = True 
-    params = set_fake_params(params)
-    while len(clauses) > 1 and (misses_bug or not keep_first_half):
-        half = len(clauses) // 2
-        new_clauses = clauses[:half] if keep_first_half else clauses[half+1:]
+    def minimize(self):
+        commands.run_cmd('mkdir -p %s' % self.outdir)
+        commands.run_cmd("mkdir -p %s" % os.path.join(self.outdir,'seeds'))
+        commands.run_cmd("mkdir -p %s" % os.path.join(self.outdir,'runs'))
 
-        seed = os.path.join(outdir, 'seeds', str(half) + ('-first' if keep_first_half else '-second'))
-        set_seed(params,seed,new_clauses)
-        misses_bug = result_is_err(err,tool, variant, flags, params, outdir,timeout,gen)
+        if not self.result_is_err(False):
+            logging.error('Original maze not a %s', self.err)
+            return
 
-        commands.run_cmd('rm -r %s' % os.path.join(outdir, 'src'))
-        if misses_bug:
-            clauses = new_clauses
-            print("Discarded %s half of constraints" % 'first' if keep_first_half else 'second')
-            keep_first_half = True
+        self.minimize_maze()
+        seed = self.get_seed()
+        self.set_fake_params()
+
+        clauses,logic = read_mutant(seed)
+        if self.expected_result == 'safe':
+            clauses, self.core = self.separate_unsat_core(clauses,logic)
+
+        clauses = self.drop_batches(clauses)
+        clauses = self.drop_individual(clauses)
+
+        self.set_seed('min',clauses)
+        if self.gen == 'container':
+            maze_gen.generate_mazes([self.params],self.outdir)
         else:
-            keep_first_half = not(keep_first_half)
-    
-    # Check individual files
-    empty_clauses = 0
-    for i in range(len(clauses)):
-        if len(clauses) == 1:
-            break
-        commands.run_cmd('mkdir -p %s' % os.path.join(outdir,'seeds'))
-        pos = i - empty_clauses
-        seed = os.path.join(outdir, 'seeds', str(len(clauses)) + '-' + str(pos+1))
-        clause = clauses.pop(pos)
-    
-        set_seed(params,seed,clauses)
-        misses_bug = result_is_err(err,tool,variant,flags,params, outdir,timeout,gen)
-        commands.run_cmd('rm -r %s' % os.path.join(outdir, 'src'))
+            maze_gen.generate_maze(self.params, self.outdir) 
+
+    def separate_unsat_core(self,clauses: list,logic: str):
+        core = sp.get_unsat_core(clauses, logic)
+        LOGGER.debug("Found core %s", core)
+        return list(filter(lambda c : c not in core, clauses)), core
+
+
+    def minimize_maze(self):
+        if not 'u' in self.params.keys():
+            w, h = self.params['w'], self.params['h']
+            self.params.update({'u':'', 'w':1, 'h':1})
+            if not self.result_is_err():
+                self.params.pop('u') 
+                self.params.update({'w':w,'h':h})
         
-        if misses_bug:
-            empty_clauses += 1
-        else: 
-            clauses.insert(pos, clause) # Reinsert clause if no longer 'fn'
+    def get_seed(self):
+        if 'storm' in self.params['t']:
+            return os.path.join(self.outdir,'smt',str(self.params['r']), 'mutant_%d.smt2' % (self.params['m'] - 1))
+        else:
+            return self.params['s']
+
+    def drop_batches(self, clauses: list):
+        keep_first_half = True
+        misses_bug = True
+        min_clauses = 1 if self.expected_result == 'error' else 0
+        while (len(clauses) > min_clauses) and (misses_bug or not keep_first_half):
+            half = len(clauses) // 2
+            new_clauses = clauses[:half] if keep_first_half else clauses[half+1:]
+            seed = str(half) + ('-first' if keep_first_half else '-second')
+            self.set_seed(seed,new_clauses)
+            misses_bug = self.result_is_err()
+            if misses_bug:
+                clauses = new_clauses
+                logging.info("Discarded %s half of constraints", 'first' if keep_first_half else 'second')
+                keep_first_half = True
+            else:
+                keep_first_half = not(keep_first_half)
+        return clauses
+
+    def drop_individual(self, clauses: list):
+        empty_clauses = 0
+        for i in range(len(clauses)):
+            if len(clauses) == 1 and self.expected_result == 'error':
+                break
+            commands.run_cmd('mkdir -p %s' % os.path.join(self.outdir,'seeds'))
+            pos = i - empty_clauses
+            seed = str(len(clauses)) + '-' + str(pos+1)
+            clause = clauses.pop(pos)
         
-        
-    set_seed(params,seed,clauses)
-    if gen == 'container':
-        maze_gen.generate_mazes([params],outdir)
-    else:
-        maze_gen.generate_maze(params, outdir)    
+            self.set_seed(seed,clauses)
+            misses_bug = self.result_is_err()
+            
+            if misses_bug:
+                empty_clauses += 1
+            else: 
+                clauses.insert(pos, clause) # Reinsert clause if no longer 'fn'
+        return clauses
 
-def result_is_err(err,tool,variant,flags,params, outdir, timeout,gen):
-    expected_result = 'error' if err in ('fn','tp') else 'safe'
-    docker.run_mc(tool,variant,flags, 'min', params, outdir,timeout=timeout, gen=gen, expected_result=expected_result)
-    sat = is_err(outdir,err)
-    return sat
+    def result_is_err(self, rm=True):
+        docker.run_pa(self.tool,self.variant,self.flags, 'min', self.params, self.outdir,timeout=self.timeout, gen=self.gen, expected_result=self.expected_result)
+        sat = self.is_err()
+        if rm:
+            commands.run_cmd('rm -r %s' % os.path.join(self.outdir, 'src'))
+        return sat
 
-def set_seed(params, seed, clauses):
-    if not seed.endswith('.smt2'):
-        seed += '.smt2'
-    sp.write_to_file(clauses,seed)            
-    params['s'] = seed
+    def set_seed(self, seed: str, clauses: list):
+        seed = os.path.join(self.outdir, 'seeds', seed)
+        constraints = self.core.union(clauses)
+        if not seed.endswith('.smt2'):
+            seed += '.smt2'
+        sp.write_to_file(constraints,seed)
+        self.params['s'] = seed
 
 
-def get_clauses(mutant):
-    formula = sp.read_file(mutant)[3]
-    return list(sp.conjunction_to_clauses(formula))
-
-def is_err(outdir,err):
-    resdir = os.path.join(outdir,'res')
-    for file in os.listdir(resdir):
-            if '_' in file: # Still false negative
-                commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(outdir,'runs')))
-                if err in file: 
+    def is_err(self):
+        maze = maze_gen.get_maze_names(self.params)[max(0,self.params['m']-1)]
+        resdir = os.path.join(self.outdir,maze,maze) # IDK why it's twice but thats just how it is
+        for file in os.listdir(resdir):
+            if len(file.split('_')) == 2: # Still false negative
+                print(file)
+                commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(self.outdir,'runs')))
+                commands.run_cmd('rm -r %s' % os.path.join(self.outdir,maze))
+                if self.err in file: 
                     return True
-    return False
+        return False
 
-def get_params(maze_path, smt_path = ''):
-    maze = maze_path.split('/')[-1][:-2] # Cut .c
-    params = maze_gen.get_params_from_maze(maze,smt_path=smt_path)  
-    return params
+    def get_params(self, maze, smt_path = ''):
+        self.maze = maze.split('/')[-1][:-2] # Cut .c
+        self.params= maze_gen.get_params_from_maze(self.maze,smt_path=smt_path)  
+        return self.params
 
-def set_fake_params(params):
-    params['t'] = params['t'].replace('storm', '')
-    params['t'] = params['t'].replace('__', '_')
-    if params['t'].endswith('_'):
-        params['t'] = params['t'][:-1]
-    if params['t'] == '':
-        params['t'] = 'keepId'
-        params['m'] = 0
-    return params
-
-
-def load(argv):
-    if ',' in argv[0]:
-        run = argv[0][:-1] if argv[0].endswith(',') else argv[0]
-        if len(run.split(',')) == 15:
-            tool,variant,flags,id,u,a,w,h,c,t,g,_,r,timeout,err = run.split(',')
+    def set_fake_params(self):
+        self.params['t'] = self.params['t'].replace('storm', '')
+        self.params['t'] = self.params['t'].replace('__', '_')
+        self.params['t'] = self.params['t'].strip('_')
+        if self.params['t'] == '' or self.params['t'] == 'last':
+            self.params['t'] = 'keepId'
+            self.params['m'] = 0
         else:
-            tool,variant,flags,id,a,w,h,c,t,g,_,r,timeout,err = run.split(',')
-            u = 0
+            self.params['m'] = 1
 
-        timeout = ceil(float(timeout)) + 60 # Add a minute for buffer
-        seeddir = argv[1]
-        outdir = argv[2]
-        gen = argv[3]
-        params = {'m':int(id),'a':a,'w':int(w),'h':int(h),'c':int(c),'t':t,'g':'CVE_gen','s':os.path.join(seeddir,g+'.smt2'),'r':int(r)}
-        if u == '1':
-            params['u'] = ''
-    else:
-        maze = argv[0]
-        seeddir = argv[1]
-        outdir = argv[2]
-        timeout = argv[3]
-        gen = argv[4]
-        err = argv[5]
-        tool = argv[6]
-        variant = flags = ''
-        if len(argv) >= 8:
-            variant = argv[7]
-            flags = ' '.join(argv[8:])
-        params = get_params(maze,seeddir)
-
-    main(params,outdir,timeout,gen, err, tool, variant, flags)
+def read_mutant(mutant: str):
+    file_data = sp.read_file(mutant)
+    return list(file_data.clauses), file_data.logic

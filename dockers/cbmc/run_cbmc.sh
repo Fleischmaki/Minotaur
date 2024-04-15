@@ -1,18 +1,20 @@
 #!/bin/bash
 
-# Arg1: Target Source code
+# Arg1: File containing targets
 # Arg2: Timeout (in minutes)
-# Arg3: ID
+
 
 WORKDIR=/home/maze/workspace
 
-INDIR=$WORKDIR/inputs
 OUTDIR=$WORKDIR/outputs
-OUTFILE=$OUTDIR/res
-
 mkdir -p $OUTDIR
 
-# Create dummy file to indicate running start
-touch $WORKDIR/.start
-timeout $2s cbmc  --error-label "__VERIFIER_ERROR()" $1 &> $OUTDIR/res
-touch $WORKDIR/.end
+for maze in $(cat $1)
+do
+    name=$(basename $maze)
+    OUTFILE=$OUTDIR/res$name
+    # Create dummy file to indicate running start
+    touch $WORKDIR/.start$name
+    timeout -k 2s $2s  cbmc  --error-label "__VERIFIER_ERROR()" ${@:3} $maze &> $OUTFILE
+    touch $WORKDIR/.end$name
+done

@@ -1,0 +1,47 @@
+{
+	"verbosity": "all",
+	"repeats" : 5,
+	"avg" : 1,
+	"mazes" : [-1],
+	"duration" : [600],
+	"workers" : 5,
+	"memory" : 4,
+	"transforms" : [15],
+	"seed": [1,2,3,4,5],
+	"batch_size": [1],
+	"maze_gen" : "container",
+	"expected_result": "error",
+	"tool" : {
+		"ultimate-release": {
+			"variant" : ["ut", "ua", "ugc", "uk"]
+		}
+	},
+	"parameters" : {
+		"u" : [0,1],
+		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
+		"w" : {
+			"min" : 4,
+			"max" : 7
+		},
+		"h" : {
+			"min" : 5,
+			"max" : 7
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 0
+		},
+		"t" : {
+			"storm": [1],
+			"wd": [0],
+			"mc": [0,25,50,75,100],
+			"dag": [0,2,3,4]
+		},
+		"g": ["CVE_gen"],
+		"s": "/home/markus/MasterThesis/Minotaur/bug_seeds/bench_12285.smt2",
+		"r" : {
+			"min" : 0,
+			"max" : 65536
+		}
+	}
+}

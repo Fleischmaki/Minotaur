@@ -1,4 +1,4 @@
-FROM maze-base
+FROM minotaur-base
 
 # Install
 WORKDIR /home/maze/tools/
