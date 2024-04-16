@@ -32,6 +32,8 @@ def load_config(path: str) -> dict:
         conf['gen_time'] = 30000
     if 'coverage' not in conf.keys():
         conf['coverage'] = False
+    if 'batch_duration' not in conf.keys():
+        conf['batch_duration'] = conf['duration']*conf['batch_size']
 
     assert conf['repeats'] > 0
     assert conf['workers'] > 0
@@ -80,6 +82,6 @@ def set_param_value(new_conf: dict, old_conf: dict, key: str, i: int):
     """
     new_conf[key] = old_conf[key][i % len(old_conf[key])]
     if key == 'transforms' and new_conf['transforms'] == 0:
-        new_conf['parameters']['t']['keepId'] = [1]
-    if key == 'neg' and old_conf['neg'] == 1:
+        new_conf['parameters']['t']['storm'] = [0]
         new_conf['parameters']['t']['neg'] = [1]
+        new_conf['transforms'] = 1

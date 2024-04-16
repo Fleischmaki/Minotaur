@@ -181,7 +181,7 @@ def read_file(file_path: str, limit : int = 0, negate_formula : bool = False) ->
             decl_arr.append(arg)
     formula = script.get_strict_formula()
     if negate_formula:
-        formula = formula if not is_sat(formula, solver_name='z3') else Not(formula)
+        formula = formula if is_sat(formula, solver_name='z3') else Not(formula)
     if limit > 0:
         formula, new_decls = ff.daggify(formula, limit)
         decl_arr.extend(new_decls)
