@@ -26,7 +26,8 @@ The following transformations are supported at the moment:
 - `storm`: run STORM on seed SMT file to produce new gurads. Strongly recommended.
 - `wd`: generate well-defined programs. Also recommended
 - `unsat`: generate unsat seeds (leading to safe programs)
-- `last`: only generate the n-th program that would be generated given the parameters. Useful when recreating bugs/minimizing programs 
+- `last`: only generate the n-th program that would be generated given the parameters. Useful when recreating bugs/minimizing programs
+- `neg`: Negate formulas that are unsat (useful for soundness without running storm)
 
 ## Checking SMT-File compatibility
 Running `python3 Minotaur/scripts/check_files.py $outfile $smt_dir` will recursively check if CVE_gen can handle smt2 files contained in $smt_dir or subdirectories. Compatible files are written to $outfile.
