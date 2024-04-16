@@ -15,7 +15,7 @@ MAXIMUM_ARRAY_SIZE = 2**7 - 1
 
 def get_bv_width_from_array_type(array_type: smt_types._ArrayType):
     """ Returns the width for the base element type of an array.
-        User get_bv_width(FNode) for more precise width computation.
+        User get_bv_width(FNode) for more precise width computation. 
     :param array_type: type of the array
     """
     node_type = array_type.elem_type
@@ -40,8 +40,8 @@ def get_bv_width(node: FNode) -> int: # TODO rewrite this, this is ugly as hell
             res = 1
         else:
             res = get_bv_width(node.args()[0]) ## Boolean relations
-    elif node.get_type().is_array_type() and node.get_type().elem_type.is_array_type():
-        return get_bv_width(node.get_type())
+    elif node.get_type().is_array_type():
+        return get_bv_width_from_array_type(node.get_type())
     elif not (node.get_type().is_bv_type()):
         raise ValueError(f"Could not compute BVWidth for node {node} of type {node.get_type()}.")
     elif node.is_bv_extract():
