@@ -148,7 +148,7 @@ def write_signed(symbs,parent: FNode,cons, node: FNode, always=True):
             cons.write('scast_helper(')
         else:
             cons.write(f'({scast})')
-    convert(symbs,node,cons)
+    write_unsigned(symbs,node,cons,node)
     if (always or needs_signed_cast(parent)) and (GENERATE_WELL_DEFINED or not has_matching_type(width)):
         cons.write(f', {width})')
 
