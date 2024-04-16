@@ -5,7 +5,7 @@ import logging
 
 from pysmt.shortcuts import And, Not, is_sat,\
     get_env,FreshSymbol, Equals, Int, GT, LT, BV, EqualsOrIff
-from pysmt.typing import INT
+from pysmt import typing as smt_types
 from pysmt.fnode import FNode
 from pysmt.solvers.z3 import Z3Solver
 
@@ -13,7 +13,24 @@ from pysmt.solvers.z3 import Z3Solver
 LOGGER = logging.getLogger(__name__)
 MAXIMUM_ARRAY_SIZE = 2**7 - 1
 
-def get_bv_width(node: FNode) -> int:
+def get_bv_width_from_array_type(array_type: smt_types._ArrayType):
+    """ Returns the width for the base element type of an array.
+        User get_bv_width(FNode) for more precise width computation.
+    :param array_type: type of the array
+    """
+    node_type = array_type.elem_type
+    if node_type.is_bool_type():
+        return 1
+    if node_type.is_int_type():
+        return 64
+    if node_type.is_bv_type():
+        return node_type.width
+    if node_type.is_array_type():
+        return get_bv_width_from_array_type(node_type)
+    raise ValueError(f"Could not compute BVWidth for node of type {node_type}.")
+
+
+def get_bv_width(node: FNode) -> int: # TODO rewrite this, this is ugly as hell
     """Calculate bit width of a node"""
     res = 0
     if node.get_type().is_int_type():
@@ -23,8 +40,10 @@ def get_bv_width(node: FNode) -> int:
             res = 1
         else:
             res = get_bv_width(node.args()[0]) ## Boolean relations
-    elif not node.get_type().is_bv_type() or node.get_type().is_array_type():
-        raise ValueError(f"Cannot compute BVWidth for node {node} of type {node.get_type()}.")
+    elif node.get_type().is_array_type() and node.get_type().elem_type.is_array_type():
+        return get_bv_width(node.get_type())
+    elif not (node.get_type().is_bv_type()):
+        raise ValueError(f"Could not compute BVWidth for node {node} of type {node.get_type()}.")
     elif node.is_bv_extract():
         res = node.bv_extract_end() - node.bv_extract_start()  + 1
     elif node.is_bv_constant() or node.is_symbol() or node.is_function_application() or node.is_ite() or node.is_select():
@@ -45,7 +64,7 @@ def get_bv_width(node: FNode) -> int:
         elif r.is_bv_constant() or r.is_symbol or r.is_function_application() or r.is_ite() or r.is_select():
             res = r.bv_width()
     else:
-        raise ValueError("Could not compute BV width: " + str(node))
+        raise ValueError(f"Could not compute BV width: for {node} of type {type}")
     if res <= 0 or res > 64:
         raise ValueError(f"Invalid bv width: {res}({node})")
     return res
@@ -211,14 +230,14 @@ def get_array_dim(node: FNode):
         dim += 1
     return dim
 
-def get_array_constraints(array_ops, array_size):
+def get_array_constraints(array_ops, array_size) -> set[FNode]:
     """Helper"""
     return {And(i < array_size, i >= 0) for i in map(lambda x: x.args()[1], array_ops)}
 
 def get_integer_constraints(formula: FNode):
     """ Collect constraints that no integer expression in the formula overflows
     """
-    integer_operations = get_nodes(formula, lambda f: f.get_type() is INT)
+    integer_operations = get_nodes(formula, lambda f: f.get_type().is_int_type())
     return {(GT(i, Int(-(2**63)))) for i in integer_operations}.union((LT(i, Int(2**63 - 1))) for i in integer_operations)
 
 def extract_vars(cond: t.List[str], variables: t.Dict[str,str]):
