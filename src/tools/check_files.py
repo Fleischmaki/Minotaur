@@ -15,7 +15,7 @@ def check_files(file_path: str, resfile: str, sat: str) -> None:
                         in the directory and subdirectory.
     :param resfile:     Valid files will be written to this path
     """
-    parser.set_well_defined(False)
+    parser.set_well_defined(sat == 'unsat')
     if os.path.isdir(file_path):
         LOGGER.info("Going into dir %s\n", file_path)
         for file in sorted(os.listdir(file_path)):
