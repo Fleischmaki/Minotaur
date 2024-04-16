@@ -273,11 +273,11 @@ def independent_formulas(conds: dict[str,bool], variables: dict[str,str], array_
         vars_by_groups.append(used_vars)
     return groups, vars_by_groups
 
-def extract_vars(cond: str, variables: dict[str,str]): 
+def extract_vars(cond: str, variables: dict[str,str]):
     used_variables = {}
-    for var, vartype in variables.items():
-        if var + " " in cond or var + ")" in cond or var.split('[')[0] in cond:
-            used_variables[var] = vartype
+    for variable, vartype in variables.items():
+        if variable + " " in cond or variable + ")" in cond or variable.split('[')[0] in cond:
+            used_variables[variable] = vartype
     return used_variables
 
 def is_array_constraint_of(cond: str,other: str,array_size: int):
@@ -310,8 +310,6 @@ def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: i
         for i in range(numb):
             cond_neg = f"(c {'>=' if i == numb-1 else '=='} {i})"
             negated_groups.append([cond_neg])
-        return negated_groups, new_vars
-
     else:
         for i in range(numb):
             new_group = set()
