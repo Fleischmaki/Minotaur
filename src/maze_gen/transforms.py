@@ -96,9 +96,9 @@ def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: 
             return [smt_file] * n
         # Try to see if we can get an unsat core from array constraints
         min_index, calls  = formula_transforms.get_array_index_calls(file_data.formula)
-        core = formula_transforms.get_array_constraints(calls, min_index)
+        core = And(formula_transforms.get_array_constraints(calls, min_index))
         LOGGER.info("Formula is sat, trying to build core from array constraints.")
-        if is_sat(core,solver_name='z3',logic=file_data.logic):
+        if is_sat(And(core,file_data.formula),solver_name='z3',logic=file_data.logic):
             LOGGER.warning("Could not get core from array constraints, using trivial core.")
             core = FALSE
     elif generate_sat:
