@@ -25,13 +25,13 @@ def load_config(path: str) -> dict:
     if 'expected_result' not in conf.keys():
         conf['maze_gen'] = 'error'
     if 'abort_on_error' not in conf.keys():
-        conf['abort_on_error'] = True
+        conf['abort_on_error'] = 1
     if 'avg' not in conf.keys():
         conf['avg'] = 1
     if 'gen_time' not in conf.keys():
         conf['gen_time'] = 30000
     if 'coverage' not in conf.keys():
-        conf['coverage'] = False
+        conf['coverage'] = 0
     if 'batch_duration' not in conf.keys():
         conf['batch_duration'] = conf['duration']*conf['batch_size']
 
