@@ -24,7 +24,7 @@ The following transformations are supported at the moment:
 - `sh`: shuffle gurad constraints
 - `dcX`: remvoe X% of guard constraints
 - `storm`: run STORM (or UNSAT fuzzing) on seed SMT file to produce new gurads. Strongly recommended.
-- `wd`: generate well-defined programs. Also recommended
+- `wd`: generate well-defined programs. Recommended for precision tests to avoid false-positives.
 - `unsat`: generate unsat seeds (leading to safe programs)
 - `last`: only generate the n-th program that would be generated given the parameters. Useful when recreating bugs/minimizing programs
 - `neg`: Negate formulas that are unsat (useful for soundness without running storm)
