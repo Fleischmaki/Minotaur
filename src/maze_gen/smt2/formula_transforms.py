@@ -17,12 +17,14 @@ def get_bv_width(node: FNode) -> int:
     """Calculate bit width of a node"""
     res = 0
     if node.get_type().is_int_type():
-        return 64
-    if node.get_type().is_bool_type():
+        res = 64
+    elif node.get_type().is_bool_type():
         if node.is_bool_constant() or node.is_symbol():
             res = 1
         else:
-            res = get_bv_width(node.args()[0])
+            res = get_bv_width(node.args()[0]) ## Boolean relations
+    elif not node.get_type().is_bv_type() or node.get_type().is_array_type():
+        raise ValueError(f"Cannot compute BVWidth for node {node} of type {node.get_type()}.")
     elif node.is_bv_extract():
         res = node.bv_extract_end() - node.bv_extract_start()  + 1
     elif node.is_bv_constant() or node.is_symbol() or node.is_function_application() or node.is_ite() or node.is_select():
