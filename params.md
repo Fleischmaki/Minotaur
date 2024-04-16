@@ -23,7 +23,7 @@ The following transformations are supported at the moment:
 - `rwX`: remove X% of walls from the maze
 - `sh`: shuffle gurad constraints
 - `dcX`: remvoe X% of guard constraints
-- `storm`: run STORM on seed SMT file to produce new gurads. Strongly recommended.
+- `storm`: run STORM (or UNSAT fuzzing) on seed SMT file to produce new gurads. Strongly recommended.
 - `wd`: generate well-defined programs. Also recommended
 - `unsat`: generate unsat seeds (leading to safe programs)
 - `last`: only generate the n-th program that would be generated given the parameters. Useful when recreating bugs/minimizing programs
