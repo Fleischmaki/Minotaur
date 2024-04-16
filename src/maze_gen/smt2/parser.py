@@ -200,7 +200,7 @@ def get_logic_from_script(script):
         LOGGER.info('Logic not found in script. Using logic from formula: %s', logic)
     return logic
 
-def conjunction_to_clauses(formula: FNode):
+def conjunction_to_clauses(formula: FNode) -> set[FNode]:
     """Transform top-level conjuncts of a formula into a set of clauses"""
     clauses = set()
     if formula.is_and():
@@ -254,7 +254,7 @@ class Graph:
                 groups.append(group)
         return groups
 
-def independent_formulas(conds: dict[str,bool], variables: dict[str,str]) -> tuple[list[list],list[dict]]:
+def independent_formulas(conds: dict[str,bool], variables: dict[str,str], array_size: int) -> tuple[list[list],list[dict]]:
     formula = Graph()
     for cond in conds:
         formula.add_edge(cond,cond)
@@ -262,6 +262,8 @@ def independent_formulas(conds: dict[str,bool], variables: dict[str,str]) -> tup
         for other in conds:
             if len(cond_vars.keys() & extract_vars(other, variables).keys()) > 0:
                 formula.add_edge(cond, other)
+            if is_array_constraint_of(cond,other,array_size):
+                formula.add_edge(cond,other)
     groups = [sorted(g, key=lambda cond: list(conds.keys()).index(cond)) for g in formula.separate()]
     vars_by_groups = []
     for group in groups:
@@ -278,7 +280,13 @@ def extract_vars(cond: str, variables: dict[str,str]):
             used_variables[var] = vartype
     return used_variables
 
-def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: int) -> tuple[list[str],dict[str,str]]:
+def is_array_constraint_of(cond: str,other: str,array_size: int):
+    if '[' not in cond:
+        return False
+    index = cond.split('[',1)[1].rsplit(']',1)[0]
+    return index in other and '0' in other and str(array_size) in other # TODO maybe refine this
+
+def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: int) -> tuple[list[str],dict[str,str]]: 
     negated_groups = []
     new_vars = {}
     n = 0

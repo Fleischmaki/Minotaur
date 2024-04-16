@@ -25,7 +25,7 @@ class Generator:
         transforms.remove_constraints(self.constraints, transformations['dc'])
         transforms.make_const(self.vars_all, transformations['mc'])
 
-        self.groups, self.vars = parser.independent_formulas(self.constraints, self.vars_all)
+        self.groups, self.vars = parser.independent_formulas(self.constraints, self.vars_all, self.array_size)
 
         if transformations['sh']:
             self.groups, self.vars = transforms.coshuffle(self.groups, self.vars)
@@ -84,16 +84,15 @@ class Generator:
         if '[' in var: #Arrays
             dim = var.count('[')
             return "\t{} {};\n\tinit({}{},{});\n".format(self.vars_all[var],var,'*'*(dim-1),var.split('[')[0],converter.get_array_size_from_dim(dim))
-        elif self.vars_all[var] == 'bool':
+        if self.vars_all[var] == 'bool':
             return "\t_Bool {} = __VERIFIER_nondet_bool();\n".format(var)
-        elif self.vars_all[var] == 'const bool':
+        if self.vars_all[var] == 'const bool':
             return "\t const _Bool {} = __VERIFIER_nondet_bool();\n".format(var)
-        else:
-            orig_type = self.vars_all[var]
-            short_type = orig_type.split(" ")[-1]
-            if 'unsigned' in orig_type:
-                short_type = 'u' + short_type
-            return "\t{} {} = __VERIFIER_nondet_{}();\n".format(self.vars_all[var], var, short_type)
+        orig_type = self.vars_all[var]
+        short_type = orig_type.split(" ")[-1]
+        if 'unsigned' in orig_type:
+            short_type = 'u' + short_type
+        return "\t{} {} = __VERIFIER_nondet_{}();\n".format(self.vars_all[var], var, short_type)
 
     def get_numb_bytes(self):
         numb_bytes = []
