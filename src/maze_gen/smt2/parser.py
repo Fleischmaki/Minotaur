@@ -127,7 +127,7 @@ def add_used_variables(variables: dict, ldecl_arr: list[FNode], symbs: t.Set[str
         if vartype.is_array_type() and not constant_arrays:
             first_bracket = type_in_c.find('[')
             symb += type_in_c[first_bracket:]
-            type_in_c = type_in_c[:first_bracket]
+            type_in_c = f"{ff.get_bv_width_from_array_type(vartype)}_{type_in_c[:first_bracket]}"
         variables[symb] = type_in_c
 
 def set_well_defined(generate_well_defined: bool):
@@ -186,7 +186,7 @@ def read_file(file_path: str, limit : int = 0, negate_formula : bool = False) ->
         formula, new_decls = ff.daggify(formula, limit)
         decl_arr.extend(new_decls)
     
-    logic = get_logic_from_script(script)  
+    logic = get_logic_from_script(script)
     clauses = conjunction_to_clauses(formula)
     return SmtFileData(decl_arr,formula,logic,clauses)
 

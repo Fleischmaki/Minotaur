@@ -493,9 +493,9 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         else:
             convert(symbs, a, cons)
             cons.write(",")
-        convert(symbs,p,cons)
+        write_unsigned(symbs,a,cons,p)
         cons.write(",")
-        convert(symbs,v,cons)
+        write_unsigned(symbs,a,cons,v)
         if v_dim > 0:
             cons.write(",")
             cons.write(get_array_size_from_dim(v_dim))
@@ -582,8 +582,9 @@ def get_array_helpers(size):
     \tif(a1[i] != a2[i]) return 0;
     }
     return 1;\n}\n""")
-    res += ("""void init(long* array,int size){
+    res += ("""void init(long* array, int width,int size){
     for(int i = 0; i < size; i++){
     \tarray[i] = __VERIFIER_nondet_long();
+    \tarray[i] &= (((1ULL << (width-1)) - 1) << 1) + 1;
     }\n}""")
     return res

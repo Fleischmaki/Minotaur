@@ -83,7 +83,8 @@ class Generator:
     def get_initialisation(self, var):
         if '[' in var: #Arrays
             dim = var.count('[')
-            return "\t{} {};\n\tinit({}{},{});\n".format(self.vars_all[var],var,'*'*(dim-1),var.split('[')[0],converter.get_array_size_from_dim(dim))
+            width, vartype = self.vars_all[var].split("_")
+            return "\t{} {};\n\tinit({}{},{},{});\n".format(vartype,var,'*'*(dim-1),var.split('[')[0],width,converter.get_array_size_from_dim(dim))
         if self.vars_all[var] == 'bool':
             return "\t_Bool {} = __VERIFIER_nondet_bool();\n".format(var)
         if self.vars_all[var] == 'const bool':
