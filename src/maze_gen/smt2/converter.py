@@ -541,7 +541,7 @@ def get_bv_helpers(well_defined = True) -> str:
             return -1ULL >> (64-width); // Make sure we shift with 0s
         return 1;
     } else if ((r == -1) && (l == ((-0x7FFFFFFFFFFFFFFFLL-1) >> (64-width))))
-        return 0x8000000000000000ULL;
+        return 0x8000000000000000ULL >> (64-width);
     return l / r;\n}"""
         res += """unsigned long div_helper(unsigned long l, unsigned long r, int width){
     if(r == 0)
@@ -550,6 +550,8 @@ def get_bv_helpers(well_defined = True) -> str:
         res += """unsigned long srem_helper(long l, long r, int width){
     if(r == 0)
         return l;
+    if ((r == -1) && (l == ((-0x7FFFFFFFFFFFFFFFLL-1) >> (64-width))))
+        return 0;
     return l % r;\n}"""
         res += """unsigned long rem_helper(unsigned long l, unsigned long r, int width){
     if(r == 0)
