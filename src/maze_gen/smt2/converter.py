@@ -288,7 +288,7 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         (l, r) = node.args()
         if "Array" in str(l.get_type()):
             if "Array" in str(r.get_type()):
-                if len(CONSTANT_INDICES) > 0:
+                if len(CONSTANT_INDICES) == 0:
                     cons.write("array_comp(")
                     convert(symbs,l,cons)
                     cons.write(",")
