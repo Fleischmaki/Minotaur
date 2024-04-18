@@ -1,7 +1,7 @@
 {
 	"verbosity": "all",
 	"repeats" : 20,
-	"mazes" : [100,100,5,5],
+	"batches": [100,100,5,5],
 	"duration" : 1000,
 	"workers" : 1,
 	"memory" : 4,
@@ -48,14 +48,14 @@
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
 		},
-		"g": ["CVE_gen, CVE-neg_gen"],
+		"g": ["CVE_gen", "CVE-neg_gen"],
 		"s": "/home/markus/MinotaurProject/Minotaur/bug_seeds/bench_1081.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
 		}
 	},{
-		"u" : 1,
+		"u" : [1],
 		"t" : {
 			"storm": [1],
 			"wd": [0],

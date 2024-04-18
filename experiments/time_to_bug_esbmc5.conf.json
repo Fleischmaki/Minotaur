@@ -12,8 +12,8 @@
 	"expected_result": "error",
 	"gen_time" : 1000,
 	"tool" : {
-		"esbmc-bug3": {
-			"variant" : ["--interval-analysis"]
+		"esbmc": {
+			"variant" : ["--mathsat --tuple-node-flattener --smt-during-symex --smt-symex-guard"]
 		}
 	},
 	"avg": 1,
@@ -49,7 +49,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen", "CVE-neg_gen"],
-		"s": "/home/markus/MasterThesis/Minotaur/bug_seeds/MULTIPLIER_PRIME_2.msat.smt2",
+		"s": "/home/markus/MinotaurProject/seeds/bitvector-s3_clnt_3.BV.c.cil-1a-test000036.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -63,7 +63,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MasterThesis/Minotaur/bug_seeds/MULTIPLIER_PRIME_2.msat.smt2",
+		"s": "/home/markus/MinotaurProject/seeds/bitvector-s3_clnt_3.BV.c.cil-1a-test000036.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -85,7 +85,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen","CVE-neg_gen"],
-		"s": "/home/markus/MasterThesis/Minotaur/bug_seeds/MULTIPLIER_PRIME_2.msat.smt2",
+		"s": "/home/markus/MinotaurProject/seeds/bitvector-s3_clnt_3.BV.c.cil-1a-test000036.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
