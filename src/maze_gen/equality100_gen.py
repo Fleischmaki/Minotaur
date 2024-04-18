@@ -12,7 +12,7 @@ class Generator:
     def get_logic_c(self):
         logic_c = list()
         for idx in range(self.size):
-            logic_c.append("\t\tsigned char c = __VERIFIER_nodet_char() ;")
+            logic_c.append("\t\tsigned char c = __VERIFIER_nondet_char() ;")
         return logic_c
 
     def get_numb_bytes(self):
