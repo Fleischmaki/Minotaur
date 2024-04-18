@@ -23,7 +23,7 @@ def load_config(path: str) -> dict:
     if 'maze_gen' not in conf.keys():
         conf['maze_gen'] = 'local'
     if 'expected_result' not in conf.keys():
-        conf['maze_gen'] = 'error'
+        conf['expected_result'] = 'error'
     if 'abort_on_error' not in conf.keys():
         conf['abort_on_error'] = 1
     if 'avg' not in conf.keys():
@@ -57,7 +57,7 @@ def load(argv):
         resfile.write("run_nr, time\n")
 
         runs = conf['repeats']
-        conf['repeats'] = conf['mazes']
+        conf['repeats'] = conf['batches']
 
         variable_keys = list(map(lambda kv: kv[0],(filter(lambda kv: isinstance(kv[1], list), conf.items()))))
         LOGGER.info("Found the following variable keys %s", str(variable_keys))
@@ -81,7 +81,9 @@ def set_param_value(new_conf: dict, old_conf: dict, key: str, i: int):
     """ Set new_conf[key] to i-th value of old_conf[key]
     """
     new_conf[key] = old_conf[key][i % len(old_conf[key])]
-    if key == 'transforms' and new_conf['transforms'] == 0:
-        new_conf['parameters']['t']['storm'] = [0]
-        new_conf['parameters']['t']['neg'] = [1]
-        new_conf['transforms'] = 1
+    LOGGER.debug("Running with value %s for key %s", new_conf[key], key)
+    if key == 'parameters' and old_conf['transforms'] == 0:
+        new_conf['parameters']['keepId'] = [1]
+        # new_conf['parameters']['t']['storm'] = [0]
+        # new_conf['parameters']['t']['neg'] = [1]
+        # new_conf['transforms'] = 1
