@@ -11,7 +11,7 @@ from pysmt.solvers.z3 import Z3Solver
 
 
 LOGGER = logging.getLogger(__name__)
-MAXIMUM_ARRAY_SIZE = 2**7 - 1
+MAXIMUM_ARRAY_SIZE = 2**16 - 1
 
 def get_bv_width_from_array_type(array_type: smt_types._ArrayType):
     """ Returns the width for the base element type of an array.
@@ -197,10 +197,11 @@ def constrain_array_size(formula: FNode):
     if not is_sat(formula, solver_name = "z3"):
         formula = Not(formula)
     max_dim = max(map(lambda op : get_array_dim(op.args()[0]),array_ops))
-    sat = all_constant and min_index <= MAXIMUM_ARRAY_SIZE
     assertions = set()
     array_size = max(min_index,2)
-
+    sat = all_constant and array_size**max_dim <= MAXIMUM_ARRAY_SIZE
+    if sat:
+        array_size *= 2
     while not sat:
         LOGGER.debug("Checking size: %d",  array_size)
         if (math.pow(array_size,max_dim)) > MAXIMUM_ARRAY_SIZE:

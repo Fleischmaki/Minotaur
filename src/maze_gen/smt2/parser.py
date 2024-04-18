@@ -87,9 +87,8 @@ def parse(file_path: str, transformations: dict, check_neg: bool, continue_on_er
                 raise e
         LOGGER.debug("Done.")
 
-            
         add_parsed_cons(check_neg, clauses, parsed_cons, clause, result)
-        add_used_variables(variables, ldecl_arr, symbs, all_arrays_constant)
+        add_used_variables(variables, ldecl_arr, symbs, all_arrays_constant and transformations['ca'])
 
     return parsed_cons, variables, array_size
 
@@ -120,7 +119,9 @@ def add_used_variables(variables: dict, ldecl_arr: list[FNode], symbs: t.Set[str
         elif 'c' in decls and symb == '__original_smt_name_was_c__':
             decl = 'c'
         else:
-            decl = "_".join(symb.split("_")[:-1])
+            decl = symb.rsplit("_",1)[0]
+            while decl not in decls:
+                decl = decl.rsplit("_",1)[0]
         i = decls.index(decl)
         vartype = ldecl_arr[i].get_type()
         type_in_c = converter.type_to_c(vartype, constant_arrays)
@@ -193,7 +194,7 @@ def read_file(file_path: str, limit : int = 0, negate_formula : bool = False) ->
 def get_logic_from_script(script):
     """Read logic from an pysmt script, or guess minimal logic if none is provided"""
     if script.contains_command(SET_LOGIC):
-        logic = str(script.filter_by_command_name(SET_LOGIC).__next__().args[0])
+        logic = str(next(script.filter_by_command_name(SET_LOGIC)).args[0])
     else:
         formula = script.get_strict_formula()
         logic = str(get_logic(formula))

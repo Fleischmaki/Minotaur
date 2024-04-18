@@ -3,12 +3,15 @@
 import re
 import io
 import typing as t
+import logging
 
 from pysmt.shortcuts import And, BV, Plus, Times, Or
 from pysmt.fnode import FNode
 from pysmt.typing import PySMTType as node_type
 
 from . import formula_transforms as ff
+
+LOGGER = logging.getLogger(__name__)
 
 ARRAY_SIZE_STRING = "ARRAY_SIZE"
 
@@ -43,6 +46,7 @@ def set_well_defined(wd: bool):
 
 def set_constant_array_indices(indices: dict[str,set[int]]):
     global CONSTANT_INDICES
+    LOGGER.debug("Using the following indices for arrays: %s", indices)
     CONSTANT_INDICES = indices
 
 def binary_to_decimal(binary: str, unsigned : bool = True) -> str:
@@ -284,7 +288,7 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         (l, r) = node.args()
         if "Array" in str(l.get_type()):
             if "Array" in str(r.get_type()):
-                if len(CONSTANT_INDICES) == 0: 
+                if len(CONSTANT_INDICES) > 0:
                     cons.write("array_comp(")
                     convert(symbs,l,cons)
                     cons.write(",")
@@ -489,6 +493,7 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
         if len(CONSTANT_INDICES) > 0:
             array_name = f'{clean_string(ff.get_array_name(a))}_{p.constant_value()}'
             cons.write(array_name)
+            symbs.add(array_name)
             cons.write(',')
         else:
             convert(symbs, a, cons)
