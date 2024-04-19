@@ -1,5 +1,6 @@
 """ Build self.random smt formulas from scratch or using given subexpressions
 """
+from audioop import reverse
 from typing import FrozenSet
 from pysmt.fnode import FNode
 import pysmt.operators as ops
@@ -18,6 +19,7 @@ BV_BINARY_OPS = frozenset([ ops.BV_AND, ops.BV_OR, ops.BV_XOR, ops.BV_ADD, \
 OTHER_BV_OPS = frozenset([ops.BV_ZEXT, ops.BV_SEXT, ops.BV_EXTRACT, ops.BV_CONCAT, ops.BV_COMP, ops.BV_LSHL, ops.BV_ASHR, ops.BV_LSHR])
 MY_IRA_OPS = frozenset(filter(lambda t: t not in (ops.BV_TONATURAL, ops.TOREAL),ops.IRA_OPERATORS))
 
+
 assert BV_UNARY_OPS | BV_BINARY_OPS | OTHER_BV_OPS == ops.BV_OPERATORS
 
 
@@ -26,7 +28,7 @@ def get_constants_for_type(node_type: types.PySMTType) -> set[FNode] | FrozenSet
     if node_type == types.BOOL:
         return frozenset([sc.FALSE(), sc.TRUE()])
     if node_type == types.INT:
-        return frozenset([sc.Int(0), sc.Int(1), sc.Int(2**63 - 1), sc.Int(2**63 + 1)])
+        return frozenset([sc.Int(0), sc.Int(1)])#, sc.Int(2**63 - 1), sc.Int(2**63 + 1)])
     if node_type.is_bv_type():
         width = node_type.width # type: ignore
         return set([sc.BVZero(width), sc.BVOne(width), sc.BV(2**width - 1, width), sc.BV(2**(width-1), width)])
@@ -62,13 +64,27 @@ class FormulaBuilder():
         if max_depth == 0:
             return self.random.random_choice(self.get_leaves_for_type(node_type, max_depth))
         res = self.random.random_choice(self.get_ops_for_outtype(node_type)\
-                                                             + [(l, []) for l in self.get_leaves_for_type(node_type, max_depth)])
-        next_operation, subtypes_needed = res
-        if isinstance(next_operation, FNode):
-            return next_operation
-        node_args = tuple(self.build_formula_of_type(t, max_depth-1) for t in subtypes_needed)
-        payload = self.get_payload_for_op(next_operation, node_type, subtypes_needed)
-        return get_env().formula_manager.create_node(next_operation, node_args, payload)
+            + [(l, []) for l in self.get_leaves_for_type(node_type, max_depth)])
+        
+        if not isinstance(res, list):
+            next_operation, subtypes_needed = res
+            if isinstance(next_operation, FNode):
+                return next_operation
+            node_args = tuple(self.build_formula_of_type(t, max_depth-1) for t in subtypes_needed)
+            payload = self.get_payload_for_op(next_operation, node_type, subtypes_needed)
+            return get_env().formula_manager.create_node(next_operation, node_args, payload)
+        ## Arrays
+        res_node = None
+        for next_operation, subtypes_needed, out_type in reversed(res):
+            built_nodes = [self.build_formula_of_type(t, max_depth-1) for t in filter(lambda t: not t is None, subtypes_needed)]
+            if res_node is not None:
+                res_index = subtypes_needed.index(None)
+                built_nodes.insert(res_index+1, res_node)
+                subtypes_needed[res_index] = res_node.get_type()
+            node_args = tuple(built_nodes)
+            payload = self.get_payload_for_op(next_operation,  out_type, subtypes_needed)
+            res_node = get_env().formula_manager.create_node(next_operation, node_args, payload)
+        return res_node #type: ignore
     
     def get_ops_for_outtype(self, out_type: types.PySMTType) -> list[tuple[int,list[types.PySMTType]]]:
         """ Returns all possible supported operations for a given SMT-Node Type
@@ -88,17 +104,29 @@ class FormulaBuilder():
         if out_type.is_bv_type():
             res.extend([(o,[out_type]) for o in BV_UNARY_OPS])
             res.extend([(o,[out_type, out_type]) for o in BV_BINARY_OPS])
+            # Size changing types: 
+            res.extend([(o,[smaller_type]) for o in (ops.BV_SEXT,ops.BV_ZEXT) \
+                        for smaller_type in filter(lambda st: st.width < out_type.width, self.bv_types)]) #type: ignore
+            res.extend([(ops.BV_EXTRACT,[larger_type]) \
+                        for larger_type in filter(lambda st: st.width > out_type.width, self.bv_types)]) #type: ignore
+            for type1 in self.bv_types:
+                for type2 in self.bv_types:
+                    if type1.width + type2.width == out_type.width: #type: ignore
+                        res.append((ops.BV_CONCAT,[type1,type2]))
+
         if out_type.is_int_type():
             res.extend([(o,[types.INT, types.INT]) for o in MY_IRA_OPS])
 
         if 'ABV' in self.logic or 'AL' in self.logic or 'AN' in self.logic:
             arrays_for_out_type = set(filter(lambda at: at.elem_type == out_type, self.arrays))
             if len(arrays_for_out_type) > 0:
-                res.extend([(ops.ARRAY_SELECT,[at, at.index_type]) for at in arrays_for_out_type])
+                res.extend([(ops.ARRAY_SELECT,[at, at.index_type]) for at in filter(lambda a: not a.index_type.is_bv_type(),arrays_for_out_type)])
+                res.extend([[(ops.ARRAY_SELECT,[at,None],out_type),(ops.BV_SEXT,[types.BV8],at.index_type)] for at in filter(lambda a: a.index_type.is_bv_type(),arrays_for_out_type)])
                 if out_type.is_bool_type():
                     res.extend([(ops.EQUALS,[at,at]) for at in self.arrays])
                 if out_type.is_array_type():
-                        res.extend([(ops.ARRAY_STORE,[at,at.index_type,out_type]) for at in self.arrays])
+                    res.extend([(ops.ARRAY_STORE,[at,at.index_type,out_type]) for at in filter(lambda a: not a.index_type.is_bv_type(),arrays_for_out_type)])
+                    res.extend([[(ops.ARRAY_STORE,[at,None,out_type],out_type),(ops.BV_SEXT,[types.BV8],at.index_type)] for at in filter(lambda a: a.index_type.is_bv_type(),arrays_for_out_type)])
         return res
     
     def get_leaves_for_type(self,node_type: types.PySMTType, maximum_depth: int) -> list[FNode]:
@@ -109,13 +137,13 @@ class FormulaBuilder():
     def get_payload_for_op(self,op: int, node_type: types.PySMTType, argtypes: list[types.PySMTType]):
         """ Returns the necessary additional information pySMT needs to create a node """
         if op in (ops.BV_ZEXT, ops.BV_SEXT):
-            return (argtypes[0].width, argtypes[0].width - node_type.width) #type: ignore
+            return (node_type.width, node_type.width-argtypes[0].width) #type: ignore
         if op == ops.BV_CONCAT:
             return (argtypes[0].width + argtypes[1].width,) # type: ignore
         if op == ops.BV_EXTRACT:
             diff = argtypes[0].width - node_type.width#type: ignore
             offset = self.random.get_random_integer(0,diff) # type: ignore # TODO: see what is correct here
-            return (diff, offset, argtypes[0].width+offset-1) #type: ignore
+            return (node_type.width, offset, node_type.width+offset-1) #type: ignore
         if op in (ops.BV_ROL, ops.BV_ROR):
             return (argtypes[0].width, self.random.get_random_integer(0,node_type.width-1)) #type: ignore
         if op in ops.BV_OPERATORS:
