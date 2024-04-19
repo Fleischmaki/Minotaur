@@ -233,7 +233,7 @@ def div_helper(symbs: t.Set[str],node: FNode, cons: io.TextIOBase):
         cons.write(',')
         write_cast(symbs,node,cons,r)
         cons.write(f',{width})')
-        if needs_unsigned_cast(node) and not has_matching_type(width):
+        if not has_matching_type(width):
             cons.write(')')
 
 
@@ -376,6 +376,8 @@ def convert(symbs: t.Set[str],node: FNode,cons: io.TextIOBase):
             cons.write(get_unsigned_cast(node, always=True))
             write_unsigned(symbs,l, cons,l)
             cons.write(')')
+            if not has_matching_type(new_width):
+                cons.write(')')
         else:
             write_unsigned(symbs,l,cons,l)
     elif node.is_bv_concat():
