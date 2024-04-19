@@ -15,13 +15,13 @@ from pysmt.smtlib.commands import SET_LOGIC
 from pysmt.fnode import FNode
 import pysmt.exceptions
 
-from . import converter, formula_transforms as ff
+from . import converter, formula_operations as ff
 
 LOGGER = logging.getLogger(__name__)
 
 SmtFileData = namedtuple('SmtFileData',['decl_arr','formula', 'logic', 'clauses'])
 
-def parse(file_path: str, transformations: dict, check_neg: bool, continue_on_error = True)\
+def parse(file_path: str, transformations: dict, check_neg: bool = False, continue_on_error = True)\
     -> tuple[OrderedDict[str,bool],dict[str,str],int]:
     """Parses an smt file, converts it into C clauses and extracts the corresponding variables
     :returns:   An OrderedDict containing the resulting C-expressions as keys and value indicating whether the negated expression is also sat

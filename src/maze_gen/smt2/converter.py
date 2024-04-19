@@ -9,7 +9,7 @@ from pysmt.shortcuts import And, BV, Plus, Times, Or
 from pysmt.fnode import FNode
 from pysmt.typing import PySMTType as node_type
 
-from . import formula_transforms as ff
+from . import formula_operations as ff
 
 LOGGER = logging.getLogger(__name__)
 

@@ -9,8 +9,7 @@ from storm.utils.randomness import Randomness # pylint: disable=import-error
 from storm.smt.smt_object import smtObject # pylint: disable=import-error
 from storm.fuzzer.fuzzer import generate_mutants # pylint: disable=import-error
 from storm.parameters import get_parameters_dict # pylint: disable=import-error
-from smt2 import parser, formula_transforms, formula_builder as fb # pylint: disable=import-error
-
+from smt2 import parser, formula_builder as fb, formula_operations # pylint: disable=import-error
 
 
 LOGGER = logging.getLogger(__name__)
@@ -52,11 +51,16 @@ def parse_transformations(t_type: str) -> dict:
     last = False
     neg = False
     ca = False
+    max_assert = max_depth = 0
     for transformation in transformations:
         if transformation == 'sh':
             shuffle = True
-        elif transformation == 'storm':
+        elif transformation.startswith('storm'):
             storm = True
+            max_assert = 5
+            max_depth = 10
+            if len(transformation) > 5:
+                max_assert, max_depth = transformation.removeprefix("storm").split('x')   
         elif transformation == 'wd':
             well_defined = True
         elif transformation.startswith('dc'):
@@ -75,7 +79,8 @@ def parse_transformations(t_type: str) -> dict:
             neg = True
         elif transformation == 'neg':
             ca = True
-    return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keep_id, 'wd' : well_defined, 'mc' : mc, 'sat' : sat, 'dag': dag, 'last': last, 'neg': neg, 'ca': ca}
+    return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keep_id, 'wd' : well_defined, 'mc' : mc, \
+            'sat' : sat, 'dag': dag, 'last': last, 'neg': neg, 'ca': ca, 'max_assert': max_assert, 'max_depth': max_depth}
 
 def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: bool = True) -> list:
     if n <= 0:
@@ -95,8 +100,8 @@ def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: 
             LOGGER.warning("Could not fuzz file: cannot generate unsat files from sat %s files.", file_data.logic)
             return [smt_file] * n
         # Try to see if we can get an unsat core from array constraints
-        min_index, calls  = formula_transforms.get_array_index_calls(file_data.formula)
-        core = And(formula_transforms.get_array_constraints(calls, min_index))
+        min_index, calls  = formula_operations.get_array_index_calls(file_data.formula)
+        core = And(formula_operations.get_array_constraints(calls, min_index))
         LOGGER.info("Formula is sat, trying to build core from array constraints.")
         if is_sat(And(core,file_data.formula),solver_name='z3',logic=file_data.logic):
             LOGGER.warning("Could not get core from array constraints, using trivial core.")

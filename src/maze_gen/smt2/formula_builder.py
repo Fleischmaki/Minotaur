@@ -9,7 +9,7 @@ from pysmt.shortcuts import get_env
 
 from storm.utils.randomness import Randomness # pylint: disable=import-error
 
-from  . import formula_transforms
+from  . import formula_operations
 
 BV_UNARY_OPS = frozenset([ops.BV_NOT, ops.BV_NEG, ops.BV_ROL,ops.BV_ROR])
 BV_BINARY_OPS = frozenset([ ops.BV_AND, ops.BV_OR, ops.BV_XOR, ops.BV_ADD, \
@@ -40,14 +40,14 @@ class FormulaBuilder():
     """
     def __init__(self, formula: FNode, logic: str, rand: Randomness):
         self.variables_by_type = {}
-        for variable in formula_transforms.get_nodes(formula, lambda _: True):
+        for variable in formula_operations.get_nodes(formula, lambda _: True):
             node_type = variable.get_type()
             if variable.get_type() not in self.variables_by_type:
                 self.variables_by_type[node_type] = set()
             self.variables_by_type[node_type].add(variable)
         self.logic = logic
         self.bv_types = set(filter(lambda t: t.is_bv_type(), self.variables_by_type.keys()))
-        self.variables_depths = formula_transforms.label_formula_depth(formula)
+        self.variables_depths = formula_operations.label_formula_depth(formula)
         self.random = rand
         self.arrays = set(filter(lambda t: t.is_array_type(), self.variables_by_type.keys()))
         
