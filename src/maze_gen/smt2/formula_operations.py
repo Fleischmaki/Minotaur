@@ -11,7 +11,7 @@ from pysmt.solvers.z3 import Z3Solver
 
 
 LOGGER = logging.getLogger(__name__)
-MAXIMUM_ARRAY_SIZE = 2*7 - 1
+MAXIMUM_ARRAY_SIZE = 2**8
 
 def get_bv_width_from_array_type(array_type: smt_types._ArrayType):
     """ Returns the width for the base element type of an array.
