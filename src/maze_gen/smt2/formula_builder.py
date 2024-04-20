@@ -104,7 +104,7 @@ class FormulaBuilder():
         if out_type.is_bv_type():
             res.extend([(o,[out_type]) for o in BV_UNARY_OPS])
             res.extend([(o,[out_type, out_type]) for o in BV_BINARY_OPS])
-            # Size changing types: 
+            # Size changing types:
             res.extend([(o,[smaller_type]) for o in (ops.BV_SEXT,ops.BV_ZEXT) \
                         for smaller_type in filter(lambda st: st.width < out_type.width, self.bv_types)]) #type: ignore
             res.extend([(ops.BV_EXTRACT,[larger_type]) \
@@ -121,12 +121,13 @@ class FormulaBuilder():
             arrays_for_out_type = set(filter(lambda at: at.elem_type == out_type, self.arrays))
             if len(arrays_for_out_type) > 0:
                 res.extend([(ops.ARRAY_SELECT,[at, at.index_type]) for at in filter(lambda a: not a.index_type.is_bv_type(),arrays_for_out_type)])
-                res.extend([[(ops.ARRAY_SELECT,[at,None],out_type),(ops.BV_SEXT,[types.BV8],at.index_type)] for at in filter(lambda a: a.index_type.is_bv_type(),arrays_for_out_type)])
+                # Limit array indices to char
+                res.extend([[(ops.ARRAY_SELECT,[at,None],out_type),(ops.BV_ZEXT,[types.BV8],at.index_type)] for at in filter(lambda a: a.index_type.is_bv_type(),arrays_for_out_type)])
                 if out_type.is_bool_type():
                     res.extend([(ops.EQUALS,[at,at]) for at in self.arrays])
                 if out_type.is_array_type():
                     res.extend([(ops.ARRAY_STORE,[at,at.index_type,out_type]) for at in filter(lambda a: not a.index_type.is_bv_type(),arrays_for_out_type)])
-                    res.extend([[(ops.ARRAY_STORE,[at,None,out_type],out_type),(ops.BV_SEXT,[types.BV8],at.index_type)] for at in filter(lambda a: a.index_type.is_bv_type(),arrays_for_out_type)])
+                    res.extend([[(ops.ARRAY_STORE,[at,None,out_type],out_type),(ops.BV_ZEXT,[types.BV8],at.index_type)] for at in filter(lambda a: a.index_type.is_bv_type(),arrays_for_out_type)])
         return res
     
     def get_leaves_for_type(self,node_type: types.PySMTType, maximum_depth: int) -> list[FNode]:

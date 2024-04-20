@@ -151,7 +151,9 @@ def get_array_calls_helper(formula: FNode, visited_nodes: set):
     min_size = 1
     if formula.is_store() or formula.is_select():
         if formula.args()[1].is_constant():
-            min_size = max(min_size, formula.args()[1].constant_value())
+            min_size = max(min_size, formula.arg(1).constant_value())
+        if formula.args()[1].is_bv_zext() and formula.arg(1).arg(0).is_bv_constant():
+            min_size = max(min_size, formula.arg(1).arg(0).constant_value())
         calls = [formula]
     for subformula in formula.args():
         if not (subformula.is_constant() or subformula.is_literal() or subformula.node_id() in visited_nodes):
