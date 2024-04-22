@@ -3,4 +3,4 @@
 # ARG 2: Outfile
 CBMC_DIR="/home/maze/tools/cbmc"
 mkdir -p "$1"
-python3 -m gcovr -r $CBMC_DIR/src --filter=$CBMC_DIR/src/ --filter=$CBMC_DIR/build/src $CBMC_DIR/build/src/cbmc --json "$1/$2".json
+python3 -m gcovr -r "$CBMC_DIR/src" --filter="$CBMC_DIR/src/" --filter="$CBMC_DIR/build/src" --json "$1/$2".json "$CBMC_DIR/build/src/cbmc"
