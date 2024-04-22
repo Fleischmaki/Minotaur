@@ -71,10 +71,12 @@ def load(argv):
             for j in range(conf['avg']):
                 start = time.time()
                 LOGGER.debug("Staring run %d/%d of experiment %d", j, conf['avg'],i)
+                LOGGER.debug("Using conf %s", curr_conf)
                 test.main(curr_conf, os.path.join(outdir, f'run{i}_{j}'))
                 end = time.time()
                 times.append(end-start)
             resfile.write(f"{i},{sum(times)/len(times)}\n")
+            resfile.flush()
 
 
 def set_param_value(new_conf: dict, old_conf: dict, key: str, i: int):

@@ -249,7 +249,7 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
             for filename in os.listdir(out_path):
                 if len(filename.split('_')) == 2:
                     runtime, tag = filename.split('_')
-                    if (tag == 'fn'):
+                    if tag in ('fp','fn'):
                         if conf['abort_on_error']:
                             has_bug = True
                         commands.run_cmd(CP_CMD % (get_maze_dir(w.maze), out_path)) # Keep buggy mazes
@@ -322,7 +322,7 @@ def merge_coverage(conf,out_dir: str) -> None:
                 files.append(os.path.join(out_dir, 'cov', file)) # For some reason filter + lambda does not work for this
                 file_string = ' --json-add-tracefile '.join(files)
                 outfile = f"{tool}_{len(files)}batches.json"
-                cmd = f"python3 -m gcovr --json-add-tracefile {file_string}  --merge-mode-functions=separate --json-summary-pretty &> {os.path.join(out_dir, 'cov', outfile)}"
+                cmd = f"python3 -m gcovr --json-add-tracefile {file_string}  --merge-mode-functions=separate --json-summary-pretty {os.path.join(out_dir, 'cov', outfile)}"
                 commands.run_cmd(cmd)
 
 def main(conf, out_dir):
@@ -345,8 +345,8 @@ def main(conf, out_dir):
         if conf['coverage']:
             store_coverage(conf,works,out_dir)
 
-    if conf['coverage']:
-        merge_coverage(conf,out_dir)
+    # if conf['coverage']:
+        # merge_coverage(conf,out_dir)
     commands.run_cmd(REMOVE_CMD % get_temp_dir())
 
 
