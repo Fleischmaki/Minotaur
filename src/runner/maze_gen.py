@@ -103,7 +103,8 @@ def generate_mazes(paramss, outdir, workers=1, timeout=-1):
             if i < len(work):
                 pipes[j].wait()
                 commands.run_cmd('mkdir -p ' + os.path.join(outdir, 'smt', str(work[i]['r'])))
-                docker.set_docker_seed(work[i]['s'], j, 'gen').wait()
+                if 's' in work[i]:
+                    docker.set_docker_seed(work[i]['s'], j, 'gen').wait()
                 pipes[j] = generate_maze_in_docker(work[i], j, timeout)
     commands.wait_for_procs(pipes)
     for i in range(len(works)):
