@@ -184,8 +184,8 @@ class TargetGenerator():
             maze_gen.generate_maze(params, get_temp_dir(), get_minotaur_root())
             self.mazes.update({maze: params for maze in maze_gen.get_maze_names(params)})
 
-    def fetch_maze_params(self):                                                                 
-        return [get_random_params(self.conf) for _ in range(min(self.repeats,ceil(ceil(self.conf['workers']/len(self.conf['tool']))*self.conf['batch_size']/max(1,self.conf['transforms']))))] # NUMNB_BATCHES*SIZE / MAZES_PER_PARAMS
+    def fetch_maze_params(self):                                                                
+        return [get_random_params(self.conf) for _ in range(min(self.repeats*self.conf['batch_size'],ceil(ceil(self.conf['workers']/len(self.conf['tool']))*self.conf['batch_size']/max(1,self.conf['transforms']))))] # NUMNB_BATCHES*SIZE / MAZES_PER_PARAMS
 
 def fetch_works(conf: dict, gen: TargetGenerator) -> tuple[list[Target], list[Target]]:
     new_targets = list(it.islice(gen, 0, conf['workers']*conf['batch_size']))
