@@ -32,7 +32,7 @@ def spawn_cmd_in_docker(container, cmd_str, timeout=-1) -> subprocess.Popen: #ty
     """
     cmd_prefix =  f'{DOCKER_COMMAND} exec {container} /bin/bash -c'
     if timeout > 0:
-        cmd_prefix = f'{DOCKER_COMMAND} exec {container} timeout {timeout}s -k 10s /bin/bash -c'
+        cmd_prefix = f'{DOCKER_COMMAND} exec {container} timeout -k 10s {timeout}s /bin/bash -c'
     cmd_args = cmd_prefix.split()
     cmd_args += [cmd_str]
     LOGGER.info('Executing (in container %s): %s', container, ' '.join(cmd_args[3:]))
