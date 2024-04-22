@@ -1,6 +1,5 @@
 """ Build self.random smt formulas from scratch or using given subexpressions
 """
-from audioop import reverse
 from typing import FrozenSet
 from pysmt.fnode import FNode
 import pysmt.operators as ops
@@ -23,14 +22,18 @@ MY_IRA_OPS = frozenset(filter(lambda t: t not in (ops.BV_TONATURAL, ops.TOREAL),
 assert BV_UNARY_OPS | BV_BINARY_OPS | OTHER_BV_OPS == ops.BV_OPERATORS
 
 
-def get_constants_for_type(node_type: types.PySMTType) -> set[FNode] | FrozenSet[FNode]:
+def get_constants_for_type(node_type: types.PySMTType,parent_is_array: bool=False) -> set[FNode] | FrozenSet[FNode]:
     """Returns interesting constants of type node_type"""
     if node_type == types.BOOL:
         return frozenset([sc.FALSE(), sc.TRUE()])
     if node_type == types.INT:
-        return frozenset([sc.Int(0), sc.Int(1)])#, sc.Int(2**63 - 1), sc.Int(2**63 + 1)])
+        if parent_is_array:
+            return frozenset([sc.Int(0), sc.Int(1)])#, sc.Int(2**63 - 1), sc.Int(2**63 + 1)])
+        return frozenset([sc.Int(0), sc.Int(1), sc.Int(2**63 - 1), sc.Int(2**63 + 1)])
     if node_type.is_bv_type():
         width = node_type.width # type: ignore
+        if parent_is_array:
+            return set([sc.BVZero(width), sc.BVOne(width)])
         return set([sc.BVZero(width), sc.BVOne(width), sc.BV(2**width - 1, width), sc.BV(2**(width-1), width)])
     return set()
 
@@ -59,32 +62,19 @@ class FormulaBuilder():
         res = self.build_formula_of_type(types.BOOL, max_depth)
         return res
 
-    def build_formula_of_type(self, node_type: types.PySMTType, max_depth: int) -> FNode:
+    def build_formula_of_type(self, node_type: types.PySMTType, max_depth: int, parent_is_array: bool = False) -> FNode:
         """ Build a random formula of the given type and depth """
         if max_depth == 0:
-            return self.random.random_choice(self.get_leaves_for_type(node_type, max_depth))
+            return self.random.random_choice(self.get_leaves_for_type(node_type, max_depth, parent_is_array))
         res = self.random.random_choice(self.get_ops_for_outtype(node_type)\
-            + [(l, []) for l in self.get_leaves_for_type(node_type, max_depth)])
+            + [(l, []) for l in self.get_leaves_for_type(node_type, max_depth, parent_is_array)])
         
-        if not isinstance(res, list):
-            next_operation, subtypes_needed = res
-            if isinstance(next_operation, FNode):
-                return next_operation
-            node_args = tuple(self.build_formula_of_type(t, max_depth-1) for t in subtypes_needed)
-            payload = self.get_payload_for_op(next_operation, node_type, subtypes_needed)
-            return get_env().formula_manager.create_node(next_operation, node_args, payload)
-        ## Arrays
-        res_node = None
-        for next_operation, subtypes_needed, out_type in reversed(res):
-            built_nodes = [self.build_formula_of_type(t, max_depth-1) for t in filter(lambda t: not t is None, subtypes_needed)]
-            if res_node is not None:
-                res_index = subtypes_needed.index(None)
-                built_nodes.insert(res_index+1, res_node)
-                subtypes_needed[res_index] = res_node.get_type()
-            node_args = tuple(built_nodes)
-            payload = self.get_payload_for_op(next_operation,  out_type, subtypes_needed)
-            res_node = get_env().formula_manager.create_node(next_operation, node_args, payload)
-        return res_node #type: ignore
+        next_operation, subtypes_needed = res
+        if isinstance(next_operation, FNode):
+            return next_operation
+        node_args = tuple(self.build_formula_of_type(t, max_depth-1) for t in subtypes_needed)
+        payload = self.get_payload_for_op(next_operation, node_type, subtypes_needed)
+        return get_env().formula_manager.create_node(next_operation, node_args, payload)
     
     def get_ops_for_outtype(self, out_type: types.PySMTType) -> list[tuple[int,list[types.PySMTType]]]:
         """ Returns all possible supported operations for a given SMT-Node Type
@@ -120,21 +110,22 @@ class FormulaBuilder():
         if 'ABV' in self.logic or 'AL' in self.logic or 'AN' in self.logic:
             arrays_for_out_type = set(filter(lambda at: at.elem_type == out_type, self.arrays))
             if len(arrays_for_out_type) > 0:
-                res.extend([(ops.ARRAY_SELECT,[at, at.index_type]) for at in filter(lambda a: not a.index_type.is_bv_type(),arrays_for_out_type)])
+                res.extend([(ops.ARRAY_SELECT,[at, at.index_type]) for at in arrays_for_out_type])
                 # Limit array indices to char
-                res.extend([[(ops.ARRAY_SELECT,[at,None],out_type),(ops.BV_ZEXT,[types.BV8],at.index_type)] for at in filter(lambda a: a.index_type.is_bv_type(),arrays_for_out_type)])
                 if out_type.is_bool_type():
                     res.extend([(ops.EQUALS,[at,at]) for at in self.arrays])
                 if out_type.is_array_type():
-                    res.extend([(ops.ARRAY_STORE,[at,at.index_type,out_type]) for at in filter(lambda a: not a.index_type.is_bv_type(),arrays_for_out_type)])
-                    res.extend([[(ops.ARRAY_STORE,[at,None,out_type],out_type),(ops.BV_ZEXT,[types.BV8],at.index_type)] for at in filter(lambda a: a.index_type.is_bv_type(),arrays_for_out_type)])
+                    res.extend([(ops.ARRAY_STORE,[at,at.index_type,out_type]) for at in arrays_for_out_type])
         return res
     
-    def get_leaves_for_type(self,node_type: types.PySMTType, maximum_depth: int) -> list[FNode]:
+    def get_leaves_for_type(self,node_type: types.PySMTType, maximum_depth: int, parent_is_array: bool = False) -> list[FNode]:
         """ Get constants or subexpressions so we don't need to generate subformulas 
         """
-        return list(filter(lambda v: self.variables_depths[v] <= maximum_depth, self.variables_by_type[node_type])) + list(get_constants_for_type(node_type))
-    
+        res = list(get_constants_for_type(node_type, parent_is_array))
+        if node_type in self.variables_by_type:
+            res.extend(filter(lambda v: self.variables_depths[v] <= maximum_depth, self.variables_by_type[node_type]))
+        return res
+
     def get_payload_for_op(self,op: int, node_type: types.PySMTType, argtypes: list[types.PySMTType]):
         """ Returns the necessary additional information pySMT needs to create a node """
         if op in (ops.BV_ZEXT, ops.BV_SEXT):
