@@ -60,7 +60,7 @@ def parse_transformations(t_type: str) -> dict:
             max_assert = 5
             max_depth = 10
             if len(transformation) > 5:
-                max_assert, max_depth = transformation.removeprefix("storm").split('x')   
+                max_assert, max_depth = transformation.removeprefix("storm").split('x')
         elif transformation == 'wd':
             well_defined = True
         elif transformation.startswith('dc'):
@@ -94,7 +94,7 @@ def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: 
         LOGGER.warning("Could not fuzz file: timeout.")
         if generate_sat:
             return [smt_file] * n
-        core = FALSE
+        core = FALSE()
     elif smt_obj.get_final_satisfiability() == "sat" and not generate_sat:
         if not 'A' in file_data.logic:
             LOGGER.warning("Could not fuzz file: cannot generate unsat files from sat %s files.", file_data.logic)
@@ -105,9 +105,9 @@ def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: 
         LOGGER.info("Formula is sat, trying to build core from array constraints.")
         if is_sat(And(core,file_data.formula),solver_name='z3',logic=file_data.logic):
             LOGGER.warning("Could not get core from array constraints, using trivial core.")
-            core = FALSE
+            core = FALSE()
     elif generate_sat:
-        core = TRUE
+        core = TRUE()
     else:
         clauses = [Not(file_data.formula)] if smt_obj.orig_satisfiability != smt_obj.final_satisfiabiliy else file_data.clauses
         core = And(*parser.get_unsat_core(clauses, file_data.logic))
@@ -128,5 +128,6 @@ def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: 
         for mutant in mutants:
             builder = fb.FormulaBuilder(file_data.formula, file_data.logic, rand)
             assertions = [builder.get_random_assertion(fpars['max_depth']) for _ in range(fpars['max_assert'])]
+            print(assertions)
             parser.write_to_file(And(*assertions, core), mutant)
     return mutants 
