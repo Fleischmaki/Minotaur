@@ -124,14 +124,14 @@ class TargetGenerator():
             raise StopIteration
         if len(self.targets) == 0:
             LOGGER.info("Out of targets, fetching new batch.")
-            self.add_batch()              
+            self.add_batch()
         return self.targets.pop(0)
 
     def has_targets(self):
-        return self.repeats != 0 or len(self.targets) > 0 or len(self.mazes) > 0
+        return self.repeats > 0 or len(self.targets) > 0 or len(self.mazes) > 0
 
     def add_batch(self):
-        while(len(self.mazes) < self.conf['batch_size'] and self.repeats != 0):
+        while len(self.mazes) < self.conf['batch_size'] and self.repeats > 0:
             LOGGER.info("Out of mazes, generating more.")
             self.generate_mazes()
 
@@ -188,6 +188,8 @@ class TargetGenerator():
         mazes_per_batch = ceil(self.conf['batch_size']/max(1,self.conf['transforms']))
         batches_in_parallel = ceil(self.conf['workers']/len(self.conf['tool']))
         return [get_random_params(self.conf) for _ in range(min(self.repeats*mazes_per_batch,batches_in_parallel*mazes_per_batch))]
+
+
 
 def fetch_works(conf: dict, gen: TargetGenerator) -> tuple[list[Target], list[Target]]:
     new_targets = list(it.islice(gen, 0, conf['workers']*conf['batch_size']))
