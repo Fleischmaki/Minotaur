@@ -50,8 +50,9 @@ Alternatively, first generate the maze and then run `python3 Minotaur --m maze.c
 
 ### Run experiment 
 Before recreating experiments, build the necessary experiments with `./Minotaur/scripts/build_experiment_dockers.sh`.
-To run an experiment run `python3 Minotaur --e experiment_name outdir`. Experiment configurations are stored in the [experiments](Minotaur/experiments) folder. See also [recreate_results.md](Minotuar/recreate_results.md) 
-for more informations on the provided experiment configurations. 
+To run an experiment run `python3 Minotaur --e experiment_name outdir`. Experiment configurations are stored in the [experiments](experiments) folder. 
+
+For more informations on the provided experiment configurations see [this guide](recreate_results.md) on how to recreate the experiment results. 
 
 ### Logging
 For all tools the logging level can be set via --LEVEL with LEVEL being one of E(rror), W(arning), I(nfo) or D(ebug). E.g. `python3 --t --D conf outdir` runs tests with log-level `DEBUG`. 
