@@ -1,11 +1,11 @@
 {
-	"verbosity": "all",
+	"verbosity": "summary",
 	"repeats" : 20,
-	"batches": [100,100,5,5],
+	"batches": [60,60,3,3],
 	"duration" : 1000,
 	"workers" : 1,
 	"memory" : 4,
-	"transforms" : [1,1,20,20],
+	"transforms" : [0,1,20,20],
 	"seed": [1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5],
 	"batch_size": 1,
 	"maze_gen" : "local",
@@ -48,8 +48,8 @@
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
 		},
-		"g": ["CVE_gen", "CVE-neg_gen"],
-		"s": "/home/markus/MinotaurProject/seeds/bitvector-s3_clnt_3.BV.c.cil-1a-test000036.smt2",
+		"g": ["CVE_gen"],
+		"s": "/home/markus/MinotaruProject/Minotaur/bug_seeds/bitvector-s3_clnt_3.BV.c.cil-1a-test000036.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -63,7 +63,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MinotaurProject/seeds/bitvector-s3_clnt_3.BV.c.cil-1a-test000036.smt2",
+		"s": "/home/markus/MinotaruProject/Minotaur/bug_seeds/bitvector-s3_clnt_3.BV.c.cil-1a-test000036.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -84,8 +84,8 @@
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
 		},
-		"g": ["CVE_gen","CVE-neg_gen"],
-		"s": "/home/markus/MinotaurProject/seeds/bitvector-s3_clnt_3.BV.c.cil-1a-test000036.smt2",
+		"g": ["CVE_gen"],
+		"s": "/home/markus/MinotaruProject/Minotaur/bug_seeds/bitvector-s3_clnt_3.BV.c.cil-1a-test000036.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

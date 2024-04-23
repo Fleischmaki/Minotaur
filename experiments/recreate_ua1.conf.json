@@ -37,7 +37,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MinotaurProject/seeds/bench_12285.smt2",
+		"s": "/home/markus/MinotaruProject/Minotaur/bug_seeds/bench_12285.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

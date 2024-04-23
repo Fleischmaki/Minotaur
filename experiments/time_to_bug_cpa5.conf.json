@@ -12,8 +12,8 @@
 	"expected_result": "error",
 	"gen_time" : 1000,
 	"tool" : {
-		"esbmc-bug2": {
-			"variant" : ["--interval-analysis"]
+		"cpa-release": {
+			"variant" : ["kInduction"]
 		}
 	},
 	"avg": 1,
@@ -44,12 +44,12 @@
 		},
 		"t" : {
 			"storm": [0],
-			"wd": [0,1],
+			"wd": [0],
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MinotaurProject/Minotaur/bug_seeds/app9bench_1287.smt2",
+		"s": "/home/markus/MinotaruProject/Minotaur/bug_seeds/bubble_sort2.c.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -58,12 +58,12 @@
 		"u" : [1],
 		"t" : {
 			"storm": [1],
-			"wd": [0,1],
+			"wd": [0],
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MinotaurProject/Minotaur/bug_seeds/app9bench_1287.smt2",
+		"s": "/home/markus/MinotaruProject/Minotaur/bug_seeds/bubble_sort2.c.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -80,12 +80,12 @@
 		},
 		"t" : {
 			"storm": [1],
-			"wd": [0,1],
+			"wd": [0],
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MinotaurProject/Minotaur/bug_seeds/app9bench_1287.smt2",
+		"s": "/home/markus/MinotaruProject/Minotaur/bug_seeds/bubble_sort2.c.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

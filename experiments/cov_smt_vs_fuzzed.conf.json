@@ -1,23 +1,22 @@
 {
-	"verbosity": "all",
+	"verbosity": "bug",
 	"repeats" : 20,
-	"batches" : 25,
+	"batches" : 100,
 	"duration" : 30,
-	"workers" : 5,
+	"workers" : 150,
 	"memory" : 4,
 	"transforms" : [0,1,10,10],
-	"batch_size": 10,
-	"maze_gen" : "local",
+	"batch_size": 100,
+	"maze_gen" : "container",
 	"expected_result": "error",
 	"gen_time" : 1000,
-	"abort_on_error":0,
+	"abort_on_error": 0,
 	"coverage": 1,
 	"seed": [1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5],
 	"tool" : { 
 		"cbmc": {
 			"variant" : ["--boolector","--mathsat","--cvc4","--yices","--z3"],
 			"choose" : {
-				"--paths " : [0,"fifo","lifo"],
 				"--" : [0,"full-slice","reachability-slice","reachability-slice-fb"]
 			},
 			"toggle" : ["--refine"]
@@ -72,9 +71,10 @@
 			"wd": [0],
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4],
-			"neg": [1]
+			"neg": [1],
+			"ca": [0,1]
 		},
-		"g": ["CVE_gen", "CVE-neg_gen"],
+		"g": ["CVE_gen","CVE-neg_gen"],
 		"s": "/home/markus/MinotaurProject/covseeds",
 		"r" : {
 			"min" : 0,
@@ -86,7 +86,8 @@
 			"storm": [1],
 			"wd": [0],
 			"mc": [0,25,50,75,100],
-			"dag": [0,2,3,4]
+			"dag": [0,2,3,4],
+			"ca": [0,1]
 		},
 		"g": ["CVE_gen"],
 		"s": "/home/markus/MinotaurProject/Minotaur/covseeds",
@@ -108,7 +109,8 @@
 			"storm": [1],
 			"wd": [0],
 			"mc": [0,25,50,75,100],
-			"dag": [0,2,3,4]
+			"dag": [0,2,3,4],
+			"ca": [0,1]
 		},
 		"g": ["CVE_gen","CVE-neg_gen"],
 		"s": "/home/markus/MinotaurProject/covseeds",

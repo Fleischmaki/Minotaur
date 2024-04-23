@@ -58,7 +58,7 @@
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
 		},
-		"g": ["CVE_gen","CVE-neg_gen"],
+		"g": ["CVE_gen"],
 		"s": "/home/markus/MinotaurProject/covseeds",
 		"r" : {
 			"min" : 0,

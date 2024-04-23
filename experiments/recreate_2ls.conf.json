@@ -1,21 +1,20 @@
 {
 	"verbosity": "summary",
 	"repeats" : 5,
-	"batches": [-1],
-	"duration" : [1000],
-	"workers" : 5,
+	"batches": -1,
+	"duration" : 1000,
+	"workers" : 1,
 	"memory" : 4,
-	"transforms" : [15],
+	"transforms" : 20,
 	"seed": [1,2,3,4,5],
-	"batch_size": [1],
-	"maze_gen" : "container",
+	"batch_size": 1,
+	"maze_gen" : "local",
 	"expected_result": "error",
 	"tool" : {
-		"cpa": {
-			"variant" : ["smg2"]
+		"2ls": {
+			"variant" : ["--k-induction"]
 		}
 	},
-	"avg": 1,
 	"parameters" : {
 		"u" : [0,1],
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
@@ -35,11 +34,10 @@
 			"storm": [1],
 			"wd": [0],
 			"mc": [0,25,50,75,100],
-			"dag": [0,2,3,4],
-			"unsat": [1]
+			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MinotaurProject/seeds/bubble_sort2.c.smt2",
+		"s": "/home/markus/MinotaurProject/Minotaur/bug_seeds/no_init_bubble_sort_safe2.c.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

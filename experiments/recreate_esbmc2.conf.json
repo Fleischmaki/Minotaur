@@ -37,7 +37,7 @@
 			"mc": [0,25,50,75,100]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MasterThesis/Minotaur/bug_seeds/app9bench_1287.smt2",
+		"s": "/home/markus/MinotaurProject/Minotaur/bug_seeds/app9bench_1287.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

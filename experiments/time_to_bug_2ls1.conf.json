@@ -12,8 +12,8 @@
 	"expected_result": "error",
 	"gen_time" : 1000,
 	"tool" : {
-		"esbmc-bug2": {
-			"variant" : ["--interval-analysis"]
+		"2ls": {
+			"variant" : ["--k-induction"]
 		}
 	},
 	"avg": 1,
@@ -49,7 +49,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MinotaurProject/Minotaur/bug_seeds/app9bench_1287.smt2",
+		"s": "/home/markus/MinotaurProject/Minotaur/bug_seeds/no_init_bubble_sort_safe2.c.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -63,7 +63,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MinotaurProject/Minotaur/bug_seeds/app9bench_1287.smt2",
+		"s": "/home/markus/MinotaurProject/Minotaur/bug_seeds/no_init_bubble_sort_safe2.c.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -85,7 +85,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MinotaurProject/Minotaur/bug_seeds/app9bench_1287.smt2",
+		"s": "/home/markus/MinotaruProject/Minotaur/bug_seeds/b183test0001.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
