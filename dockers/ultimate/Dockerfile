@@ -26,5 +26,6 @@ ADD run_ultimate.sh /home/maze/tools/run_ultimate.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD unreach.prp /home/maze/workspace/unreach.prp
 
+ENV PATH=$PATH:/home/maze/tools/UAutomizer-linux/
 
 WORKDIR /home/maze/workspace
