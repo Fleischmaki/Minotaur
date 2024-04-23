@@ -8,8 +8,8 @@ flowchart LR
     Klee --> Storm
     SMTComp --> Storm
     Storm --> |SAT Clauses| Generator
-    Klee --> UFuzz
-    SMTComp --> UFuzz
+    Klee --> UnsatFuzzer
+    SMTComp --> UnsatFuzzer
     UFuzz --> |UNSAT Clauses| Generator
     Maze --> |Scaffolding| Fuzzle
     Generator --> |Logic| Fuzzle
@@ -18,7 +18,7 @@ flowchart LR
     SMC --> |Result| Minimizer
     SMC --> |Imprecise/Unsound| Bug 
     Storm --> |Clauses| Minimizer
-    Unsat Fuzzing --> |Clauses, Core| Minimizer
+    UnsatFuzzer --> |Clauses Core| Minimizer
     Minimizer --> | Selected Clauses | Generator
     Minimizer --> | Minimized Code | Bug
 ```
