@@ -128,6 +128,5 @@ def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, generate_sat: 
         for mutant in mutants:
             builder = fb.FormulaBuilder(file_data.formula, file_data.logic, rand)
             assertions = [builder.get_random_assertion(fpars['max_depth']) for _ in range(fpars['max_assert'])]
-            print(assertions)
             parser.write_to_file(And(*assertions, core), mutant)
     return mutants 
