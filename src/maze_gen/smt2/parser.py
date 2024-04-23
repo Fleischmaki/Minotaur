@@ -49,7 +49,6 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
         array_size = -1
     else:
         converter.set_constant_array_indices({})
-
     try:
         core = set() if generate_sat else get_unsat_core(clauses, logic)
     except pysmt.exceptions.SolverStatusError as e:
@@ -147,7 +146,7 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
     if logic.split('_')[-1].startswith('A'):
         array_size, array_constraints, _, all_constant = ff.constrain_array_size(formula)
         if GENERATE_WELL_DEFINED:
-            clauses.extend(filter(lambda c: len(c.get_free_variables()) > 0, array_constraints))
+            clauses.extend(array_constraints)
         constraints.update(array_constraints)
     else:
         array_size = -1

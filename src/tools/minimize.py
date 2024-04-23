@@ -143,7 +143,7 @@ class Minimizer:
 
     def is_err(self):
         maze = maze_gen.get_maze_names(self.params)[max(0,self.params['m']-1)]
-        resdir = os.path.join(self.outdir,maze,maze) # IDK why it's twice but thats just how it is
+        resdir = os.path.join(self.outdir,maze,maze) 
         for file in os.listdir(resdir):
             if len(file.split('_')) == 2: # Still false negative
                 print(file)

@@ -86,6 +86,3 @@ def set_param_value(new_conf: dict, old_conf: dict, key: str, i: int):
     LOGGER.debug("Running with value %s for key %s", new_conf[key], key)
     if key == 'parameters' and old_conf['transforms'] == 0:
         new_conf['parameters']['keepId'] = [1]
-        # new_conf['parameters']['t']['storm'] = [0]
-        # new_conf['parameters']['t']['neg'] = [1]
-        # new_conf['transforms'] = 1
