@@ -5,8 +5,8 @@ In particular config files accept the following values
 - `memory`: Memory to use per worker
 - `duration`: Time to run tools per maze
 - `repeats`: Number of mazes to generate (-1 to run until cancelled), `transforms`: Number of transformations per maze
-   - Total number of mazes generated = `repeats` * `transforms`
 - `batch_size`: How many mazes will be tested before collecting results. Use higher numbers if spawning containers is expensive. 
+   - Total number of mazes generated = `repeats` * `batch_size`
 - `batch_duration` Sets the time before a batch gets killed, specified as the average time a maze should have (i.e. the total time for a batch is batch_duration*batch_size) 
 - `maze_gen=['local','container']`: Generate mazes locally one at a time or in parallel in docker
 -  `verbosity=['all','bug','summary','bug_only']`: Container output to keep: `all` keeps all, `bug` only for buggy outputs (fn or fp), `summary` only logs results to `summary.csv`, but keeps no output and `bug_only` only logs bugs to `summary.csv`
