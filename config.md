@@ -4,8 +4,9 @@ In particular config files accept the following values
 - `workers`: Number of cores to use in parallel
 - `memory`: Memory to use per worker
 - `duration`: Time to run tools per maze
-- `repeats`: Number of mazes to generate (-1 to run until cancelled), `transforms`: Number of transformations per maze
+- `transforms`: Number of transformations per maze
 - `batch_size`: How many mazes will be tested before collecting results. Use higher numbers if spawning containers is expensive. 
+- `repeats`: Number of batches to generate (-1 to run until cancelled), 
    - Total number of mazes generated = `repeats` * `batch_size`
 - `batch_duration` Sets the time before a batch gets killed, specified as the average time a maze should have (i.e. the total time for a batch is batch_duration*batch_size) 
 - `maze_gen=['local','container']`: Generate mazes locally one at a time or in parallel in docker
