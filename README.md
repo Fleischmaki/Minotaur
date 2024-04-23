@@ -48,9 +48,10 @@ Compatible files will be written to outfile. Files can then be collected, e.g. w
 Run `python3 Minotaur --m report seed-dir out-dir {local,container}`, where 'report' the line of the summary.csv file from testing.
 Alternatively, first generate the maze and then run `python3 Minotaur --m maze.c seed-dir out-dir timeout {container,local} {fn,fp,er,...} tool [variant] [params]`.
 
-### Recreate an experiment 
+### Run experiment 
 Before recreating experiments, build the necessary experiments with `./Minotaur/scripts/build_experiment_dockers.sh`.
-To run an experiment run `python3 Minotaur --e experiment_name outdir`. Experiment configurations are stored in the [experiments](Minotaur/experiments) folder.
+To run an experiment run `python3 Minotaur --e experiment_name outdir`. Experiment configurations are stored in the [experiments](Minotaur/experiments) folder. See also [recreate_results.md](Minotuar/recreate_results.md) 
+for more informations on the provided experiment configurations. 
 
 ### Logging
 For all tools the logging level can be set via --LEVEL with LEVEL being one of E(rror), W(arning), I(nfo) or D(ebug). E.g. `python3 --t --D conf outdir` runs tests with log-level `DEBUG`. 
