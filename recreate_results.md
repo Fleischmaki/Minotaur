@@ -12,8 +12,10 @@ Note that the found bugs might look different from the ones reported, as the rep
 ### Time to bug
 Configurations of the form time_to_bug_PaId.conf.json (e.g. recreate_cpa1).
 These correspond to Table 2 in the paper. To get an accurate measure for time, only a single worker is used, so these can take a while to finish.
-The results are stored in a specified directory `$outdir`. To compute the average times, we used the scrip [get_average_times.py](scripts/get_average_times.py).
-To collect the times run `pyhton3 Minotaur/script/get_average_times.py $outdir 4` (4 is the number of different configs we use).
+
+The results are stored in a specified directory `$outdir`. To compute the average times, we used [this script](scripts/get_average_times.py).
+
+To obtain the times for an experiment, run `pyhton3 Minotaur/script/get_average_times.py $outdir 4` (4 is the number of different configs we use).
 
 ### Coverage
 The coverage experiment is provided in cov_smt_vs_fuzzed.conf.json.
