@@ -33,7 +33,7 @@ def load_config(path: str) -> dict:
     if 'coverage' not in conf.keys():
         conf['coverage'] = 0
     if 'batch_duration' not in conf.keys():
-        conf['batch_duration'] = conf['duration']*conf['batch_size']
+        conf['batch_duration'] = conf['duration']
 
     assert conf['repeats'] > 0
     assert conf['workers'] > 0
