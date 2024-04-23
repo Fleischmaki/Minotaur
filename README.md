@@ -18,7 +18,7 @@ flowchart LR
     SMC --> |Result| Minimizer
     SMC --> |Imprecise/Unsound| Bug 
     Storm --> |Clauses| Minimizer
-    UFuzz  --> |Clauses| Minimizer
+    Unsat Fuzzing --> |Clauses, Core| Minimizer
     Minimizer --> | Selected Clauses | Generator
     Minimizer --> | Minimized Code | Bug
 ```
