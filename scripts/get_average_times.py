@@ -19,4 +19,4 @@ for test in range(num_tests):
             found += 1
 
     avg_tool_time = average(tool_times)
-    print(f"Test {test}:\tTotal time {avg:.2f},\t Tool time {avg_tool_time:.2f},\tPA% = {avg_tool_time / avg:.3f}\t found {found}/5")
+    print(f"Test {test}:\tTotal time {avg:.2f},\t Tool time {avg_tool_time:.2f},\tPA% = {100*avg_tool_time / avg:.3f}\t found {found}/5")
