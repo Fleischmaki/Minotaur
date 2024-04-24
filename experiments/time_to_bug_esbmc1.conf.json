@@ -1,7 +1,7 @@
 {
 	"verbosity": "summary",
 	"repeats" : 20,
-	"batches": [60,60,3,3],
+	"batches": [60,60,60,60],
 	"duration" : 1000,
 	"workers" : 1,
 	"memory" : 4,
