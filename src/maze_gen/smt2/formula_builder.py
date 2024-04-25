@@ -67,11 +67,11 @@ class FormulaBuilder():
         if max_depth == 0:
             return self.random.random_choice(self.get_leaves_for_type(node_type, max_depth, parent_is_array))
         res = self.random.random_choice(self.get_ops_for_outtype(node_type)\
-            + [(l, []) for l in self.get_leaves_for_type(node_type, max_depth, parent_is_array)])
+            + self.get_leaves_for_type(node_type, max_depth, parent_is_array))
         
+        if isinstance(res, FNode):
+            return res
         next_operation, subtypes_needed = res
-        if isinstance(next_operation, FNode):
-            return next_operation
         node_args = tuple(self.build_formula_of_type(t, max_depth-1, i != 0 or next_operation in (ops.ARRAY_OPERATORS)) for i, t in enumerate(subtypes_needed))
         payload = self.get_payload_for_op(next_operation, node_type, subtypes_needed)
         return get_env().formula_manager.create_node(next_operation, node_args, payload)
@@ -118,12 +118,12 @@ class FormulaBuilder():
                     res.extend([(ops.ARRAY_STORE,[at,at.index_type,out_type]) for at in arrays_for_out_type])
         return res
     
-    def get_leaves_for_type(self,node_type: types.PySMTType, maximum_depth: int, parent_is_array: bool = False) -> list[tuple[FNode,list]]:
+    def get_leaves_for_type(self,node_type: types.PySMTType, maximum_depth: int, parent_is_array: bool = False) -> list[FNode]:
         """ Get constants or subexpressions so we don't need to generate subformulas 
         """
-        res = [(c,[]) for c in get_constants_for_type(node_type, parent_is_array)]
+        res = list(get_constants_for_type(node_type, parent_is_array))
         if node_type in self.variables_by_type:
-            res.extend((v,[]) for v in filter(lambda v: self.variables_depths[v] <= maximum_depth, self.variables_by_type[node_type]))
+            res.extend(filter(lambda v: self.variables_depths[v] <= maximum_depth, self.variables_by_type[node_type]))
         return res
 
     def get_payload_for_op(self,op: int, node_type: types.PySMTType, argtypes: list[types.PySMTType]):
