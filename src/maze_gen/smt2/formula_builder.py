@@ -118,12 +118,12 @@ class FormulaBuilder():
                     res.extend([(ops.ARRAY_STORE,[at,at.index_type,out_type]) for at in arrays_for_out_type])
         return res
     
-    def get_leaves_for_type(self,node_type: types.PySMTType, maximum_depth: int, parent_is_array: bool = False) -> list[FNode]:
+    def get_leaves_for_type(self,node_type: types.PySMTType, maximum_depth: int, parent_is_array: bool = False) -> list[tuple[FNode,list]]:
         """ Get constants or subexpressions so we don't need to generate subformulas 
         """
-        res = list(get_constants_for_type(node_type, parent_is_array))
+        res = [(c,[]) for c in get_constants_for_type(node_type, parent_is_array)]
         if node_type in self.variables_by_type:
-            res.extend(filter(lambda v: self.variables_depths[v] <= maximum_depth, self.variables_by_type[node_type]))
+            res.extend((v,[]) for v in filter(lambda v: self.variables_depths[v] <= maximum_depth, self.variables_by_type[node_type]))
         return res
 
     def get_payload_for_op(self,op: int, node_type: types.PySMTType, argtypes: list[types.PySMTType]):
