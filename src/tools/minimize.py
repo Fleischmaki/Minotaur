@@ -146,7 +146,7 @@ class Minimizer:
         resdir = os.path.join(self.outdir,maze,maze) 
         for file in os.listdir(resdir):
             if len(file.split('_')) == 2: # Still false negative
-                print(file)
+                LOGGER.info(file)
                 commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(self.outdir,'runs')))
                 commands.run_cmd('rm -r %s' % os.path.join(self.outdir,maze))
                 if self.err in file: 

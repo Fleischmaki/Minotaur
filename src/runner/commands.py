@@ -12,7 +12,7 @@ def spawn_cmd(cmd_str: str):
     try:
         return subprocess.Popen(cmd_args, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
     except Exception as e:
-        print(e)
+        LOGGER.exception(e)
         exit(1)
 
 def run_cmd(cmd_str: str):

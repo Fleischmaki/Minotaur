@@ -235,7 +235,6 @@ def get_array_dim(node: FNode):
 
 def get_array_constraints(array_ops, array_size) -> set[FNode]:
     """Helper"""
-    print(array_size)
     return {And(i < array_size, i >= 0) for i in filter(lambda index: not index.is_constant(), map(lambda x: x.arg(1), array_ops))}
 
 def get_integer_constraints(formula: FNode):
