@@ -75,7 +75,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
         try:
             LOGGER.debug("Converting clause %d/%d.", c,len(clauses))
             clause_in_c, symbs = converter.convert_and_gather_symbols(clause)
-        except (ValueError, RecursionError) as e:
+        except (Exception) as e:
             LOGGER.warning("Could not convert clause!")
             LOGGER.exception(e)
             if continue_on_error:
