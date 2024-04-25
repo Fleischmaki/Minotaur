@@ -21,7 +21,12 @@ def save_tc(dest_dir, tc_path, start_time, end_time, sig, expected_result='error
 WORKDIR = '/home/maze/workspace'
 OUTDIR = '/home/maze/workspace/outputs'
 
-def main(dest_dir,expected_result,verbosity):
+def main(dest_dir,verbosity,expected_results):
+    if len(expected_results) > 1:
+        expected_result_by_maze = {}
+    for result in expected_results:
+        name, res = result.rsplit('_',1)
+        expected_result_by_maze[name] = res
     # Create destination directory
     os.system('mkdir -p %s' % dest_dir)
     for file in filter(lambda f: 'res' in f, os.listdir(OUTDIR)):
@@ -34,6 +39,7 @@ def main(dest_dir,expected_result,verbosity):
             end_time = os.path.getmtime(end_file)       
             file_dir = os.path.join(dest_dir,name) 
             os.system('mkdir -p %s' % file_dir)
+            expected_result = expected_result[0] if len(expected_results) == 1 else expected_result_by_maze[name]
             resfile = open(respath, "r").read()
         except Exception as e:
             print("NOTE: Failed to parse file %s: %s" % (file, str(e)))
@@ -60,6 +66,6 @@ def main(dest_dir,expected_result,verbosity):
 
 if __name__ == '__main__':
     dest_dir = sys.argv[1]    
-    expected_result = sys.argv[2]
-    verbosity = sys.argv[3]    
-    main(dest_dir,expected_result,verbosity)
+    expected_results = sys.argv[3]
+    verbosity = sys.argv[2]    
+    main(dest_dir,verbosity,expected_results)
