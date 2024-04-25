@@ -188,8 +188,12 @@ class TargetGenerator(Iterable):
             for i in range(min(len(maze_keys),self.conf['batch_size'])):
                 maze = maze_keys[i]
                 params = self.mazes[maze]
-                self.targets.append((False,Target(maze, tool,batch_id, params, variant, flags, maze + ' ' + self.get_expected_result(params,batch_id,i))))
-    
+                try:
+                    res = self.get_expected_result(params,batch_id,i)
+                    self.targets.append((False,Target(maze, tool,batch_id, params, variant, flags, maze + ' ' + res)))
+                except FileNotFoundError as e:
+                    LOGGER.warning("Could not determine expected result: %s", str(e))
+                    maze_keys.pop(i)
         with open(get_batch_file(batch_id), 'w') as batch_file:
             for i in range(min(len(maze_keys),self.conf['batch_size'])):
                 batch_file.write(f"{docker.HOST_NAME}/{maze_keys[i]}\n")
