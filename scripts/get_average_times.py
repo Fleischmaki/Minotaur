@@ -12,6 +12,7 @@ for test_id in range(num_tests):
     found = [False] * total_runs
     for run in range(test_id, total_runs, num_tests):
         summary = pandas.read_csv(os.path.join(run_directory, f'run{run}_{0}','summary.csv'), header='infer')
+        tool_times.append(sum(filter(lambda r: isinstance(r, float),summary['runtime'][::])))
         if any(map(lambda res: res in ('fn', 'fp'), summary['status'][::])):
             found[run] = True
             tool_times.append(sum(summary['runtime'][::]))
