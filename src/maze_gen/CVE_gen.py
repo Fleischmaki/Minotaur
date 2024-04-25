@@ -19,7 +19,7 @@ class Generator:
         except Exception as e:
             LOGGER.warning('Error while parsing smt file')
             LOGGER.exception(e)
-            self.constraints = {} if transformations['sat'] else {'(1==0)': False}
+            self.constraints = {} if transformations['sat'] and not smt_file.strip('.smt2').endswith('unsat') else {'(1==0)': False}
             self.vars_all = {}
             self.array_size = 0
 
