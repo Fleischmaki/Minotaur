@@ -14,3 +14,4 @@ for run in sys.argv[1:]:
                 cmd = f"python3 -m gcovr --json-add-tracefile {file_string}  --merge-mode-functions=separate --json-summary-pretty > {os.path.join(out_dir, outfile)}"
                 print(cmd)
                 subprocess.run(args=cmd, shell=True)
+                files = [outfile]

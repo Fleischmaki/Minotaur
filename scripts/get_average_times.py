@@ -14,9 +14,9 @@ for test in range(num_tests):
     found = 0
     for run in range(test,total_runs,num_tests):
         summary = pandas.read_csv(os.path.join(run_directory, f'run{run}_{0}','summary.csv'), header='infer')
-        tool_times.append(sum(summary['runtime'][::]))
+        tool_times.append(sum(filter(lambda r: isinstance(r, float),summary['runtime'][::])))
         if any(map(lambda res: res in ('fn', 'fp'), summary['status'][::])):
             found += 1
 
     avg_tool_time = average(tool_times)
-    print(f"Test {test}:\tTotal time {avg:.2f},\t Tool time {avg_tool_time:.2f},\tPA% = {100*avg_tool_time / avg:.3f}\t found {found}/5")
+    print(f"Test {test}:\tTotal time {avg:.2f},\t Tool time {avg_tool_time:.2f},\tPA% = {100*avg_tool_time / avg:.1f}\t found {found}/5")

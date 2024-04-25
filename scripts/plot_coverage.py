@@ -2,6 +2,7 @@ import os
 import json
 import sys
 import matplotlib.pyplot as plt
+from matplotlib.scale import LogScale
 import numpy as np
 
 def get_average(coverages, key):
@@ -64,16 +65,16 @@ for baseline in range(num_baselines):
             type_coverage = all_coverages[baseline][tool][covtype]
             all_coverages[baseline][tool][covtype] = [np.average([run[i] for run in type_coverage]) for i in range(len(type_coverage[0]))]
 for tool in tools:
-    plt.ylim(0,100)
-    plt.xlim(0,99)
-    plt.ylabel("Coverage (%)")
-    plt.xlabel("Number of batches (100 mazes per batch)")
-    x = np.arange(100)
-    for baseline in range(num_baselines):
-        col = cols[num_baselines]
-        plt.plot(x, all_coverages[baseline][tool]['b'], color=col, linestyle=":", label=f"Baseline {baseline} b.c.")
-        plt.plot(x, all_coverages[baseline][tool]['l'], color=col,label=f"Baseline {baseline} l.f.")
-        plt.plot(x, all_coverages[baseline][tool]['f'], color=col,linestyle="-", label=f"Baseline {baseline} f.c.")
-    plt.legend()
-    plt.savefig(os.path.join(sys.argv[1], f'{tool}_coverage.png'))
-    plt.close()
+    for cov in ('b','l','f'):
+        plt.xlim(0,99)
+        plt.ylabel("Coverage (%)")
+        plt.xlabel("Number of batches (100 mazes per batch)")
+        x = np.arange(100)
+        for baseline in range(num_baselines):
+            col = cols[baseline]
+            plt.plot(x, all_coverages[baseline][tool][cov], color=col, linestyle="-", label=f"Baseline {baseline} {cov}.c.")
+            # plt.plot(x, all_coverages[baseline][tool]['l'], color=col,label=f"Baseline {baseline} l.f.")
+            # plt.plot(x, all_coverages[baseline][tool]['f'], color=col,linestyle="-", label=f"Baseline {baseline} f.c.")
+        plt.legend()
+        plt.savefig(os.path.join(sys.argv[1], f'{tool}_{cov}-coverage.png'))
+        plt.close()
