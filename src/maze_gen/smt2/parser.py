@@ -15,8 +15,8 @@ from pysmt.smtlib.commands import SET_LOGIC
 from pysmt.fnode import FNode
 import pysmt.exceptions
 
-from . import converter, formula_operations as ff
-
+from . import formula_operations as ff
+from .converter import get_converter, clean_string, type_to_c, Converter
 LOGGER = logging.getLogger(__name__)
 
 SmtFileData = namedtuple('SmtFileData',['decl_arr','formula', 'logic', 'clauses'])
@@ -33,22 +33,21 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     generate_sat=transformations['sat']
     limit=transformations['dag']
     negate_formula=transformations['neg']
-    set_well_defined(generate_well_defined)
     LOGGER.info("Converting %s: ", file_path)
     decl_arr, formula, logic, formula_clauses = read_file(file_path, limit, negate_formula)
     all_arrays_constant = False
     if generate_sat:
-        clauses, array_size, all_arrays_constant = run_checks(formula, logic, formula_clauses)
+        clauses, array_size, all_arrays_constant = run_checks(formula, logic, formula_clauses, generate_well_defined)
     else:
         array_size, array_calls = ff.get_array_index_calls(formula)
         array_size += 1
         clauses = list(ff.get_array_constraints(array_calls, array_size)) + list(formula_clauses)
 
+    converter = get_converter()
+    converter.set_well_defined(generate_well_defined)
     if all_arrays_constant and transformations['ca']:
-        converter.set_constant_array_indices(ff.get_indices_for_each_array(ff.get_array_index_calls(formula)[1]))
+        converter.set_array_indices(ff.get_indices_for_each_array(ff.get_array_index_calls(formula)[1]))
         array_size = -1
-    else:
-        converter.set_constant_array_indices({})
     try:
         core = set() if generate_sat else get_unsat_core(clauses, logic)
     except pysmt.exceptions.SolverStatusError as e:
@@ -57,7 +56,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     parsed_cons = OrderedDict()
     variables = {}
 
-    if GENERATE_WELL_DEFINED:
+    if generate_well_defined:
         clauses.sort(key=lambda c: len(ff.get_array_index_calls(c)[1]))
 
     for c, clause in enumerate(clauses,start=1):
@@ -75,7 +74,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
 
         try:
             LOGGER.debug("Converting clause %d/%d.", c,len(clauses))
-            result = converter.convert_to_string(symbs,clause)
+            clause_in_c, symbs = converter.convert_and_gather_symbols(clause)
         except (ValueError, RecursionError) as e:
             LOGGER.warning("Could not convert clause: %s", str(e))
             if continue_on_error:
@@ -86,7 +85,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
                 raise e
         LOGGER.debug("Done.")
 
-        add_parsed_cons(check_neg, clauses, parsed_cons, clause, result)
+        add_parsed_cons(check_neg, clauses, parsed_cons, clause, clause_in_c)
         add_used_variables(variables, ldecl_arr, symbs, all_arrays_constant and transformations['ca'])
 
     return parsed_cons, variables, array_size
@@ -112,7 +111,7 @@ def add_parsed_cons(check_neg:bool, clauses:list, parsed_cons:OrderedDict, claus
 def add_used_variables(variables: dict, ldecl_arr: list[FNode], symbs: t.Set[str], constant_arrays:bool):
     """Add a variable to the variable dict"""
     for symb in symbs:
-        decls = list(map(converter.clean_string, ldecl_arr))
+        decls = list(map(clean_string, ldecl_arr))
         if symb in decls:
             decl = symb
         elif 'c' in decls and symb == '__original_smt_name_was_c__':
@@ -123,29 +122,24 @@ def add_used_variables(variables: dict, ldecl_arr: list[FNode], symbs: t.Set[str
                 decl = decl.rsplit("_",1)[0]
         i = decls.index(decl)
         vartype = ldecl_arr[i].get_type()
-        type_in_c = converter.type_to_c(vartype, constant_arrays)
+        type_in_c = type_to_c(vartype, constant_arrays)
         if vartype.is_array_type() and not constant_arrays:
             first_bracket = type_in_c.find('[')
             symb += type_in_c[first_bracket:]
             type_in_c = f"{ff.get_bv_width_from_array_type(vartype)}_{type_in_c[:first_bracket]}"
         variables[symb] = type_in_c
 
-def set_well_defined(generate_well_defined: bool):
-    global GENERATE_WELL_DEFINED
-    GENERATE_WELL_DEFINED = generate_well_defined
-    converter.set_well_defined(generate_well_defined)
-
-def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
+def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode], well_defined: bool):
     """Check whether the translated formula is going to have valid soltuions"""
     constraints = set()
     clauses = list(formula_clauses)
 
-    if 'BV' not in logic and GENERATE_WELL_DEFINED:
+    if 'BV' not in logic and well_defined:
         LOGGER.warning("Can only guarantee well-definedness on bitvectors")
 
     if logic.split('_')[-1].startswith('A'):
         array_size, array_constraints, _, all_constant = ff.constrain_array_size(formula)
-        if GENERATE_WELL_DEFINED:
+        if well_defined:
             clauses.extend(array_constraints)
         constraints.update(array_constraints)
     else:
@@ -157,7 +151,7 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
         LOGGER.info("Generating integer constraints")
         constraints.update(ff.get_integer_constraints(formula))
 
-    if not GENERATE_WELL_DEFINED:
+    if not well_defined:
         LOGGER.info("Generating divsion constraints")
         constraints.update(ff.get_division_constraints(formula))
 
