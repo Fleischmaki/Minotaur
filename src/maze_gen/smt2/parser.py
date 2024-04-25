@@ -4,7 +4,6 @@ import sys
 import random
 import logging
 import typing as t
-
 from collections import defaultdict, OrderedDict, namedtuple
 
 from pysmt.smtlib.parser import SmtLibParser
@@ -15,8 +14,9 @@ from pysmt.smtlib.commands import SET_LOGIC
 from pysmt.fnode import FNode
 import pysmt.exceptions
 
+
 from . import formula_operations as ff
-from .converter import get_converter, clean_string, type_to_c, Converter
+from .converter import get_converter, clean_string, type_to_c
 LOGGER = logging.getLogger(__name__)
 
 SmtFileData = namedtuple('SmtFileData',['decl_arr','formula', 'logic', 'clauses'])
@@ -30,7 +30,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     """
     sys.setrecursionlimit(10000)
     generate_well_defined=transformations['wd']
-    generate_sat=transformations['sat']
+    generate_sat=(transformations['sat'] and not transformations['fuzz']) or not file_path.removesuffix('.smt2').endswith('unsat')
     limit=transformations['dag']
     negate_formula=transformations['neg']
     LOGGER.info("Converting %s: ", file_path)
@@ -76,7 +76,8 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
             LOGGER.debug("Converting clause %d/%d.", c,len(clauses))
             clause_in_c, symbs = converter.convert_and_gather_symbols(clause)
         except (ValueError, RecursionError) as e:
-            LOGGER.warning("Could not convert clause: %s", str(e))
+            LOGGER.warning("Could not convert clause!")
+            LOGGER.exception(e)
             if continue_on_error:
                 if clause not in core:
                     continue
@@ -162,6 +163,7 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode], well_d
         LOGGER.info("Done.")
     
     return clauses,array_size, all_constant
+
 
 def read_file(file_path: str, limit : int = 0, negate_formula : bool = False) -> SmtFileData:
     """Read an SMTfile and extract important fields"""

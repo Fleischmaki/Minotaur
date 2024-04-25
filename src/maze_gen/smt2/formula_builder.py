@@ -72,7 +72,7 @@ class FormulaBuilder():
         next_operation, subtypes_needed = res
         if isinstance(next_operation, FNode):
             return next_operation
-        node_args = tuple(self.build_formula_of_type(t, max_depth-1, node_type.is_array_type()) for t in subtypes_needed)
+        node_args = tuple(self.build_formula_of_type(t, max_depth-1, i != 0 or next_operation in (ops.ARRAY_OPERATORS)) for i, t in enumerate(subtypes_needed))
         payload = self.get_payload_for_op(next_operation, node_type, subtypes_needed)
         return get_env().formula_manager.create_node(next_operation, node_args, payload)
     

@@ -27,7 +27,7 @@ def load_config(path):
 
     set_default(conf,'verbosity','all')
     set_default(conf,'maze_gen','local')
-    set_default(conf,'expected_result','error')
+    set_default(conf,'expected_result','infer')
     set_default(conf,'abort_on_error',False)
     set_default(conf,'batch_size',1)
     set_default(conf,'gen_time',120)
@@ -41,7 +41,7 @@ def load_config(path):
     assert conf['transforms'] >= 0
     assert conf['maze_gen'] in ['local', 'container']
     assert conf['verbosity'] in ['all','summary','bug','bug_only']
-    assert conf['expected_result'] in ['error','safe']
+    assert conf['expected_result'] in ['error','safe','infer']
 
     return conf
 
@@ -138,7 +138,7 @@ def pick_tool_flags(conf: dict, tool: str):
     return variant,flags
 
 
-Target = namedtuple(typename='Target',field_names=['maze','tool','index','params','variant','flags'])
+Target = namedtuple(typename='Target',field_names=['maze','tool','index','params','variant','flags','expected_result'])
 
 class TargetGenerator(Iterable):
     """ Keep track of everything we need to run.
@@ -188,7 +188,7 @@ class TargetGenerator(Iterable):
             for i in range(min(len(maze_keys),self.conf['batch_size'])):
                 maze = maze_keys[i]
                 params = self.mazes[maze]
-                self.targets.append((False,Target(maze, tool,batch_id, params, variant, flags)))
+                self.targets.append((False,Target(maze, tool,batch_id, params, variant, flags, maze + ' ' + self.get_expected_result(params,batch_id,i))))
     
         with open(get_batch_file(batch_id), 'w') as batch_file:
             for i in range(min(len(maze_keys),self.conf['batch_size'])):
@@ -199,6 +199,20 @@ class TargetGenerator(Iterable):
 
         for i in range(min(len(maze_keys),self.conf['batch_size'])):
             self.mazes.pop(maze_keys[i])
+
+    def get_expected_result(self,params,batch_id,maze_id):
+        if self.conf['expected_result'] != 'infer':
+            return self.conf['expected_result']
+        if 'storm' in params['t']:
+            return 'error'
+        if 'fuzz' in params['t'] and 'unsat' in params['t']: 
+            return 'safe'
+
+        smt_dir = os.path.join(get_temp_dir(), 'smt', str(batch_id))
+        for file in os.listdir(smt_dir):
+            file = str(file)
+            if f'_{maze_id}_' in file:
+                return 'error' if file.removesuffix('.smt2').rsplit('_',1) == 'sat' else 'safe'
 
     def generate_mazes(self):
         """ Generate more mazes
@@ -284,7 +298,8 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
     procs = []
     for i in range(get_containers_needed(conf,works)):
         target = works[i*conf['batch_size']]
-        procs.append(docker.collect_docker_results(target.tool, target.index, conf['expected_result'],conf['verbosity']))
+        expected_results = [conf['expected_result']] if conf['expected_result'] != 'infer' else list(map(lambda w: w.expected_result,works[i*conf['batch_size']:[(i+1)*conf['batch_size']]]))
+        procs.append(docker.collect_docker_results(target.tool, target.index, expected_results, conf['verbosity']))
     commands.wait_for_procs(procs)
     time.sleep(5)
 
@@ -317,7 +332,7 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
     return has_bug
 
 def write_summary(conf,out_dir, target,tag,runtime):
-    maze, tool, batch_id, params, variant, flags = target
+    maze, tool, batch_id, params, variant, flags, _ = target
     out_path = os.path.join(out_dir,tool, str(batch_id),maze)
     if (conf['verbosity'] == 'bug' or conf['verbosity'] == 'bug_only') and tag not in ('fp', 'fn'):
         commands.run_cmd(REMOVE_CMD % out_path)
@@ -398,7 +413,7 @@ def main(conf, out_dir):
         cleanup(to_remove)
         if conf['coverage']:
             store_coverage(conf,works,out_dir)
-    commands.run_cmd(REMOVE_CMD % get_temp_dir())
+    # commands.run_cmd(REMOVE_CMD % get_temp_dir())
 
 
 def load(argv):

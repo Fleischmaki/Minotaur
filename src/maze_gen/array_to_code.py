@@ -244,7 +244,9 @@ def main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, uni
     transformations = transforms.parse_transformations(t_type)
     min = 0 if transformations['keepId'] == 1 else t_numb if transformations['last'] else 1
     if transformations["storm"]:
-        smt_files = [smt_file] + transforms.run_storm(smt_file, os.path.join(output_dir,'smt',str(seed)), seed, t_numb, transformations['sat'])
+        smt_files = [smt_file] + transforms.run_storm(smt_file, os.path.join(output_dir,'smt',str(seed)), seed, t_numb, transformations)
+    elif transformations["fuzz"]:
+        smt_files = [smt_file] + transforms.run_formula_builder(smt_file, os.path.join(output_dir,'smt',str(seed)), seed, t_numb, transformations)
     else:
         smt_files = [smt_file]*(t_numb+1)
     for t_index in range(min, t_numb+1):

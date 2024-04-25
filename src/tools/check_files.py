@@ -1,7 +1,6 @@
 """ Checks SMT2-files for good potential candidates  
 """
 import os
-import io
 import sys
 import logging
 from src.maze_gen.smt2 import formula_operations as ff
