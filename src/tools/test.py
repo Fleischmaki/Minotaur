@@ -92,7 +92,7 @@ def get_random_params(conf: dict):
         elif key == 's':
             body = value
             while os.path.isdir(body):
-                body = os.path.join(value,random.choice(os.listdir(value)))
+                body = os.path.join(body,random.choice(os.listdir(body)))
         else:
             body = pick_values(value)
 
