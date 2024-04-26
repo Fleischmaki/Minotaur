@@ -6,7 +6,7 @@ import json
 import time
 import itertools as it
 from collections import namedtuple, OrderedDict
-from math import ceil
+from math import ceil, exp
 import logging
 from typing import Iterable
 
@@ -181,6 +181,7 @@ class TargetGenerator(Iterable):
         self.repeats -= 1
 
         maze_keys = list(self.mazes.keys())
+        expected_results = self.get_expected_results(maze_keys)
 
         batch_id = random.randint(0,65535)
         for tool in self.conf['tool'].keys():
@@ -188,8 +189,7 @@ class TargetGenerator(Iterable):
             for i in range(min(len(maze_keys),self.conf['batch_size'])):
                 maze = maze_keys[i]
                 params = self.mazes[maze]
-                self.targets.append((False,Target(maze, tool,batch_id, params, variant, flags, maze + ' ' + self.get_expected_result(params,batch_id,i))))
-    
+                self.targets.append((False,Target(maze, tool,batch_id, params, variant, flags,self.conf['expected_result'] if self.conf['expected_result'] != 'infer' else maze + ' ' + expected_results[i])))
         with open(get_batch_file(batch_id), 'w') as batch_file:
             for i in range(min(len(maze_keys),self.conf['batch_size'])):
                 batch_file.write(f"{docker.HOST_NAME}/{maze_keys[i]}\n")
@@ -200,15 +200,35 @@ class TargetGenerator(Iterable):
         for i in range(min(len(maze_keys),self.conf['batch_size'])):
             self.mazes.pop(maze_keys[i])
 
-    def get_expected_result(self,params,batch_id,maze_id):
+    def get_expected_results(self, maze_keys):
+        expected_results = []
+        if self.conf['expected_result'] == 'infer':
+            for i in range(len(maze_keys)):
+                maze = maze_keys[i-not_found]
+                params = self.mazes[maze]
+                res = None
+                try:
+                    res = self.get_expected_result(params,maze_gen.get_params_from_maze(maze)['m']-1)
+                    LOGGER.info("Expected result: %s", res)
+                except FileNotFoundError:
+                    pass
+                if res is None:
+                    LOGGER.warning("Could not determine expected result")
+                    self.mazes.pop(maze)
+                    not_found = not_found+1
+                    continue
+                expected_results.append(res)
+        return expected_results
+
+    def get_expected_result(self,params,maze_id):
         if self.conf['expected_result'] != 'infer':
             return self.conf['expected_result']
         if 'storm' in params['t']:
             return 'error'
-        if 'fuzz' in params['t'] and 'unsat' in params['t']: 
+        if 'fuzz' in params['t'] and 'unsat' in params['t']:
             return 'safe'
 
-        smt_dir = os.path.join(get_temp_dir(), 'smt', str(batch_id))
+        smt_dir = os.path.join(get_temp_dir(), 'smt', params['r'])
         for file in os.listdir(smt_dir):
             file = str(file)
             if f'_{maze_id}_' in file:
