@@ -240,6 +240,7 @@ class TargetGenerator(Iterable):
             if f'_{maze_id}_' in file:
                 res = 'error' if file.removesuffix('.smt2').rsplit('_',1) == 'sat' else 'safe'
                 commands.run_cmd(f"rm {os.path.join(smt_dir, str(params['r']),file)}")
+                return res
 
     def generate_mazes(self):
         """ Generate more mazes
