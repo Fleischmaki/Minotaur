@@ -6,7 +6,7 @@ import json
 import time
 import itertools as it
 from collections import namedtuple, OrderedDict
-from math import ceil, exp
+from math import ceil
 import logging
 from typing import Iterable
 
@@ -158,10 +158,11 @@ class TargetGenerator(Iterable):
         return self
 
     def __next__(self):
-        if not(self.has_targets()):
-            LOGGER.info("All batches generated")
-            raise StopIteration
-        if len(self.targets) == 0:
+        while len(self.targets) == 0:
+            if not(self.has_targets()):
+                LOGGER.info("All batches generated")
+                raise StopIteration
+
             LOGGER.info("Out of targets, fetching new batch.")
             self.add_batch()
         return self.targets.pop(0)
@@ -182,29 +183,32 @@ class TargetGenerator(Iterable):
 
         maze_keys = list(self.mazes.keys())
 
+        available_mazes = len(maze_keys)
         if self.conf['expected_result'] == 'infer':
             expected_results = self.get_expected_results(maze_keys)
+            available_mazes = len(expected_results)
 
         batch_id = random.randint(0,65535)
         for tool in self.conf['tool'].keys():
             variant, flags = pick_tool_flags(self.conf,tool) # Since we run whole batch at once can only pick one flag
-            for i in range(min(len(maze_keys),self.conf['batch_size'])):
+            for i in range(min(available_mazes,self.conf['batch_size'])):
                 maze = maze_keys[i]
                 params = self.mazes[maze]
                 res = self.conf['expected_result'] if  self.conf['expected_result'] != 'infer' else expected_results[i]
                 self.targets.append((False,Target(maze, tool,batch_id, params, variant, flags, maze + ' ' + res)))
             with open(get_batch_file(batch_id), 'w') as batch_file:
-                for i in range(min(len(maze_keys),self.conf['batch_size'])):
+                for i in range(min(available_mazes,self.conf['batch_size'])):
                     batch_file.write(f"{docker.HOST_NAME}/{maze_keys[i]}\n")
 
         if len(self.targets) > 0:
             self.targets[-1] = (True, self.targets[-1][1])
 
-        for i in range(min(len(maze_keys),self.conf['batch_size'])):
+        for i in range(min(available_mazes,self.conf['batch_size'])):
             self.mazes.pop(maze_keys[i])
 
     def get_expected_results(self, maze_keys):
         expected_results = []
+        not_found = 0
         for i in range(min(len(maze_keys),self.conf['batch_size'])):
             maze = maze_keys[i-not_found]
             params = self.mazes[maze]
@@ -323,7 +327,7 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
     procs = []
     for i in range(get_containers_needed(conf,works)):
         target = works[i*conf['batch_size']]
-        expected_results = [conf['expected_result']] if conf['expected_result'] != 'infer' else list(map(lambda w: w.expected_result,works[i*conf['batch_size']:[(i+1)*conf['batch_size']]]))
+        expected_results = [conf['expected_result']] if conf['expected_result'] != 'infer' else list(map(lambda w: w.expected_result,works[i*conf['batch_size']:(i+1)*conf['batch_size']]))
         procs.append(docker.collect_docker_results(target.tool, target.index, expected_results, conf['verbosity']))
     commands.wait_for_procs(procs)
     time.sleep(5)
