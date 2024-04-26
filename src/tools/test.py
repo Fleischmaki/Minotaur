@@ -181,14 +181,16 @@ class TargetGenerator(Iterable):
         self.repeats -= 1
 
         maze_keys = list(self.mazes.keys())
-        expected_results = self.get_expected_results(maze_keys)
+
+        if self.conf['expected_result'] == 'infer':
+            expected_results = self.get_expected_results(maze_keys)
 
         batch_id = random.randint(0,65535)
         for tool in self.conf['tool'].keys():
+            variant, flags = pick_tool_flags(self.conf,tool) # Since we run whole batch at once can only pick one flag
             for i in range(min(len(maze_keys),self.conf['batch_size'])):
                 maze = maze_keys[i]
                 params = self.mazes[maze]
-                variant, flags = pick_tool_flags(self.conf,tool) # Since we run whole batch at once can only pick one flag
                 res = self.conf['expected_result'] if  self.conf['expected_result'] != 'infer' else expected_results[i]
                 self.targets.append((False,Target(maze, tool,batch_id, params, variant, flags, maze + ' ' + res)))
             with open(get_batch_file(batch_id), 'w') as batch_file:
@@ -203,22 +205,22 @@ class TargetGenerator(Iterable):
 
     def get_expected_results(self, maze_keys):
         expected_results = []
-        if self.conf['expected_result'] == 'infer':
-            for i in range(min(len(maze_keys),self.conf['batch_size'])):
-                maze = maze_keys[i-not_found]
-                params = self.mazes[maze]
-                res = None
-                try:
-                    res = self.get_expected_result(params,maze_gen.get_params_from_maze(maze)['m']-1)
-                    LOGGER.info("Expected result: %s", res)
-                except FileNotFoundError:
-                    pass
-                if res is None:
-                    LOGGER.warning("Could not determine expected result")
-                    self.mazes.pop(maze)
-                    not_found = not_found+1
-                    continue
-                expected_results.append(res)
+        for i in range(min(len(maze_keys),self.conf['batch_size'])):
+            maze = maze_keys[i-not_found]
+            params = self.mazes[maze]
+            res = None
+            try:
+                res = self.get_expected_result(params,maze_gen.get_params_from_maze(maze)['m']-1)
+                LOGGER.info("Expected result: %s", res)
+            except FileNotFoundError:
+                pass
+            if res is None:
+                LOGGER.warning("Could not determine expected result")
+                maze_keys.pop(i-not_found)
+                self.mazes.pop(maze)
+                not_found = not_found+1
+                continue
+            expected_results.append(res)
         return expected_results
 
     def get_expected_result(self,params,maze_id):
@@ -234,7 +236,7 @@ class TargetGenerator(Iterable):
             file = str(file)
             if f'_{maze_id}_' in file:
                 res = 'error' if file.removesuffix('.smt2').rsplit('_',1) == 'sat' else 'safe'
-                commands.run_cmd(f"rm {os.path.join(smt_dir, str(params['r']),file)}")
+                commands.run_cmd(f"rm {os.path.join(smt_dir, file)}")
                 return res
 
     def generate_mazes(self):
