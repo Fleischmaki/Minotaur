@@ -29,8 +29,8 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
                 The minimal array size for the clauses to be valid
     """
     sys.setrecursionlimit(10000)
-    generate_well_defined=transformations['wd']
     generate_sat=(transformations['sat'] and not transformations['fuzz']) or not file_path.removesuffix('.smt2').endswith('unsat')
+    generate_well_defined=transformations['wd'] and generate_sat
     limit=transformations['dag']
     negate_formula=transformations['neg']
     LOGGER.info("Converting %s: ", file_path)

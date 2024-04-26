@@ -189,7 +189,13 @@ class TargetGenerator(Iterable):
             for i in range(min(len(maze_keys),self.conf['batch_size'])):
                 maze = maze_keys[i]
                 params = self.mazes[maze]
-                self.targets.append((False,Target(maze, tool,batch_id, params, variant, flags,self.conf['expected_result'] if self.conf['expected_result'] != 'infer' else maze + ' ' + expected_results[i])))
+                try:
+                    res = self.get_expected_result(params,i)
+                except FileNotFoundError as e:
+                    LOGGER.warning("Could not determine expected result: %s", str(e))
+                    maze_keys.pop(i)
+                    continue
+                self.targets.append((False,Target(maze, tool,batch_id, params, variant, flags, maze + ' ' + res)))
         with open(get_batch_file(batch_id), 'w') as batch_file:
             for i in range(min(len(maze_keys),self.conf['batch_size'])):
                 batch_file.write(f"{docker.HOST_NAME}/{maze_keys[i]}\n")
@@ -228,11 +234,12 @@ class TargetGenerator(Iterable):
         if 'fuzz' in params['t'] and 'unsat' in params['t']:
             return 'safe'
 
-        smt_dir = os.path.join(get_temp_dir(), 'smt', params['r'])
+        smt_dir = os.path.join(get_temp_dir(), 'smt', str(params['r']))
         for file in os.listdir(smt_dir):
             file = str(file)
             if f'_{maze_id}_' in file:
-                return 'error' if file.removesuffix('.smt2').rsplit('_',1) == 'sat' else 'safe'
+                res = 'error' if file.removesuffix('.smt2').rsplit('_',1) == 'sat' else 'safe'
+                commands.run_cmd(f"rm {os.path.join(smt_dir, str(params['r']),file)}")
 
     def generate_mazes(self):
         """ Generate more mazes
