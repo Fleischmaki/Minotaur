@@ -185,20 +185,15 @@ class TargetGenerator(Iterable):
 
         batch_id = random.randint(0,65535)
         for tool in self.conf['tool'].keys():
-            variant, flags = pick_tool_flags(self.conf,tool) # Since we run whole batch at once can only pick one flag
             for i in range(min(len(maze_keys),self.conf['batch_size'])):
                 maze = maze_keys[i]
                 params = self.mazes[maze]
-                try:
-                    res = self.get_expected_result(params,i)
-                except FileNotFoundError as e:
-                    LOGGER.warning("Could not determine expected result: %s", str(e))
-                    maze_keys.pop(i)
-                    continue
+                variant, flags = pick_tool_flags(self.conf,tool) # Since we run whole batch at once can only pick one flag
+                res = self.conf['expected_result'] if  self.conf['expected_result'] != 'infer' else expected_results[i]
                 self.targets.append((False,Target(maze, tool,batch_id, params, variant, flags, maze + ' ' + res)))
-        with open(get_batch_file(batch_id), 'w') as batch_file:
-            for i in range(min(len(maze_keys),self.conf['batch_size'])):
-                batch_file.write(f"{docker.HOST_NAME}/{maze_keys[i]}\n")
+            with open(get_batch_file(batch_id), 'w') as batch_file:
+                for i in range(min(len(maze_keys),self.conf['batch_size'])):
+                    batch_file.write(f"{docker.HOST_NAME}/{maze_keys[i]}\n")
 
         if len(self.targets) > 0:
             self.targets[-1] = (True, self.targets[-1][1])
@@ -209,7 +204,7 @@ class TargetGenerator(Iterable):
     def get_expected_results(self, maze_keys):
         expected_results = []
         if self.conf['expected_result'] == 'infer':
-            for i in range(len(maze_keys)):
+            for i in range(min(len(maze_keys),self.conf['batch_size'])):
                 maze = maze_keys[i-not_found]
                 params = self.mazes[maze]
                 res = None
