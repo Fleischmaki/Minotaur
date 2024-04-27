@@ -22,8 +22,7 @@ WORKDIR = '/home/maze/workspace'
 OUTDIR = '/home/maze/workspace/outputs'
 
 def main(dest_dir,verbosity,expected_results):
-    if expected_results in ('safe', 'error'):
-        expected_result_by_maze = {}
+    expected_result_by_maze = {}
     with open(expected_results,'r') as results_file:
         for result in results_file.readlines():
             name, res = result.rsplit(' ',1)
@@ -41,7 +40,7 @@ def main(dest_dir,verbosity,expected_results):
             resfile = open(respath, "r").read().strip()
             file_dir = os.path.join(dest_dir,name) 
             os.system('mkdir -p %s' % file_dir)
-            expected_result = expected_result[0] if len(expected_results) == 1 else expected_result_by_maze[name]
+            expected_result = expected_results if expected_results != 'infer' else expected_result_by_maze[name]
         except Exception as e:
             print("NOTE: Failed to parse file %s: %s" % (file, str(e)))
             continue
