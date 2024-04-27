@@ -59,7 +59,7 @@ def main(dest_dir,verbosity,expected_results):
             save_tc(file_dir, respath, start_time, end_time, 'to', copy_content = verbosity == 'all')
     
 if __name__ == '__main__':
-    dest_dir = sys.argv[1]    
+    dest_dir = sys.argv[1]
     expected_results = sys.argv[3]
     verbosity = sys.argv[2]
     main(dest_dir,verbosity,expected_results)

@@ -61,5 +61,5 @@ def main(dest_dir,verbosity,expected_results):
 if __name__ == '__main__':
     dest_dir = sys.argv[1]
     verbosity = sys.argv[2]
-    expected_result = sys.argv[3]
+    expected_results = sys.argv[3]
     main(dest_dir, verbosity, expected_results)
