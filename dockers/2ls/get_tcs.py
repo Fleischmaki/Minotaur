@@ -21,11 +21,12 @@ WORKDIR = '/home/maze/workspace'
 OUTDIR = '/home/maze/workspace/outputs'
 
 def main(dest_dir,verbosity,expected_results):
-    if len(expected_results) > 1:
+    if expected_results in ('safe', 'error'):
         expected_result_by_maze = {}
-    for result in expected_results:
-        name, res = result.rsplit('_',1)
-        expected_result_by_maze[name] = res
+    with open(expected_results,'r') as results_file:
+        for result in results_file.readlines():
+            name, res = result.rsplit(' ',1)
+            expected_result_by_maze[name] = res
     # Create destination directory
     os.system('mkdir -p %s' % dest_dir)
     for file in filter(lambda f: 'res' in f, os.listdir(OUTDIR)):
@@ -61,5 +62,5 @@ def main(dest_dir,verbosity,expected_results):
 if __name__ == '__main__':
     dest_dir = sys.argv[1]
     verbosity = sys.argv[2]
-    expected_results = sys.argv[3:]
+    expected_result = sys.argv[3]
     main(dest_dir, verbosity, expected_results)

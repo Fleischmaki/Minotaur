@@ -138,7 +138,7 @@ def pick_tool_flags(conf: dict, tool: str):
     return variant,flags
 
 
-Target = namedtuple(typename='Target',field_names=['maze','tool','index','params','variant','flags','expected_result'])
+Target = namedtuple(typename='Target',field_names=['maze','tool','index','params','variant','flags'])
 
 class TargetGenerator(Iterable):
     """ Keep track of everything we need to run.
@@ -180,30 +180,35 @@ class TargetGenerator(Iterable):
             self.generate_mazes()
 
         self.repeats -= 1
+        batch_id = random.randint(0,65535)
 
         maze_keys = list(self.mazes.keys())
-
-        available_mazes = len(maze_keys)
+        maze_count = min(len(maze_keys),self.conf['batch_size'])
         if self.conf['expected_result'] == 'infer':
-            expected_results = self.get_expected_results(maze_keys)
-            available_mazes = len(expected_results)
+            with open(get_result_file(batch_id), 'w') as res_file:
+                expected_results = self.get_expected_results(maze_keys)
+                maze_count = min(len(expected_results), maze_count)
+                for i in range(maze_count):
+                    res_file.write(f"{maze_keys[i]} {expected_results[i]}")
 
-        batch_id = random.randint(0,65535)
+
+        with open(get_batch_file(batch_id), 'w') as batch_file:
+            for i in range(maze_count):
+                batch_file.write(f"{docker.HOST_NAME}/{maze_keys[i]}\n")
+
         for tool in self.conf['tool'].keys():
             variant, flags = pick_tool_flags(self.conf,tool) # Since we run whole batch at once can only pick one flag
-            for i in range(min(available_mazes,self.conf['batch_size'])):
+            for i in range(maze_count):
                 maze = maze_keys[i]
                 params = self.mazes[maze]
-                res = self.conf['expected_result'] if  self.conf['expected_result'] != 'infer' else expected_results[i]
-                self.targets.append((False,Target(maze, tool,batch_id, params, variant, flags, maze + ' ' + res)))
-            with open(get_batch_file(batch_id), 'w') as batch_file:
-                for i in range(min(available_mazes,self.conf['batch_size'])):
-                    batch_file.write(f"{docker.HOST_NAME}/{maze_keys[i]}\n")
+                self.targets.append((False,Target(maze, tool,batch_id, params, variant, flags)))
+
+
 
         if len(self.targets) > 0:
             self.targets[-1] = (True, self.targets[-1][1])
 
-        for i in range(min(available_mazes,self.conf['batch_size'])):
+        for i in range(maze_count):
             self.mazes.pop(maze_keys[i])
 
     def get_expected_results(self, maze_keys):
@@ -286,12 +291,18 @@ def get_maze_dir(maze: str = '') -> str:
     """
     return os.path.join(get_temp_dir(),'src', maze)
 
-def get_batch_file(batch: int):
+def get_batch_file(batch: int) -> str:
     """ Get the batch file for a given batch.
     Batchfiles contain a list of mazes and 
     are used to tell solvers of each batch which mazes to solve.
     """
     return get_maze_dir(docker.BATCH_FILE_FORMAT % batch)
+
+def get_result_file(batch: int) -> str:
+    """ Get the expected result file for a given batch.
+    Result files contain the maze names + their expected results.
+    """
+    return get_maze_dir(docker.RESULT_FILE_FORMAT % batch)
 
 def get_minotaur_root() -> str:
     mainfile = sys.modules['__main__'].__file__ # pylint: disable=no-member 
@@ -327,7 +338,7 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
     procs = []
     for i in range(get_containers_needed(conf,works)):
         target = works[i*conf['batch_size']]
-        expected_results = [conf['expected_result']] if conf['expected_result'] != 'infer' else list(map(lambda w: w.expected_result,works[i*conf['batch_size']:(i+1)*conf['batch_size']]))
+        expected_results = conf['expected_result'] if conf['expected_result'] != 'infer' else get_result_file(target.index)
         procs.append(docker.collect_docker_results(target.tool, target.index, expected_results, conf['verbosity']))
     commands.wait_for_procs(procs)
     time.sleep(5)
@@ -361,7 +372,7 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
     return has_bug
 
 def write_summary(conf,out_dir, target,tag,runtime):
-    maze, tool, batch_id, params, variant, flags, _ = target
+    maze, tool, batch_id, params, variant, flags = target
     out_path = os.path.join(out_dir,tool, str(batch_id),maze)
     if (conf['verbosity'] == 'bug' or conf['verbosity'] == 'bug_only') and tag not in ('fp', 'fn'):
         commands.run_cmd(REMOVE_CMD % out_path)
