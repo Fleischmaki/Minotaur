@@ -98,6 +98,7 @@ def run_docker(duration, batch_duration, tool, name, variant='', flags='', batch
 def collect_docker_results(tool: str,name: str | int, expected_result: str, verbosity: str ='all'):
     """Collects results of a docker, giving duration and results in simplified format"""
     user = get_user(tool)
+    expected_result = f'{HOST_NAME}/{RESULT_FILE_FORMAT % name}' if expected_result == 'infer' else expected_result
     cmd = f"python3 /home/{user}/tools/get_tcs.py /home/{user}/workspace/{GENERATION_DIR} {verbosity} {expected_result}"
     return spawn_cmd_in_docker(get_container(tool,name), cmd)
 

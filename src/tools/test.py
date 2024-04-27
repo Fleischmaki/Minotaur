@@ -338,8 +338,7 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
     procs = []
     for i in range(get_containers_needed(conf,works)):
         target = works[i*conf['batch_size']]
-        expected_results = conf['expected_result'] if conf['expected_result'] != 'infer' else get_result_file(target.index)
-        procs.append(docker.collect_docker_results(target.tool, target.index, expected_results, conf['verbosity']))
+        procs.append(docker.collect_docker_results(target.tool, target.index, conf['expected_result'], conf['verbosity']))
     commands.wait_for_procs(procs)
     time.sleep(5)
 
