@@ -189,7 +189,7 @@ class TargetGenerator(Iterable):
                 expected_results = self.get_expected_results(maze_keys)
                 maze_count = min(len(expected_results), maze_count)
                 for i in range(maze_count):
-                    res_file.write(f"{maze_keys[i]} {expected_results[i]}")
+                    res_file.write(f"{maze_keys[i]} {expected_results[i]}\n")
 
 
         with open(get_batch_file(batch_id), 'w') as batch_file:
