@@ -23,7 +23,7 @@ The coverage experiment is provided in [cov_smt_vs_fuzzed.conf.json](experiments
 Coverage is collected per batch and can be aggregated via [a script](scripts/merge_coverage.py), which creates a coverage files combining the first n batches with n from 1 to the number of generated batches. 
 The summarized coverage can be printed and plotted via [plot_coverage.py](script/plot_coverage.py), once coverage has been merged.
 ```
-python3 Minotaur --e smt_vs_fuzzed_cov result_dir # This will take a long time to run 
+python3 Minotaur --e smt_vs_fuzzed_cov result_dir  // This will take a long time to run 
 python3 Minotaur/scripts/merge_coverage.py result_dir/run*
 python3 Minotaur/scripts/plot_coverage.py result_dir 16 4
 ```
