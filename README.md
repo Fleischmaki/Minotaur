@@ -89,7 +89,7 @@ Nr. |Tool | Status | Type
 4 | SeaHorn | [open](https://github.com/seahorn/seahorn/issues/550) |
 5 | CPA -smg2 | [open](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1211) | 
 6 | MOPSA | [open](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/177) | Type Casts
-7 | 2l --k-induction | [open](https://github.com/diffblue/2ls/issues/177)
+7 | 2l --k-induction | [confirmed](https://github.com/diffblue/2ls/issues/177)
 ### Other
 Tool | Status | Type
  -- | -- | --
