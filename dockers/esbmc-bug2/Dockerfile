@@ -1,6 +1,7 @@
-FROM minotaur-esbmc-base
+FROM minotaur-esbmc-base as build
 
 ### Build esbmc
+USER maze
 WORKDIR /home/maze/tools/esbmc
 # RUN git checkout b426077 to see if previous fix caused this
 RUN git checkout e5e0074
@@ -10,11 +11,18 @@ RUN cmake .. -GNinja -DDOWNLOAD_DEPENDENCIES=On -DBUILD_STATIC=On -DBoolector_DI
 RUN cmake --build . -j1
 RUN ninja install
 
-WORKDIR /home/maze/tools
-USER maze
+FROM minotaur-base
+COPY --from=build /home/maze/tools/cvc4 /home/maze/tools/cvc4 
+COPY --from=build /home/maze/tools/z3 /home/maze/tools/z3
+COPY --from=build /home/maze/tools/yices /home/maze/tools/yices
+COPY --from=build /home/maze/tools/boolector-release/ /home/maze/tools/boolector-release/ 
+COPY --from=build dest/home/maze/tools/mathsat dest/home/maze/tools/mathsat
+COPY --from=build /home/maze/tools/release /home/maze/tools/release
+ENV PATH=/home/maze/tools/cvc4/bin:/home/maze/tools/z3/bin:/home/maze/tools/yices/bin:/home/maze/tools/boolector-release/bin:/home/maze/tools/mathsat/bin:$PATH
 
+WORKDIR /home/maze/tools
 ADD run_esbmc-bug2.sh /home/maze/tools/run_esbmc-bug2.sh
-RUN sudo chmod +x /home/maze/tools/run_esbmc-bug2.sh
+RUN sudo chmod +x /home/maze/tools/run_esbmc-bug1.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 
 ### Cleanup

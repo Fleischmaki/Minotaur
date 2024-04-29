@@ -1,4 +1,4 @@
-FROM minotaur-base
+FROM minotaur-base as build 
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
@@ -21,7 +21,13 @@ WORKDIR /home/maze/tools/ultimate/releaseScripts/default
 RUN ./makeFresh.sh
 RUN mv *-linux /home/maze/tools
 
+FROM minotaur-base
 WORKDIR /home/maze/tools/
+COPY --from=build /home/maze/tools/UAutomizer-linux /home/maze/tools/UAutomizer-linux
+COPY --from=build /home/maze/tools/UTaipan-linux /home/maze/tools/UTaipan-linux
+COPY --from=build /home/maze/tools/UGemCutter-linux /home/maze/tools/UGemCutter-linux
+COPY --from=build /home/maze/tools/UKojak-linux /home/maze/tools/UKojak-linux
+
 ADD run_ultimate.sh /home/maze/tools/run_ultimate.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD unreach.prp /home/maze/workspace/unreach.prp

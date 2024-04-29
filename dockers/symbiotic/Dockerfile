@@ -1,4 +1,4 @@
-FROM minotaur-base
+FROM minotaur-base as build
 
 WORKDIR /home/maze/tools
 
@@ -12,6 +12,9 @@ RUN git clone https://github.com/staticafi/symbiotic
 WORKDIR /home/maze/tools/symbiotic
 RUN apt-get update && yes | scripts/install-ubuntu.sh 
 RUN ./build.sh 
+
+FROM minotaur-base 
+COPY --from=build /home/maze/tools/symbiotic /home/maze/tools/symbiotic
 
 ### Set up directory structure
 USER maze

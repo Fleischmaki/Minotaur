@@ -1,9 +1,20 @@
-FROM minotaur-base
+FROM ubuntu:20.04
+
+RUN groupadd --gid 1000 maze \ 
+    && useradd --uid 1000 --gid maze --shell /bin/bash --create-home maze
+
+### Set up directory structure
+USER maze
+RUN mkdir -p /home/maze/tools
+RUN mkdir -p /home/maze/workspace
+
+USER root 
 
 ### Install Dependencies
 ENV DEBIAN_FRONTEND="noninteractive"
 RUN apt-get update && apt-get install -y \
     build-essential \
+    wget \
     git \
     gperf \
     libgmp-dev \
@@ -24,8 +35,9 @@ RUN apt-get update && apt-get install -y \
     lcov \
 && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /home/maze/tools
 USER maze
+WORKDIR /home/maze/tools
+
 ### Get CMAKE manually, as we need version >= 3.18
 RUN wget https://github.com/Kitware/CMake/releases/download/v3.27.2/cmake-3.27.2-linux-x86_64.tar.gz
 RUN tar xf cmake-3.27.2-linux-x86_64.tar.gz
@@ -72,5 +84,7 @@ RUN git checkout Yices-2.6.1 && autoreconf -fi && ./configure --prefix $PWD/../y
 # Z3
 WORKDIR /home/maze/tools
 RUN wget https://github.com/Z3Prover/z3/releases/download/z3-4.8.9/z3-4.8.9-x64-ubuntu-16.04.zip && unzip z3-4.8.9-x64-ubuntu-16.04.zip && mv z3-4.8.9-x64-ubuntu-16.04 z3
+
+WORKDIR /home/maze/tools/esbmc 
 
 ENV PATH=/home/maze/tools/cvc4/bin:/home/maze/tools/z3/bin:/home/maze/tools/yices/bin:/home/maze/tools/boolector-release/bin:/home/maze/tools/mathsat/bin:$PATH

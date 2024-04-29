@@ -22,5 +22,7 @@ WORKDIR /home/maze/workspace
 ADD run_cbmc.sh /home/maze/tools/run_cbmc.sh
 ADD get_coverage.sh /home/maze/tools/get_coverage.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
-RUN sudo chmod +rwx /home/maze/tools/*
 
+USER root
+RUN chmod +rwx /home/maze/tools/*
+USER maze

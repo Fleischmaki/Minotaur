@@ -1,4 +1,4 @@
-FROM minotaur-base
+FROM minotaur-base as build
 
 # Install
 WORKDIR /home/maze/tools/
@@ -18,6 +18,8 @@ RUN ant
 
 
 ### Add scripts
+FROM minotaur-base
+COPY --from=build /home/maze/tools/cpa /home/maze/tools/cpa
 USER maze
 
 WORKDIR /home/maze/tools/
