@@ -1,12 +1,10 @@
 FROM minotaur-base as build
 
 # Install dependencies
-RUN apt-get remove -y openjdk-17-jre
 RUN apt-get update && apt-get install -y \
     make \
     clang \
     openjdk-11-jdk \
-    openjdk-11-jre \
     maven \
     zip \
     g++ \
@@ -23,6 +21,8 @@ RUN git clone https://github.com/ultimate-pa/ultimate.git
 WORKDIR /home/maze/tools/ultimate
 RUN git checkout bfb52b7
 
+RUN sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java 
+
 WORKDIR /home/maze/tools/ultimate/releaseScripts/default
 RUN ./makeFresh.sh
 RUN mv *-linux /home/maze/tools
@@ -34,6 +34,8 @@ RUN mv UTaipan-linux ut
 RUN mv UKojak-linux uk
 
 FROM minotaur-base
+RUN sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java
+
 WORKDIR /home/maze/tools/
 COPY --from=build /home/maze/tools/ua /home/maze/tools/ua
 COPY --from=build /home/maze/tools/ut /home/maze/tools/ut

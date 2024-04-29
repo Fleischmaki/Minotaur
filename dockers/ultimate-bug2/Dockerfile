@@ -20,6 +20,7 @@ RUN git clone https://github.com/ultimate-pa/ultimate.git
 # Get old version 
 WORKDIR /home/maze/tools/ultimate
 RUN git checkout bfb52b7
+RUN sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java 
 
 WORKDIR /home/maze/tools/ultimate/releaseScripts/default
 RUN ./makeFresh.sh
@@ -33,6 +34,7 @@ RUN mv UTaipan-linux ut
 RUN mv UKojak-linux uk
 
 FROM minotaur-base
+RUN sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java 
 WORKDIR /home/maze/tools/
 COPY --from=build /home/maze/tools/ua /home/maze/tools/ua
 COPY --from=build /home/maze/tools/ut /home/maze/tools/ut

@@ -40,7 +40,7 @@ def main(dest_dir,verbosity,expected_results):
             resfile = open(respath, "r").read()
             file_dir = os.path.join(dest_dir,name) 
             os.system('mkdir -p %s' % file_dir)
-            expected_result = expected_result_by_maze[name] if expected_results.endswith('.txt') else expected_results 
+            expected_result = expected_result_by_maze[name] if expected_results.endswith('.txt') else expected_results
         except Exception as e:
             print("NOTE: Failed to parse file %s: %s" % (file, str(e)))
             continue

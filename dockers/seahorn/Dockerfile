@@ -1,6 +1,6 @@
 ARG BASE_IMAGE=jammy-scm 
 # Base image with usual build dependencies
-FROM buildpack-deps:$BASE_IMAGE as dependencies
+FROM buildpack-deps:$BASE_IMAGE
 
 # Install dependencies
 ARG DEBIAN_FRONTEND=noninteractive
@@ -40,11 +40,6 @@ RUN curl -sSOL https://yices.csl.sri.com/releases/2.6.1/yices-2.6.1-x86_64-pc-li
 RUN wget https://github.com/Kitware/CMake/releases/download/v3.27.2/cmake-3.27.2-linux-x86_64.tar.gz
 RUN tar xf cmake-3.27.2-linux-x86_64.tar.gz
 RUN mv cmake-3.27.2-linux-x86_64 /opt/cmake
-ENV PATH=$PATH:/opt/cmake/bin
-
-FROM buildpack-deps:$BASE_IMAGE as build
-COPY --from=dependencies /tmp /tmp
-COPY --from=dependencies /opt /opt
 ENV PATH=$PATH:/opt/cmake/bin
 
 RUN groupadd --gid 1000 maze \ 
@@ -90,10 +85,6 @@ RUN cmake .. -GNinja \
   cmake --build . --target package && \
   units/units_z3 && \
   units/units_yices2
-
-
-FROM minotaur-base 
-COPY --from=build /home/maze/tools/seahorn /home/maze/tools/seahorn
 
 RUN pip3 install --upgrade gcovr
 

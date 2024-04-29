@@ -17,11 +17,15 @@ USER maze
 # Add scripts
 RUN git clone https://github.com/ultimate-pa/ultimate.git
 
+RUN sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java 
+
 WORKDIR /home/maze/tools/ultimate/releaseScripts/default
 RUN ./makeFresh.sh
 RUN mv *-linux /home/maze/tools
 
 FROM minotaur-base
+RUN sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java 
+
 WORKDIR /home/maze/tools/
 COPY --from=build /home/maze/tools/UAutomizer-linux /home/maze/tools/UAutomizer-linux
 COPY --from=build /home/maze/tools/UTaipan-linux /home/maze/tools/UTaipan-linux
