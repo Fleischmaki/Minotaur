@@ -15,6 +15,10 @@
 			"variant" : ["--interval-analysis"]
 		}
 	},
+	"check_error": {
+		"esbmc-bug1": "esbmc-fixed1"
+	},
+
 	"avg": 1,
 	"parameters" : {
 		"u" : [0,1],

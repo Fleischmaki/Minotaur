@@ -11,10 +11,14 @@
 	"maze_gen" : "local",
 	"expected_result": "error",
 	"tool" : {
-		"ultimate-release": {
+		"ultimate-bug1": {
 			"variant" : ["ut", "ua", "ugc", "uk"]
 		}
 	},
+	"check_error": {
+		"ultimate-bug1": "ultimate-fixed1"
+	},
+
 	"parameters" : {
 		"u" : [0,1],
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],

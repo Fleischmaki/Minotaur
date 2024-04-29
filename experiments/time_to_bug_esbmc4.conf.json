@@ -12,7 +12,7 @@
 	"expected_result": "error",
 	"gen_time" : 1000,
 	"tool" : {
-		"esbmc-bug3": {
+		"esbmc-bug4": {
 			"variant" : ["--cvc --smt-during-symex --smt-symex-assert"]
 		}
 	},

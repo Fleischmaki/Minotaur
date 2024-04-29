@@ -11,9 +11,12 @@
 	"maze_gen" : "local",
 	"expected_result": "error",
 	"tool" : {
-		"cpa-release": {
+		"cpa-bug3": {
 			"variant" : ["kInduction"]
 		}
+	},
+	"check_error": {
+		"cpa-bug3": "cpa-fixed3"
 	},
 	"avg": 1,
 	"parameters" : {

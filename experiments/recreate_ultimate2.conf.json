@@ -15,6 +15,10 @@
 			"variant" : ["ut", "ua", "ugc", "uk"]
 		}
 	},
+	"check_error": {
+		"ultimate-bug2": "ultimate-fixed2"
+	},
+
 	"parameters" : {
 		"u" : [0,1],
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],

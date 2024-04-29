@@ -11,10 +11,14 @@
 	"maze_gen" : "local",
 	"expected_result": "error",
 	"tool" : {
-		"esbmc-bug3": {
+		"esbmc-bug4": {
 			"variant" : ["--cvc --smt-during-symex --smt-symex-assert"]
 		}
 	},
+	"check_error": {
+		"esbmc-bug4": "esbmc-fixed4"
+	},
+
 	"avg": 1,
 	"parameters" : {
 		"u" : [0,1],
