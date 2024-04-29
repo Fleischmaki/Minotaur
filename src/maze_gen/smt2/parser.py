@@ -29,8 +29,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
                 The minimal array size for the clauses to be valid
     """
     sys.setrecursionlimit(10000)
-    generate_sat=(transformations['sat'] and not transformations['fuzz']) or not file_path.removesuffix('.smt2').endswith('unsat')
-    generate_well_defined=transformations['wd'] or not generate_sat
+    generate_sat, generate_well_defined = get_forced_parameters(file_path, transformations)
     limit=transformations['dag']
     negate_formula=transformations['neg']
     LOGGER.info("Converting %s: ", file_path)
@@ -90,6 +89,11 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
         add_used_variables(variables, ldecl_arr, symbs, all_arrays_constant and transformations['ca'])
 
     return parsed_cons, variables, array_size
+
+def get_forced_parameters(file_path, transformations):
+    generate_sat=(transformations['sat'] and not transformations['fuzz']) or not file_path.removesuffix('.smt2').endswith('unsat')
+    generate_well_defined=transformations['wd'] or not generate_sat
+    return generate_sat,generate_well_defined
 
 def get_unsat_core(clauses, logic):
     """Copmutes the unsat core"""
