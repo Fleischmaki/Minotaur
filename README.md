@@ -78,8 +78,8 @@ Nr.  | Tool | Status | Type
 10 |Seahorn - bpf | [closed (without fixing)](https://github.com/seahorn/seahorn/issues/545) | Bound inference
 11 |ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1565) | Boolean Intervals
 12 |ESBMC --cvc4 | [fixed](https://github.com/esbmc/esbmc/issues/1770) | SMT translation
-13 |CPA -invariantGenearation | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1208) | Division
-14 |ESBMC | [confirmed](https://github.com/esbmc/esbmc/issues/1771) | 
+13 |CPA -InvariantsCPA | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1208) | Division
+14 |ESBMC --mathsat| [confirmed](https://github.com/esbmc/esbmc/issues/1771) | 
 ### Precision Issues
 Nr. |Tool | Status | Type
 | -- | -- | -- | -- |
