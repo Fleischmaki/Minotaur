@@ -14,12 +14,13 @@ class Generator:
         self.transformations = transformations
         self.logic = parser.read_file(smt_file).logic
 
+        self.is_sat, self.is_wd = parser.get_forced_parameters(smt_file, transformations)
         try:
             self.constraints, self.vars_all, self.array_size = parser.parse(smt_file, transformations, check_neg = False)
         except Exception as e:
             LOGGER.warning('Error while parsing smt file')
             LOGGER.exception(e)
-            self.constraints = {} if transformations['sat'] and not smt_file.strip('.smt2').endswith('unsat') else {'(1==0)': False}
+            self.constraints = {} if self.is_sat else {'(1==0)': False}
             self.vars_all = {}
             self.array_size = 0
 
@@ -45,8 +46,9 @@ class Generator:
             
     def get_logic_def(self):
         logic_def = ""
+        
         if 'BV' in self.logic:
-            logic_def += converter.get_bv_helpers(self.transformations['wd'])
+            logic_def += converter.get_bv_helpers(self.is_wd)
         if self.array_size > 0:
             logic_def += converter.get_array_helpers(self.array_size)
         return logic_def
