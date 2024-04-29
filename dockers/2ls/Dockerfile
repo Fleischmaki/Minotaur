@@ -17,7 +17,7 @@ RUN git clone http://github.com/diffblue/2ls
 WORKDIR /home/maze/tools/2ls
 RUN ./build.sh  
 
-FROM minotaur-esbmc-base 
+FROM minotaur-base 
 COPY --from=build /home/maze/tools/2ls /home/maze/tools/2ls
 
 ADD get_tcs.py /home/maze/tools/get_tcs.py
