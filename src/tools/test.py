@@ -29,6 +29,7 @@ def load_config(path):
     set_default(conf,'maze_gen','local')
     set_default(conf,'expected_result','infer')
     set_default(conf,'abort_on_error',False)
+    set_default(conf,'check_error',None)
     set_default(conf,'batch_size',1)
     set_default(conf,'gen_time',120)
     set_default(conf,'coverage',False)
@@ -363,12 +364,29 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
                     runtime, tag = filename.split('_')
                     if tag in ('fp','fn'):
                         if conf['abort_on_error']:
-                            has_bug = True
+                            if conf['check_error'] is None:
+                                has_bug = True
+                            else:
+                                has_bug = check_error(conf, w, tag, out_dir)
                         commands.run_cmd(CP_CMD % (get_maze_dir(w.maze), out_path)) # Keep buggy mazes
                     write_summary(conf, out_dir, w, tag, runtime)
         if runtime == 'notFound' or tag == 'notFound':
             write_summary(conf, out_dir, w, tag, runtime)
     return has_bug
+
+def check_error(conf: dict, w: Target, tag: str, out_dir: str):
+    res_dir = os.path.join(out_dir, 'check')
+    docker.run_pa(conf['check_error'][w.tool], w.variant, w.flags, 'check', w.params, res_dir, memory=conf['memory'], timeout=300, gen=conf['maze_gen'])
+    maze = w.maze
+    resdir = os.path.join(out_dir,maze,maze) 
+    for file in os.listdir(resdir):
+        if len(file.split('_')) == 2: # Still false negative
+            LOGGER.info(file)
+            commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(out_dir,'runs')))
+            commands.run_cmd('rm -r %s' % os.path.join(out_dir,maze))
+            if tag in file:
+                return True
+    return False
 
 def write_summary(conf,out_dir, target,tag,runtime):
     maze, tool, batch_id, params, variant, flags = target
@@ -421,18 +439,6 @@ def store_coverage(conf,works: list[Target], out_dir: str) -> None:
         docker.copy_docker_results(work.tool, work.index,os.path.join(out_dir,'cov'), docker_dir=docker.COVERAGE_DIR)
         docker.kill_docker(work.tool, work.index)
 
-def merge_coverage(conf,out_dir: str) -> None:
-    for tool in conf['tool']:
-        files = []
-        resfiles = os.listdir(os.path.join(out_dir,'cov'))
-        for file in resfiles:
-            if tool in file:
-                files.append(os.path.join(out_dir, 'cov', file)) # For some reason filter + lambda does not work for this
-                file_string = ' --json-add-tracefile '.join(files)
-                outfile = f"{tool}_{len(files)}batches.json"
-                cmd = f"python3 -m gcovr --json-add-tracefile {file_string}  --merge-mode-functions=separate --json-summary-pretty {os.path.join(out_dir, 'cov', outfile)}"
-                commands.run_cmd(cmd)
-
 def main(conf, out_dir):
     os.system(f'mkdir -p {out_dir}')
     if 'seed' in conf.keys():
@@ -452,6 +458,7 @@ def main(conf, out_dir):
         cleanup(to_remove)
         if conf['coverage']:
             store_coverage(conf,works,out_dir)
+
     # commands.run_cmd(REMOVE_CMD % get_temp_dir())
 
 

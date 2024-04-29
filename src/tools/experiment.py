@@ -34,6 +34,9 @@ def load_config(path: str) -> dict:
         conf['coverage'] = 0
     if 'batch_duration' not in conf.keys():
         conf['batch_duration'] = conf['duration']
+    if 'check_error' not in conf.keys():
+        conf['check_error'] = None
+
 
     assert conf['repeats'] > 0
     assert conf['workers'] > 0
