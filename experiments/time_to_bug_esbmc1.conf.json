@@ -16,6 +16,10 @@
 			"variant" : ["--interval-analysis"]
 		}
 	},
+	"check_error": {
+		"esbmc-bug1": "esbmc-fixed1"
+	},
+
 	"avg": 1,
 	"parameters" : [{
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],

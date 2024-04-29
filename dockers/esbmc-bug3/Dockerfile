@@ -11,6 +11,7 @@ RUN cmake --build . -j1
 RUN ninja install
 
 FROM minotaur-base
+
 COPY --from=build /home/maze/tools/cvc4 /home/maze/tools/cvc4 
 COPY --from=build /home/maze/tools/z3 /home/maze/tools/z3
 COPY --from=build /home/maze/tools/yices /home/maze/tools/yices
@@ -19,10 +20,12 @@ COPY --from=build dest/home/maze/tools/mathsat dest/home/maze/tools/mathsat
 COPY --from=build /home/maze/tools/release /home/maze/tools/release
 ENV PATH=/home/maze/tools/cvc4/bin:/home/maze/tools/z3/bin:/home/maze/tools/yices/bin:/home/maze/tools/boolector-release/bin:/home/maze/tools/mathsat/bin:$PATH
 
+COPY --from=build /home/maze/tools/run_esbmc.sh /home/maze/tools/
+COPY --from=build /home/maze/tools/get_tcs.py /home/maze/tools/
+
+
 WORKDIR /home/maze/tools
-ADD run_esbmc-bug3.sh /home/maze/tools/run_esbmc-bug3.sh
-RUN sudo chmod +x /home/maze/tools/run_esbmc-bug1.sh
-ADD get_tcs.py /home/maze/tools/get_tcs.py
+RUN mv /home/maze/tools/run_esbmc.sh /home/maze/tools/run_esbmc-bug3.sh 
 
 ### Cleanup
 WORKDIR /home/maze/workspace

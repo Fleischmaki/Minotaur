@@ -17,3 +17,5 @@ RUN git clone https://gitlab.com/sosy-lab/software/cpachecker.git cpa
 ADD run_cpa.sh /home/maze/tools/run_cpa.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD svcompNotl.properties /home/maze/tools/cpa/config/svcompNotl.properties
+
+WORKDIR /home/maze/tools/cpa

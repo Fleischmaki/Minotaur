@@ -44,6 +44,9 @@ ENV PATH=$PATH:/opt/cmake/bin
 
 FROM buildpack-deps:$BASE_IMAGE as build
 COPY --from=dependencies /tmp /tmp
+COPY --from=dependencies /opt /opt
+ENV PATH=$PATH:/opt/cmake/bin
+
 RUN groupadd --gid 1000 maze \ 
     && useradd --uid 1000 --gid maze --shell /bin/bash --create-home maze
 RUN echo 'maze  ALL=(root) NOPASSWD: ALL' >> /etc/sudoers
@@ -91,6 +94,7 @@ RUN cmake .. -GNinja \
 
 FROM minotaur-base 
 COPY --from=build /home/maze/tools/seahorn /home/maze/tools/seahorn
+
 RUN pip3 install --upgrade gcovr
 
 ENV PATH "/home/maze/tools/seahorn/build/run/bin:$PATH"

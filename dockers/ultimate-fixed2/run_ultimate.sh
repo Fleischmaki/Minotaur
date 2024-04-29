@@ -2,9 +2,10 @@
 
 # Arg1: File containing targets
 # Arg2: Timeout (in minutes)
-# Arg3: Variant
+# Arg3: Variant 
 
 
+sudo chown -R maze:maze /home/maze/tools/$3
 
 WORKDIR=/home/maze/workspace
 
@@ -17,6 +18,6 @@ do
     OUTFILE=$OUTDIR/res$name
     # Create dummy file to indicate running start
     touch $WORKDIR/.start$name
-    timeout -k 2s $2s /home/maze/tools/release/bin/esbmc --timeout $2s ${@:3} $maze &> $OUTFILE 
+    timeout -k 2s $2s  /home/maze/tools/$3/Ultimate.py --spec unreach.prp --witness-dir $OUTDIR --architecture 64bit --file $maze &> $OUTFILE
     touch $WORKDIR/.end$name
 done

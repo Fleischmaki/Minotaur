@@ -16,6 +16,9 @@
 			"variant" : ["ut", "ua", "ugc", "uk"]
 		}
 	},
+	"check_error": {
+		"ultimate-bug2": "ultimate-fixed2"
+	},
 	"avg": 1,
 	"parameters" : [{
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],

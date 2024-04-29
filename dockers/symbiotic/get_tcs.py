@@ -23,10 +23,11 @@ OUTDIR = '/home/maze/workspace/outputs'
 
 def main(dest_dir,verbosity,expected_results):
     expected_result_by_maze = {}
-    with open(expected_results,'r') as results_file:
-        for result in results_file.readlines():
-            name, res = result.rsplit(' ',1)
-            expected_result_by_maze[name] = res
+    if expected_results.endswith('.txt'):
+        with open(expected_results,'r') as results_file:
+            for result in results_file.readlines():
+                name, res = result.rsplit(' ',1)
+                expected_result_by_maze[name] = res
     # Create destination directory
     os.system('mkdir -p %s' % dest_dir)
     for file in filter(lambda f: 'res' in f, os.listdir(OUTDIR)):
@@ -40,7 +41,7 @@ def main(dest_dir,verbosity,expected_results):
             resfile = open(respath, "r").read()
             file_dir = os.path.join(dest_dir,name) 
             os.system('mkdir -p %s' % file_dir)
-            expected_result = expected_results if expected_results != 'infer' else expected_result_by_maze[name]
+            expected_result = expected_result_by_maze[name] if expected_results.endswith('.txt') else expected_results 
         except Exception as e:
             print("NOTE: Failed to parse file %s: %s" % (file, str(e)))
             continue

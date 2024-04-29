@@ -1,11 +1,13 @@
 FROM minotaur-base as build
 
 # Install dependencies
+RUN apt-get remove -y openjdk-17-jre
 RUN apt-get update && apt-get install -y \
     make \
     clang \
-    maven \
+    openjdk-11-jdk \
     openjdk-11-jre \
+    maven \
     zip \
     g++ \
 && rm -rf /var/lib/apt/lists/*
@@ -19,7 +21,7 @@ RUN git clone https://github.com/ultimate-pa/ultimate.git
 
 # Get old version 
 WORKDIR /home/maze/tools/ultimate
-RUN git checkout bfb52b7
+RUN git checkout d699333
 
 WORKDIR /home/maze/tools/ultimate/releaseScripts/default
 RUN ./makeFresh.sh
@@ -38,7 +40,7 @@ COPY --from=build /home/maze/tools/ut /home/maze/tools/ut
 COPY --from=build /home/maze/tools/ugc /home/maze/tools/ugc
 COPY --from=build /home/maze/tools/uk /home/maze/tools/uk
 
-ADD run_ultimate.sh /home/maze/tools/run_ultimate-release.sh
+ADD run_ultimate.sh /home/maze/tools/run_ultimate-fixed1.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD unreach.prp /home/maze/workspace/unreach.prp
 

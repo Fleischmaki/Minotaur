@@ -12,9 +12,12 @@
 	"expected_result": "safe",
 	"gen_time" : 1000,
 	"tool" : {
-		"cpa-release": {
+		"cpa-bug1": {
 			"variant" : ["kInduction"]
 		}
+	},
+	"check_error": {
+		"cpa-bug1": "cpa-fixed1"
 	},
 	"avg": 1,
 	"parameters" : [{

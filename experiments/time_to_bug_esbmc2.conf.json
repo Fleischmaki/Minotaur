@@ -1,12 +1,12 @@
 {
 	"verbosity": "summary",
-	"repeats" : 20,
+	"repeats" : 8,
 	"batches": 100,
 	"duration" : 1000,
 	"workers" : 1,
 	"memory" : 4,
 	"transforms" : [0,1,20,20],
-	"seed": [1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5],
+	"seed": [4,4,4,4,5,5,5,5],
 	"batch_size": 1,
 	"maze_gen" : "local",
 	"expected_result": "error",
@@ -15,6 +15,9 @@
 		"esbmc-bug2": {
 			"variant" : ["--interval-analysis"]
 		}
+	},
+	"check_error": {
+		"esbmc-bug2": "esbmc-fixed2"
 	},
 	"avg": 1,
 	"parameters" : [{

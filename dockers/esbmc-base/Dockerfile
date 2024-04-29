@@ -85,6 +85,14 @@ RUN git checkout Yices-2.6.1 && autoreconf -fi && ./configure --prefix $PWD/../y
 WORKDIR /home/maze/tools
 RUN wget https://github.com/Z3Prover/z3/releases/download/z3-4.8.9/z3-4.8.9-x64-ubuntu-16.04.zip && unzip z3-4.8.9-x64-ubuntu-16.04.zip && mv z3-4.8.9-x64-ubuntu-16.04 z3
 
-WORKDIR /home/maze/tools/esbmc 
+WORKDIR /home/maze/tools
+ADD run_esbmc.sh /home/maze/tools/run_esbmc.sh
+ADD get_coverage.sh /home/maze/tools/get_coverage.sh
+ADD get_tcs.py /home/maze/tools/get_tcs.py
 
+USER root
+RUN chmod +x /home/maze/tools/*.sh
+
+USER maze 
+WORKDIR /home/maze/tools/esbmc 
 ENV PATH=/home/maze/tools/cvc4/bin:/home/maze/tools/z3/bin:/home/maze/tools/yices/bin:/home/maze/tools/boolector-release/bin:/home/maze/tools/mathsat/bin:$PATH

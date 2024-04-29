@@ -1,11 +1,13 @@
-FROM minotaur-base as build 
+FROM minotaur-base as build
 
 # Install dependencies
+RUN apt-get remove -y openjdk-17-jre
 RUN apt-get update && apt-get install -y \
     make \
     clang \
-    maven \
     openjdk-11-jdk \
+    openjdk-11-jre \
+    maven \
     zip \
     g++ \
 && rm -rf /var/lib/apt/lists/*
@@ -26,7 +28,6 @@ RUN ./makeFresh.sh
 RUN mv *-linux /home/maze/tools
 
 WORKDIR /home/maze/tools/
-
 RUN mv UAutomizer-linux ua
 RUN mv UGemCutter-linux ugc
 RUN mv UTaipan-linux ut
@@ -39,18 +40,10 @@ COPY --from=build /home/maze/tools/ut /home/maze/tools/ut
 COPY --from=build /home/maze/tools/ugc /home/maze/tools/ugc
 COPY --from=build /home/maze/tools/uk /home/maze/tools/uk
 
-ADD run_ultimate.sh /home/maze/tools/run_ultimate-release.sh
+ADD run_ultimate.sh /home/maze/tools/run_ultimate-bug1.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD unreach.prp /home/maze/workspace/unreach.prp
 
 ENV PATH=$PATH:/home/maze/tools/ua
-
-WORKDIR /home/maze/workspace
-
-ADD run_ultimate.sh /home/maze/tools/run_ultimate-bug2.sh
-ADD get_tcs.py /home/maze/tools/get_tcs.py
-ADD unreach.prp /home/maze/workspace/unreach.prp
-
-ENV PATH=$PATH:/home/maze/tools/ua/
 
 WORKDIR /home/maze/workspace

@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y \
     make \
     clang \
     maven \
-    openjdk-11-jre \
+    openjdk-11-jdk \
     zip \
     g++ \
 && rm -rf /var/lib/apt/lists/*
