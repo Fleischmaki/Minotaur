@@ -12,7 +12,7 @@
 	"expected_result": "error",
 	"gen_time" : 1000,
 	"tool" : {
-		"ultimate-release": {
+		"ultimate-bug2": {
 			"variant" : ["ut", "ua", "ugc", "uk"]
 		}
 	},

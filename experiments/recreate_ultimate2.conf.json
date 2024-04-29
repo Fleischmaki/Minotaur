@@ -1,7 +1,7 @@
 {
-	"verbosity": "summary",
+	"verbosity": "all",
 	"repeats" : 5,
-	"batches": -1,
+	"mazes" : -1,
 	"duration" : 1000,
 	"workers" : 1,
 	"memory" : 4,
@@ -11,7 +11,7 @@
 	"maze_gen" : "local",
 	"expected_result": "error",
 	"tool" : {
-		"ultimate-release": {
+		"ultimate-bug2": {
 			"variant" : ["ut", "ua", "ugc", "uk"]
 		}
 	},
@@ -37,7 +37,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MinotaruProject/Minotaur/bug_seeds/bench_12285.smt2",
+		"s": "/home/markus/MinotaurProject/Minotaur/bug_seeds/bench_8477.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

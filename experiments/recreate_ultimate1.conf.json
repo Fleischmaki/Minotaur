@@ -1,7 +1,7 @@
 {
 	"verbosity": "summary",
 	"repeats" : 5,
-	"batches": -1,
+	"mazes" : -1,
 	"duration" : 1000,
 	"workers" : 1,
 	"memory" : 4,
@@ -37,7 +37,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MinotaurProject/Minotaur/bug_seeds/bench_8477.smt2",
+		"s": "/home/markus/MinotaurProject/Minotaur/bug_seeds/bench_12285.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
