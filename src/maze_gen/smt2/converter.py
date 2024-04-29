@@ -163,11 +163,6 @@ class Converter():
             LOGGER.debug("Using the following indices for arrays: %s")
             LOGGER.debug("Well definedness changed, have to clear node cache")
 
-    def convert_and_gather_symbols(self, node):
-        self.symbs = set()
-        result = self.convert(node)
-        return result, self.symbs
-        
     def write_unsigned(self, parent: FNode, cons, node: FNode, always=True):
         """ Writes a node as an unsigned integer
         """
@@ -175,7 +170,7 @@ class Converter():
         if width < 32:
             cons.write(f'({bits_to_utype(32)})')
         cons.write(get_unsigned_cast(parent, always))
-        cons.write(self.convert(node))
+        self.write_node(node,cons)
         if (always or needs_unsigned_cast(parent)) and not has_matching_type(width):
             cons.write(')')
 
@@ -204,7 +199,7 @@ class Converter():
             else:
                 self.write_unsigned(parent, cons,node, always)
         else:
-            cons.write(self.convert(node))
+            self.write_node(node,cons)
 
 
     def convert_helper(self, node: FNode, cons: io.TextIOBase, op: str, always_cast_args=False):
@@ -269,13 +264,20 @@ class Converter():
             if needs_unsigned_cast(node) and not has_matching_type(width):
                 cons.write(')')
 
-    def convert(self,node: FNode) -> str:
+    def write_node(self, node: FNode, cons: io.TextIOBase):
+        curr_symbs = self.symbs
+        text, new_symbs = self.convert(node)
+        self.symbs = curr_symbs.union(new_symbs)
+        cons.write(text)
+
+    def convert(self,node: FNode) -> tuple[str,set[str]]:
         """ Converts a formula into C-expression.
         :param node: Root node of the formula
         """
         if node.node_id() in self.node_cache:
             return self.node_cache[node.node_id()]
         cons = io.StringIO()
+        self.symbs = set()
         cons.write('(')
         if node.is_iff() or node.is_equals() or node.is_bv_comp():
             (l, r) = node.args()
@@ -283,9 +285,9 @@ class Converter():
                 if "Array" in str(r.get_type()):
                     if len(self.array_indices) == 0:
                         cons.write("array_comp(")
-                        cons.write(self.convert(l))
+                        self.write_node(l,cons)
                         cons.write(",")
-                        cons.write(self.convert(r))
+                        self.write_node(r,cons)
                         cons.write(f",{get_array_size(l)})")
                     else:
                         lname = ff.get_array_name(l)
@@ -387,7 +389,7 @@ class Converter():
             mask = binary_to_decimal("1" * (dif))
             newtype = bits_to_utype(dif)
             cons.write("(" + newtype +") (")
-            cons.write(self.convert(l))
+            self.write_node(l,cons)
             cons.write(" >> " + str(ext_start))
             if ext_end != m:
                 cons.write(" & " + mask)
@@ -401,20 +403,20 @@ class Converter():
         elif node.is_not():
             (b,) = node.args()
             cons.write("!")
-            cons.write(self.convert(b))
+            self.write_node(b,cons)
         elif node.is_implies():
             (l,r) = node.args()
             cons.write("!")
-            cons.write(self.convert(l))
+            self.write_node(l,cons)
             cons.write(" | ")
-            cons.write(self.convert(r))
+            self.write_node(r,cons)
         elif node.is_ite():
             (g,p,n) = node.args()
-            cons.write(self.convert(g))
+            self.write_node(g,cons)
             cons.write(' ? ')
-            cons.write(self.convert(p))
+            self.write_node(p,cons)
             cons.write(' : ')
-            cons.write(self.convert(n))
+            self.write_node(n,cons)
         elif node.is_bv_neg():
             (s,) = node.args()
             base = binary_to_decimal("1" * (ff.get_bv_width(s)))
@@ -428,7 +430,7 @@ class Converter():
             self.check_shift_size(node)
             cons.write(get_unsigned_cast(node))
             cons.write("rotate_helper(")
-            cons.write(self.convert( l))
+            self.write_node( l,cons)
             cons.write(f",{node.bv_rotation_step()},{'1' if node.is_bv_rol() else '0'},{width})")
             if not has_matching_type(width) and needs_unsigned_cast(node):
                 cons.write(')')
@@ -463,15 +465,15 @@ class Converter():
                 cons.write(array_name)
                 self.symbs.add(array_name)
             else:
-                cons.write(self.convert( a))
+                self.write_node( a,cons)
                 if dim == 1:
                     cons.write("[")
-                    cons.write(self.convert(p))
+                    self.write_node(p,cons)
                     cons.write("]")
                 else:
                     size = get_array_size_from_dim(dim-1)
                     cons.write(f"+({size}*")
-                    cons.write(self.convert(p))
+                    self.write_node(p,cons)
                     cons.write(")")
             if 'BV' in str(node.get_type()) and not has_matching_type(ff.get_bv_width(node)) and needs_unsigned_cast(node):
                 cons.write(")")
@@ -491,7 +493,7 @@ class Converter():
                 self.symbs.add(array_name)
                 cons.write(',')
             else:
-                cons.write(self.convert( a))
+                self.write_node( a,cons)
                 cons.write(",")
             self.write_unsigned(a,cons,p)
             cons.write(",")
@@ -510,13 +512,13 @@ class Converter():
             self.symbs.add(fn + index)
         else:
             error(0, node.get_type())
-            return ""
+            return "", set()
         cons.write(')')
         cons.seek(0)
         node_in_c = cons.read()
-        self.node_cache[node.node_id()] = node_in_c
+        self.node_cache[node.node_id()] = (node_in_c,self.symbs)
         cons.close()
-        return node_in_c
+        return node_in_c, self.symbs
 
 CONVERTER = Converter()
 
