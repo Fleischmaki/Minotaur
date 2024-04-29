@@ -26,8 +26,17 @@ RUN python3 -m pysmt install --confirm-agreement --z3
 ADD token.txt /home/maze/workspace/token.txt
 RUN sudo chmod +r token.txt
 
+WORKDIR /home/maze/tools
+RUN git clone https://github.com/testsmt/yinyang.git yinyang
+WORKDIR /home/maze/tools/yinyang
+RUN git checkout f38bb10
+ADD yinyang.patch /home/maze/tools/yinyang.patch
+RUN git apply /home/maze/tools/yinyang.patch
+ENV PATH=/home/maze/tools/yinyang/bin:$PATH
+
 WORKDIR /home/maze/workspace
 RUN git clone https://$(cat /home/maze/workspace/token.txt)@github.com/Fleischmaki/Minotaur.git -c core.sshCommand 
 WORKDIR /home/maze/workspace/Minotaur
 RUN git checkout working
+
 WORKDIR /home/maze/workspace
