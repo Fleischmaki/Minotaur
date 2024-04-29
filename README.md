@@ -29,12 +29,15 @@ flowchart LR
 ## Installation
 ```
 git clone https://github.com/Fleischmaki/Minotaur.git
-pip install -r Minotaur/requirements.txt
 ./Minotaur/scripts/build_MC_dockers.sh
 # For recreating experiments #
 ./Minotaur/scripts/build_experiment_dockers.sh
 ```
 Note that the provided dockers build most tools from source. Building might take up to a few hours and several GBs of memory.
+If you want to generate mazes locally you will need to install the packages from [requirements.txt](requirements.txt)
+```
+pip install -r Minotaur/requirements.txt
+``` 
 
 ## Using Minotaur
 ### Test Analyzers
