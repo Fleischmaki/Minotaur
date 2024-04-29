@@ -38,7 +38,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MinotaurProject/Minotaur/bug_seeds/MULTIPLIER_PRIME_2.msat.smt2",
+		"s": "/Minotaur/bug_seeds/MULTIPLIER_PRIME_2.msat.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

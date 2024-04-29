@@ -75,7 +75,7 @@
 			"ca": [0,1]
 		},
 		"g": ["CVE_gen","CVE-neg_gen"],
-		"s": "/home/markus/MinotaurProject/covseeds",
+		"s": "/Minotaur/covseeds",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -90,7 +90,7 @@
 			"ca": [0,1]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MinotaurProject/Minotaur/covseeds",
+		"s": "/Minotaur/covseeds",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -113,7 +113,7 @@
 			"ca": [0,1]
 		},
 		"g": ["CVE_gen","CVE-neg_gen"],
-		"s": "/home/markus/MinotaurProject/covseeds",
+		"s": "/Minotaur/covseeds",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

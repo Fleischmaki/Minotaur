@@ -10,7 +10,6 @@ from math import ceil
 import logging
 from typing import Iterable
 
-
 from ..runner import docker, commands, maze_gen
 
 LOGGER = logging.getLogger(__name__)
@@ -46,6 +45,11 @@ def load_config(path):
 
     return conf
 
+def resolve_seed_path(seed: str):
+    if seed.startswith('/Minotaur/'):
+        return os.path.join(get_minotaur_root(),seed.removeprefix('/Minotaur/'))
+    return seed
+
 def pick_values(value: dict[str,int]  | list, head: str = "",tail: str = "") -> str | None:
     """
     Randomly pick values in the from either a list or a min/max range.
@@ -74,7 +78,7 @@ def set_default(parameters: dict, name: str, value):
     """
     if name not in parameters.keys():
         parameters[name] = value
-        LOGGER.debug('Using default value %s for parameter %s', value, name)
+        LOGGER.debug('Using default value %s for parameter %s', value, name)        
 
 def get_random_params(conf: dict):
     """
@@ -91,7 +95,7 @@ def get_random_params(conf: dict):
                 body += transform if transform is not None else ''
             body = body.strip('_') # remove last _
         elif key == 's':
-            body = value
+            body = resolve_seed_path(value)
             while os.path.isdir(body):
                 body = os.path.join(body,random.choice(os.listdir(body)))
         else:
@@ -237,7 +241,7 @@ class TargetGenerator(Iterable):
         if self.conf['expected_result'] != 'infer':
             return self.conf['expected_result']
         if 'storm' in params['t']:
-            return 'error'
+            return 'error' if 'unsat' not in params['t'] else 'safe'
         if 'fuzz' in params['t'] and 'unsat' in params['t']:
             return 'safe'
 
@@ -245,7 +249,7 @@ class TargetGenerator(Iterable):
         for file in os.listdir(smt_dir):
             file = str(file)
             if f'_{maze_id}_' in file:
-                res = 'error' if file.removesuffix('.smt2').rsplit('_',1) == 'sat' else 'safe'
+                res = 'error' if file.removesuffix('.smt2').rsplit('_',1)[1] == 'sat' else 'safe'
                 commands.run_cmd(f"rm {os.path.join(smt_dir, file)}")
                 return res
 
