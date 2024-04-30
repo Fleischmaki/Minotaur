@@ -1,7 +1,8 @@
 FROM minotaur-cpa-base
 
 # Install
-USER mazeRUN git checkout ec8f159a  
+USER maze
+RUN git checkout ec8f159a  
 RUN ant
 
 RUN mv /home/maze/tools/run_cpa.sh /home/maze/tools/run_cpa-bug2.sh
