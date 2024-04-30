@@ -42,7 +42,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MinotaruProject/Minotaur/bug_seeds/cvs_vc105353.smt2",
+		"s": "/Minotaur/bug_seeds/cvs_vc105353.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

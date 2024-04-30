@@ -39,7 +39,7 @@
 			"unsat": [1]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MinotaruProject/Minotaur/bug_seeds/bubble_sort2.c.smt2",
+		"s": "/Minotaur/bug_seeds/bubble_sort2.c.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
