@@ -139,10 +139,9 @@ class Minimizer:
         return sat
 
     def set_seed(self, seed: str, clauses: list):
+        seed = f"{seed.removesuffix('.smt2')}_{'sat' if self.expected_result == 'error' else 'unsat'}.smt2"
         seed = os.path.join(self.outdir, 'seeds', seed)
         constraints = self.core.union(clauses)
-        if not seed.endswith('.smt2'):
-            seed += '.smt2'
         sp.write_to_file(constraints,seed)
         self.params['s'] = seed
 
@@ -165,7 +164,9 @@ class Minimizer:
         return self.params
 
     def set_fake_params(self):
-        transforms = list(filter(lambda t: not ('storm' in t or 'fuzz' in t or 'yinyang'), '_'.split(self.params['t'])))
+        transforms = set(filter(lambda t: not ('storm' in t or 'fuzz' in t or 'yinyang' in t), self.params['t'].split('_')))
+        if self.expected_result == 'safe':
+            transforms.add('unsat')
         self.params['t'] = '_'.join(transforms)
         self.params['t'] = self.params['t'].strip('_')
         if self.params['t'] == '' or self.params['t'] == 'last':
@@ -173,6 +174,7 @@ class Minimizer:
             self.params['m'] = 0
         else:
             self.params['m'] = 1
+        print(self.params['t'])
 
 def read_mutant(mutant: str):
     file_data = sp.read_file(mutant)
