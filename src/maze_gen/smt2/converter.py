@@ -1,5 +1,6 @@
 """ Implements translation from SMT Formulas to C Expressions 
 """
+from operator import is_
 import re
 import io
 import typing as t
@@ -96,7 +97,7 @@ def needs_unsigned_cast(node: FNode):
     return width not in (32,64) or \
         len(node.args()) == 0 or \
         all(map(lambda n: n.is_bv_constant() or n.is_symbol(), node.args())) or \
-        all(map(is_signed, node.args())) or \
+        not all(map(is_signed, node.args())) or \
         not all(map(lambda n: ff.get_bv_width(n)<=width,filter(lambda n: n.get_type().is_bv_type(),node.args())))
 
 def get_unsigned_cast(node: FNode, always=False) -> str:
@@ -166,9 +167,12 @@ class Converter():
     def write_unsigned(self, parent: FNode, cons, node: FNode, always=True):
         """ Writes a node as an unsigned integer
         """
+        if node.is_constant():
+            self.write_node(node, cons)
+            return 
         width = ff.get_bv_width(parent)
-        if width < 32:
-            cons.write(f'({bits_to_utype(32)})')
+        # if width < 32:
+        #     cons.write(f'({bits_to_utype(32)})')
         cons.write(get_unsigned_cast(parent, always))
         self.write_node(node,cons)
         if (always or needs_unsigned_cast(parent)) and not has_matching_type(width):
