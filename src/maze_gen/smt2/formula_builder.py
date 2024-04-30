@@ -16,7 +16,7 @@ BV_BINARY_OPS = frozenset([ ops.BV_AND, ops.BV_OR, ops.BV_XOR, ops.BV_ADD, \
                             ops.BV_SUB, ops.BV_MUL, ops.BV_UDIV,\
                             ops.BV_UREM,  ops.BV_SDIV, ops.BV_SREM])
 OTHER_BV_OPS = frozenset([ops.BV_ZEXT, ops.BV_SEXT, ops.BV_EXTRACT, ops.BV_CONCAT, ops.BV_COMP, ops.BV_LSHL, ops.BV_ASHR, ops.BV_LSHR])
-MY_IRA_OPS = frozenset(filter(lambda t: t not in (ops.BV_TONATURAL, ops.TOREAL),ops.IRA_OPERATORS))
+MY_IRA_OPS = frozenset(filter(lambda t: t not in (ops.BV_TONATURAL, ops.TOREAL, ops.POW),ops.IRA_OPERATORS))
 
 
 assert BV_UNARY_OPS | BV_BINARY_OPS | OTHER_BV_OPS == ops.BV_OPERATORS
@@ -90,7 +90,7 @@ class FormulaBuilder():
                 res.extend([(ops.EQUALS,[t,t]) for t in self.bv_types])
             if ('IA' in self.logic):
                 res.extend([(o,[types.INT,types.INT]) for o in ops.IRA_RELATIONS])
-                res.append([(ops.EQUALS,[types.INT,types.INT])])
+                res.append((ops.EQUALS,[types.INT,types.INT]))
         if out_type.is_bv_type():
             res.extend([(o,[out_type]) for o in BV_UNARY_OPS])
             res.extend([(o,[out_type, out_type]) for o in BV_BINARY_OPS])
