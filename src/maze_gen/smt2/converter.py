@@ -176,7 +176,7 @@ class Converter():
             self.write_node(node, cons)
             return 
         width = ff.get_bv_width(parent)
-        if width < 32:
+        if width < 32 and self.well_defined:
             cons.write(f'({bits_to_utype(32)})')
         cons.write(get_unsigned_cast(parent, always))
         self.write_node(node,cons)
