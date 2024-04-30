@@ -127,7 +127,7 @@ def run_formula_builder(smt_file: str, mutant_path: str, seed: int, n: int, tran
         clauses = [builder.get_random_assertion(transformations['max_depth']) for _ in range(transformations['max_assert'])]
         formula = And(*clauses) if transformations['sat'] else And(*clauses,*core)
         sat_status = 'unsat'
-        if transformations['sat'] and is_sat(formula):
+        if transformations['sat'] and is_sat(formula,solver_name='z3',logic=filedata.logic):
             sat_status = 'sat'
         respath = os.path.join(mutant_path, f'mutant_{i}_{sat_status}.smt2')
         mutants.append(respath)
