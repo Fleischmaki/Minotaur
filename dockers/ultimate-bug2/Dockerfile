@@ -34,6 +34,7 @@ RUN mv UTaipan-linux ut
 RUN mv UKojak-linux uk
 
 FROM minotaur-base
+USER maze
 RUN sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java 
 WORKDIR /home/maze/tools/
 COPY --from=build /home/maze/tools/ua /home/maze/tools/ua

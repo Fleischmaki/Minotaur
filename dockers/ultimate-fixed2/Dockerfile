@@ -19,7 +19,9 @@ RUN git clone https://github.com/ultimate-pa/ultimate.git
 
 # Get old version 
 WORKDIR /home/maze/tools/ultimate
-RUN git checkout 5d0a42b
+RUN git checkout addfb16
+
+RUN sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java 
 
 WORKDIR /home/maze/tools/ultimate/releaseScripts/default
 RUN ./makeFresh.sh
@@ -33,6 +35,7 @@ RUN mv UTaipan-linux ut
 RUN mv UKojak-linux uk
 
 FROM minotaur-base
+USER maze
 WORKDIR /home/maze/tools/
 COPY --from=build /home/maze/tools/ua /home/maze/tools/ua
 COPY --from=build /home/maze/tools/ut /home/maze/tools/ut
@@ -46,6 +49,8 @@ ADD unreach.prp /home/maze/workspace/unreach.prp
 ENV PATH=$PATH:/home/maze/tools/ua
 
 WORKDIR /home/maze/workspace
+
+RUN sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java 
 
 ADD run_ultimate.sh /home/maze/tools/run_ultimate-fixed2.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py

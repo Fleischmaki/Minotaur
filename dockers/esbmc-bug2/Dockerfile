@@ -12,6 +12,7 @@ RUN cmake --build . -j1
 RUN ninja install
 
 FROM minotaur-base
+USER maze
 
 COPY --from=build /home/maze/tools/cvc4 /home/maze/tools/cvc4 
 COPY --from=build /home/maze/tools/z3 /home/maze/tools/z3

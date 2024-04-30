@@ -24,6 +24,7 @@ RUN ./makeFresh.sh
 RUN mv *-linux /home/maze/tools
 
 FROM minotaur-base
+USER maze
 RUN sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java 
 
 WORKDIR /home/maze/tools/
@@ -38,4 +39,5 @@ ADD unreach.prp /home/maze/workspace/unreach.prp
 
 ENV PATH=$PATH:/home/maze/tools/UAutomizer-linux/
 
+USER maze
 WORKDIR /home/maze/workspace
