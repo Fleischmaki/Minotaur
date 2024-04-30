@@ -428,7 +428,7 @@ class Converter():
             (l,) = node.args()
             width = ff.get_bv_width(node)
             self.check_shift_size(node)
-            cons.write(get_unsigned_cast(node))
+            cons.write(get_unsigned_cast(node, always=True))
             cons.write("rotate_helper(")
             self.write_node( l,cons)
             cons.write(f",{node.bv_rotation_step()},{'1' if node.is_bv_rol() else '0'},{width})")
