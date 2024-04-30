@@ -11,6 +11,7 @@
 	"maze_gen" : "local",
 	"expected_result": "error",
 	"gen_time" : 1000,
+	"abort_on_error": ["fn"],
 	"tool" : {
 		"ultimate-bug2": {
 			"variant" : ["ut", "ua", "ugc", "uk"]

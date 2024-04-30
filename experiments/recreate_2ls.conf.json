@@ -9,7 +9,8 @@
 	"seed": [1,2,3,4,5],
 	"batch_size": 1,
 	"maze_gen" : "local",
-	"expected_result": "error",
+	"expected_result": "safe",
+	"abort_on_error": ["fp"],
 	"tool" : {
 		"2ls": {
 			"variant" : ["--k-induction"]

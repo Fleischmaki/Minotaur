@@ -10,6 +10,7 @@
 	"batch_size": 1,
 	"maze_gen" : "local",
 	"expected_result": "error",
+	"abort_on_error": ["fn"],
 	"gen_time" : 1000,
 	"tool" : {
 		"esbmc-bug2": {
