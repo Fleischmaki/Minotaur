@@ -219,9 +219,9 @@ def write_to_file(formula : FNode | t.Iterable[FNode], logic: str, file: str):
     """
     if isinstance(formula,t.Iterable):
         formula = And(*formula)
-        with open(file, "w") as fout:
-            script = smtlibscript_from_formula(formula, logic)
-            script.serialize(fout)
+    with open(file, "w") as fout:
+        script = smtlibscript_from_formula(formula, logic)
+        script.serialize(fout)
 
 
 class Graph:
