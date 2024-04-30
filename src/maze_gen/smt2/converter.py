@@ -356,6 +356,8 @@ class Converter():
             cons.write("(~")
             cons.write(get_unsigned_cast(node))
             self.write_node(b, cons)
+            if not has_matching_type(ff.get_bv_width(node)):
+                cons.write(')')
             cons.write(")")
         elif node.is_bv_sext():
             (l,) = node.args()
@@ -434,7 +436,7 @@ class Converter():
             cons.write("rotate_helper(")
             self.write_unsigned(node,cons,l)
             cons.write(f",{node.bv_rotation_step()},{'1' if node.is_bv_rol() else '0'},{width})")
-            if not has_matching_type(width) and needs_unsigned_cast(node):
+            if not has_matching_type(width):
                 cons.write(')')
         elif node.is_bv_constant():
             value =  str(node.constant_value()) + 'U'
