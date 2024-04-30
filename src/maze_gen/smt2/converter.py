@@ -172,9 +172,9 @@ class Converter():
     def write_unsigned(self, parent: FNode, cons, node: FNode, always=True):
         """ Writes a node as an unsigned integer
         """
-        if node.is_constant():
+        if node.is_constant() and not always:
             self.write_node(node, cons)
-            return 
+            return
         width = ff.get_bv_width(parent)
         if width < 32 and self.well_defined:
             cons.write(f'({bits_to_utype(32)})')
@@ -384,9 +384,9 @@ class Converter():
                 self.write_unsigned(l,cons,l)
         elif node.is_bv_concat():
             (l,r) = node.args()
-            self.write_unsigned(node,cons,l)
+            self.write_unsigned(node,cons,l, True)
             cons.write(f' << {ff.get_bv_width(r)} | ')
-            self.write_unsigned(r,cons,r)
+            self.write_unsigned(r,cons,r, True)
         elif node.is_bv_extract():
             ext_start = node.bv_extract_start()
             ext_end = node.bv_extract_end()
