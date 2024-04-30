@@ -40,6 +40,8 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     else:
         array_size, array_calls = ff.get_array_index_calls(formula)
         array_size += 1
+        if array_size > ff.MAXIMUM_ARRAY_SIZE:
+            raise ValueError("Minimum array size too large!")
         clauses = list(ff.get_array_constraints(array_calls, array_size)) + list(formula_clauses)
 
     converter = get_converter()
