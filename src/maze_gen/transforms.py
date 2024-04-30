@@ -131,7 +131,7 @@ def run_formula_builder(smt_file: str, mutant_path: str, seed: int, n: int, tran
             sat_status = 'sat'
         respath = os.path.join(mutant_path, f'mutant_{i}_{sat_status}.smt2')
         mutants.append(respath)
-        parser.write_to_file(formula, respath)
+        parser.write_to_file(formula,filedata.logic, respath)
     return mutants
 
 def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, transformations: dict) -> list[str]:
@@ -177,5 +177,5 @@ def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, transformation
     if not transformations['sat']:
         for mutant in mutants:
             assertions = parser.read_file(mutant).clauses
-            parser.write_to_file(And(*assertions, core), mutant)
+            parser.write_to_file(And(*assertions, core),file_data.logic, mutant)
     return mutants 

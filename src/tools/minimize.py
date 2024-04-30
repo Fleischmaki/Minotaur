@@ -60,9 +60,9 @@ class Minimizer:
         seed = self.get_seed()
         self.set_fake_params()
 
-        clauses,logic = read_mutant(seed)
+        clauses,self.logic = read_mutant(seed)
         if self.expected_result == 'safe':
-            clauses, self.core = self.separate_unsat_core(clauses,logic)
+            clauses, self.core = self.separate_unsat_core(clauses)
 
         clauses = self.drop_batches(clauses)
         clauses = self.drop_individual(clauses)
@@ -73,8 +73,8 @@ class Minimizer:
         else:
             maze_gen.generate_maze(self.params, self.outdir) 
 
-    def separate_unsat_core(self,clauses: list,logic: str):
-        core = sp.get_unsat_core(clauses, logic)
+    def separate_unsat_core(self,clauses: list):
+        core = sp.get_unsat_core(clauses, self.logic)
         LOGGER.debug("Found core %s", core)
         return list(filter(lambda c : c not in core, clauses)), core
 
@@ -142,7 +142,7 @@ class Minimizer:
         seed = f"{seed.removesuffix('.smt2')}_{'sat' if self.expected_result == 'error' else 'unsat'}.smt2"
         seed = os.path.join(self.outdir, 'seeds', seed)
         constraints = self.core.union(clauses)
-        sp.write_to_file(constraints,seed)
+        sp.write_to_file(constraints,self.logic,seed)
         self.params['s'] = seed
 
 

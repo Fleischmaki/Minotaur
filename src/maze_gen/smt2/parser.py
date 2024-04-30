@@ -7,11 +7,12 @@ import typing as t
 from collections import defaultdict, OrderedDict, namedtuple
 
 from pysmt.smtlib.parser import SmtLibParser
-from pysmt.shortcuts import is_sat, write_smtlib, And, Not, get_env
+from pysmt.shortcuts import is_sat, And, Not, get_env
 from pysmt.solvers.z3 import Z3Solver
 from pysmt.oracles import get_logic
 from pysmt.smtlib.commands import SET_LOGIC
 from pysmt.fnode import FNode
+from pysmt.smtlib.script import smtlibscript_from_formula
 import pysmt.exceptions
 
 
@@ -212,13 +213,15 @@ def conjunction_to_clauses(formula: FNode) -> set[FNode]:
         clauses.add(formula)
     return clauses
 
-def write_to_file(formula : FNode | t.Iterable[FNode], file: str):
+def write_to_file(formula : FNode | t.Iterable[FNode], logic: str, file: str):
     """Write a formula to a file
     :param formula: If an iterable is provided, takes a conjunction of those clauses
     """
     if isinstance(formula,t.Iterable):
         formula = And(*formula)
-    return write_smtlib(formula, file)
+        with open(file, "w") as fout:
+            script = smtlibscript_from_formula(formula, logic)
+            script.serialize(fout)
 
 
 class Graph:
