@@ -27,7 +27,7 @@ def load_config(path):
     set_default(conf,'verbosity','all')
     set_default(conf,'maze_gen','local')
     set_default(conf,'expected_result','infer')
-    set_default(conf,'abort_on_error',False)
+    set_default(conf,'abort_on_error',[])
     set_default(conf,'check_error',None)
     set_default(conf,'batch_size',1)
     set_default(conf,'gen_time',120)
@@ -367,7 +367,7 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
                 if len(filename.split('_')) == 2:
                     runtime, tag = filename.split('_')
                     if tag in ('fp','fn'):
-                        if conf['abort_on_error']:
+                        if tag in conf['abort_on_error']:
                             if conf['check_error'] is None:
                                 has_bug = True
                             else:
@@ -379,16 +379,18 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
     return has_bug
 
 def check_error(conf: dict, w: Target, tag: str, out_dir: str):
-    res_dir = os.path.join(out_dir, 'check')
-    docker.run_pa(conf['check_error'][w.tool], w.variant, w.flags, 'check', w.params, res_dir, memory=conf['memory'], timeout=300, gen=conf['maze_gen'])
+    check_tag = 'fn' if tag == 'fp' else 'fp' if tag == 'fn' else 'er'
+    out_dir = os.path.join(out_dir, 'check')
+    w.params['m'] = maze_gen.get_params_from_maze(w.maze)['m']
+    docker.run_pa(conf['check_error'][w.tool], w.variant, w.flags, 'check', w.params, out_dir, memory=conf['memory'], timeout=300, gen=conf['maze_gen'])
     maze = w.maze
-    resdir = os.path.join(out_dir,maze,maze) 
+    resdir = os.path.join(out_dir,maze)
     for file in os.listdir(resdir):
         if len(file.split('_')) == 2: # Still false negative
             LOGGER.info(file)
             commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(out_dir,'runs')))
             commands.run_cmd('rm -r %s' % os.path.join(out_dir,maze))
-            if tag in file:
+            if check_tag in file:
                 return True
     return False
 

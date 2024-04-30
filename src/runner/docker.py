@@ -129,7 +129,7 @@ def collect_coverage_info(tool,name, outfile):
     user = get_user(tool)
     return spawn_cmd_in_docker(get_container(tool,name), f'/home/{user}/tools/get_coverage.sh /home/{user}/workspace/{COVERAGE_DIR} {outfile}')
 
-def run_pa(tool,variant,flags, name, params,outdir, memory = 4,  timeout=60, gen='container', expected_result='error'):
+def run_pa(tool,variant,flags, name, params,outdir, memory = 4,  timeout=60, gen='container', expected_result='error', verbosity='all'):
     """Generate a maze and run a program analyzer on it.
     :param tool,variant,flags: Program analyzer to test
     :param params: Parameters for maze gen
@@ -151,6 +151,6 @@ def run_pa(tool,variant,flags, name, params,outdir, memory = 4,  timeout=60, gen
         batchfile.write(f'{HOST_NAME}/{maze}')
     spawn_docker(memory,name,tool,os.path.join(outdir,'src')).wait()
     run_docker(timeout, timeout, tool, name, variant,flags).wait()
-    collect_docker_results(tool,name,expected_result,'all').wait()
+    collect_docker_results(tool,name,expected_result,verbosity).wait()
     copy_docker_results(tool,name,os.path.join(outdir, maze))
     kill_docker(tool,name).wait()
