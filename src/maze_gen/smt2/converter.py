@@ -81,10 +81,15 @@ def has_matching_type(numb_bits: int) -> bool:
     """
     return numb_bits in (8,16,32,64)
 
+def needs_signed(node: FNode) -> str:
+    """ Check if a function needs signed arguments
+    """
+    return node.is_bv_sle() or node.is_bv_slt() or node.is_bv_ashr() or node.is_bv_srem() or node.is_bv_sdiv()
+
 def is_signed(node: FNode) -> str:
     """ Check if a function needs signed arguments
     """
-    return node.is_bv_sle() or node.is_bv_slt() or node.is_bv_ashr() or node.is_bv_sext() or node.is_bv_srem() or node.is_bv_sdiv()
+    return node.is_bv_ashr() or node.is_bv_sext() or node.is_bv_srem() or node.is_bv_sdiv()
 
 def needs_unsigned_cast(node: FNode):
     """ Checks if a node needs children to be recast. This is the case if:
@@ -169,7 +174,7 @@ class Converter():
         """
         if node.is_constant():
             self.write_node(node, cons)
-            return
+            return 
         width = ff.get_bv_width(parent)
         if width < 32:
             cons.write(f'({bits_to_utype(32)})')
@@ -190,15 +195,17 @@ class Converter():
                 cons.write('scast_helper(')
             else:
                 cons.write(f'({scast})')
-        self.write_node(node,cons)
-        if (always or needs_signed_cast(parent)) and (self.well_defined or not has_matching_type(width)):
-            cons.write(f', {width})')
+            self.write_unsigned(node,cons,node)
+            if self.well_defined or not has_matching_type(width):
+                cons.write(f', {width})')
+        else:
+            cons.write_node(node,cons)
 
     def write_cast(self, parent: FNode, cons, node: FNode, always=False):
         """ Writes a node as the type needed by the parent
         """
         if parent.get_type().is_bv_type() or (parent.get_type().is_array_type() and parent.get_type().elem.type().is_bv_type()) or parent.is_theory_relation() and parent.arg(0).get_type().is_bv_type():
-            if is_signed(parent):
+            if needs_signed(parent):
                 self.write_signed(parent, cons,node, always)
             else:
                 self.write_unsigned(parent, cons,node, always)
