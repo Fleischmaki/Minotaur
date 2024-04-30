@@ -3,13 +3,17 @@
 import os
 import logging
 from math import ceil
+
 from ..runner import maze_gen, commands, docker
 from ..maze_gen.smt2 import parser as sp
 
 LOGGER = logging.getLogger(__name__)
 
 class Minimizer:
-    def __init__(self,argv: 'list[str]'):
+    """ As we have a lot of local state, use a class instead of load()
+    :param argv:    The argv after the --m (and possibly debug) flag
+    """
+    def __init__(self,argv: list[str]):
         if ',' in argv[0]:
             run = argv[0][:-1] if argv[0].endswith(',') else argv[0]
             args = run.split(',')
@@ -43,6 +47,7 @@ class Minimizer:
 
 
     def minimize(self):
+        """Run the minimization"""
         commands.run_cmd('mkdir -p %s' % self.outdir)
         commands.run_cmd("mkdir -p %s" % os.path.join(self.outdir,'seeds'))
         commands.run_cmd("mkdir -p %s" % os.path.join(self.outdir,'runs'))
@@ -85,8 +90,9 @@ class Minimizer:
     def get_seed(self):
         if 'storm' in self.params['t']:
             return os.path.join(self.outdir,'smt',str(self.params['r']), 'mutant_%d.smt2' % (self.params['m'] - 1))
-        else:
-            return self.params['s']
+        if 'fuzz' in self.params['t'] or 'yinyang' in self.params['t']:
+            return os.path.join(self.outdir,'smt',str(self.params['r']), f"mutant_{self.params['m']-1}_{'sat' if self.expected_result == 'error' else 'unsat'}.smt2")
+        return self.params['s']
 
     def drop_batches(self, clauses: list):
         keep_first_half = True
@@ -159,8 +165,8 @@ class Minimizer:
         return self.params
 
     def set_fake_params(self):
-        self.params['t'] = self.params['t'].replace('storm', '')
-        self.params['t'] = self.params['t'].replace('__', '_')
+        transforms = list(filter(lambda t: not ('storm' in t or 'fuzz' in t or 'yinyang'), '_'.split(self.params['t'])))
+        self.params['t'] = '_'.join(transforms)
         self.params['t'] = self.params['t'].strip('_')
         if self.params['t'] == '' or self.params['t'] == 'last':
             self.params['t'] = 'keepId'
