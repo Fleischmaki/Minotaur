@@ -379,7 +379,7 @@ class Converter():
             (l,r) = node.args()
             self.write_unsigned(node,cons,l)
             cons.write(f' << {ff.get_bv_width(r)} | ')
-            self.write_unsigned(node,cons,r)
+            self.write_unsigned(r,cons,r)
         elif node.is_bv_extract():
             ext_start = node.bv_extract_start()
             ext_end = node.bv_extract_end()
