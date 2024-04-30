@@ -81,7 +81,7 @@ def has_matching_type(numb_bits: int) -> bool:
     """
     return numb_bits in (8,16,32,64)
 
-def needs_signed(node: FNode) -> str:
+def needs_signed_children(node: FNode) -> str:
     """ Check if a function needs signed arguments
     """
     return node.is_bv_sle() or node.is_bv_slt() or node.is_bv_ashr() or node.is_bv_srem() or node.is_bv_sdiv()
@@ -102,7 +102,7 @@ def needs_unsigned_cast(node: FNode):
     return width not in (32,64) or \
         len(node.args()) == 0 or \
         all(map(lambda n: n.is_bv_constant() or n.is_symbol(), node.args())) or \
-        not all(map(is_signed, node.args())) or \
+        all(map(is_signed, node.args())) or \
         not all(map(lambda n: ff.get_bv_width(n)<=width,filter(lambda n: n.get_type().is_bv_type(),node.args())))
 
 def get_unsigned_cast(node: FNode, always=False) -> str:
@@ -205,7 +205,7 @@ class Converter():
         """ Writes a node as the type needed by the parent
         """
         if parent.get_type().is_bv_type() or (parent.get_type().is_array_type() and parent.get_type().elem.type().is_bv_type()) or parent.is_theory_relation() and parent.arg(0).get_type().is_bv_type():
-            if needs_signed(parent):
+            if needs_signed_children(parent):
                 self.write_signed(parent, cons,node, always)
             else:
                 self.write_unsigned(parent, cons,node, always)
