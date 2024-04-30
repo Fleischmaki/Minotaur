@@ -27,7 +27,7 @@ def main(dest_dir,verbosity,expected_results):
         with open(expected_results,'r') as results_file:
             for result in results_file.readlines():
                 name, res = result.rsplit(' ',1)
-                expected_result_by_maze[name] = res
+                expected_result_by_maze[name] = res.strip()
     # Create destination directory
     os.system('mkdir -p %s' % dest_dir)
     for file in filter(lambda f: 'res' in f, os.listdir(OUTDIR)):
