@@ -17,7 +17,7 @@ COPY --from=build /home/maze/tools/cvc4 /home/maze/tools/cvc4
 COPY --from=build /home/maze/tools/z3 /home/maze/tools/z3
 COPY --from=build /home/maze/tools/yices /home/maze/tools/yices
 COPY --from=build /home/maze/tools/boolector-release/ /home/maze/tools/boolector-release/ 
-COPY --from=build dest/home/maze/tools/mathsat dest/home/maze/tools/mathsat
+COPY --from=build /home/maze/tools/mathsat /home/maze/tools/mathsat
 COPY --from=build /home/maze/tools/release /home/maze/tools/release
 ENV PATH=/home/maze/tools/cvc4/bin:/home/maze/tools/z3/bin:/home/maze/tools/yices/bin:/home/maze/tools/boolector-release/bin:/home/maze/tools/mathsat/bin:$PATH
 
