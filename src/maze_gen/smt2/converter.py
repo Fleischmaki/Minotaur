@@ -190,7 +190,7 @@ class Converter():
                 cons.write('scast_helper(')
             else:
                 cons.write(f'({scast})')
-        self.write_unsigned(node,cons,node)
+        self.write_node(node,cons)
         if (always or needs_signed_cast(parent)) and (self.well_defined or not has_matching_type(width)):
             cons.write(f', {width})')
 
@@ -244,15 +244,15 @@ class Converter():
                 helper = 'div_helper'
             else:
                 helper = 'sdiv_helper'
-            cons.write(get_unsigned_cast(node, always=True))
+            # cons.write(get_unsigned_cast(node, always=True))
             cons.write(helper)
             cons.write('(')
             self.write_cast(node,cons,l)
             cons.write(',')
             self.write_cast(node,cons,r)
             cons.write(f',{width})')
-            if not has_matching_type(width):
-                cons.write(')')
+            # if not has_matching_type(width):
+            #     cons.write(')')
 
         else:
             if node.is_bv_urem() or node.is_bv_srem():
@@ -324,13 +324,9 @@ class Converter():
             self.convert_helper(node,cons,' <= ')
         elif node.is_lt():
             self.convert_helper(node,cons,' < ')
-        elif node.is_bv_sle():
+        elif node.is_bv_sle() or node.is_bv_ule():
             self.convert_helper(node, cons, " <= ")
-        elif node.is_bv_ule():
-            self.convert_helper(node, cons, " <= ")
-        elif node.is_bv_slt():
-            self.convert_helper(node, cons, " < ")
-        elif node.is_bv_ult():
+        elif node.is_bv_slt() or node.is_bv_ult():
             self.convert_helper(node, cons, " < ")
         elif node.is_bv_lshr():
             self.check_shift_size(node)
@@ -365,11 +361,7 @@ class Converter():
             cons.write(")")
         elif node.is_bv_sext():
             (l,) = node.args()
-            cons.write('((')
-            cons.write(bits_to_utype(ff.get_bv_width(node)))
-            cons.write(')')
             self.write_signed(l,cons,l)
-            cons.write(')')
         elif node.is_bv_zext():
             new_width = ff.get_bv_width(node)
             (l,) = node.args()
@@ -567,10 +559,10 @@ def get_bv_helpers(well_defined = True) -> str:
     return i;\n}\n"""
 
     if well_defined:
-        res += """unsigned long sdiv_helper(long l, long r, int width){
+        res += """signed long sdiv_helper(long l, long r, int width){
     if(r == 0){
         if(l >= 0)
-            return -1ULL >> (64-width); // Make sure we shift with 0s
+            return -1LL >> (64-width); // Make sure we shift with 0s
         return 1;
     } else if ((r == -1) && (l == ((-0x7FFFFFFFFFFFFFFFLL-1) >> (64-width))))
         return 0x8000000000000000ULL >> (64-width);
@@ -579,7 +571,7 @@ def get_bv_helpers(well_defined = True) -> str:
     if(r == 0)
         return -1ULL >> (64-width);
     return l / r;\n}"""
-        res += """unsigned long srem_helper(long l, long r, int width){
+        res += """long srem_helper(long l, long r, int width){
     if(r == 0)
         return l;
     if ((r == -1) && (l == ((-0x7FFFFFFFFFFFFFFFLL-1) >> (64-width))))
