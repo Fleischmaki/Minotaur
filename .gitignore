@@ -2,6 +2,5 @@
 test/mctest_config/my.conf.json
 test/mctest_config/server.conf.json
 temp/smt/mutant_0.smt2
-*.smt2
 dockers/gen/token.txt
 temp*
