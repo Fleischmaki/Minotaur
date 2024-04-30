@@ -13,5 +13,5 @@ def load(argv):
         mg.generate_maze_in_docker(params, 'gen').wait()
         return docker.kill_docker('gen','gen').wait()
     if gen == 'local':
-        return mg.generate_maze(param_string, out_dir)
+        return mg.generate_maze(params, out_dir)
     LOGGER.error("Invalid generation option, please use one of [container,local]")
