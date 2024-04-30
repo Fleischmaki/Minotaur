@@ -299,7 +299,8 @@ class Converter():
                             cons.write(f'({lname}_{index}=={rname}_{index})')
                 else:
                     error(1, "Cannot compare array with non-array", node)
-            self.convert_helper(node, cons, " == ")
+            else:
+                self.convert_helper(node, cons, " == ")
         elif node.is_int_constant():
             value = str(node.constant_value())
             if int(value) > 2**32:
