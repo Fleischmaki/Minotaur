@@ -373,7 +373,7 @@ class Converter():
             cons.write(")")
         elif node.is_bv_sext():
             (l,) = node.args()
-            self.write_signed(l,cons,l)
+            self.write_signed(l,cons,l, True)
         elif node.is_bv_zext():
             new_width = ff.get_bv_width(node)
             (l,) = node.args()
@@ -386,7 +386,7 @@ class Converter():
                 if not has_matching_type(new_width):
                     cons.write(')')
             else:
-                self.write_unsigned(l,cons,l)
+                self.write_unsigned(node,cons,l, True)
         elif node.is_bv_concat():
             (l,r) = node.args()
             self.write_unsigned(node,cons,l, True)
