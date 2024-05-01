@@ -81,10 +81,15 @@ def has_matching_type(numb_bits: int) -> bool:
     """
     return numb_bits in (8,16,32,64)
 
-def needs_signed_children(node: FNode) -> str:
+def needs_signed_children(node: FNode) -> bool:
     """ Check if a function needs signed arguments
     """
     return node.is_bv_sle() or node.is_bv_slt() or node.is_bv_ashr() or node.is_bv_srem() or node.is_bv_sdiv()
+
+def needs_downcasting(node: FNode) -> bool:
+    return node.is_bv_sdiv() or node.is_bv_udiv() or node.is_bv_srem() or node.is_bv_urem() \
+        or node.is_bv_ror() or node.is_bv_rol() \
+        or node.is_select()
 
 def is_signed(node: FNode) -> str:
     """ Check if a function needs signed arguments
@@ -97,13 +102,15 @@ def needs_unsigned_cast(node: FNode):
         - is a constant or symbol or similar
         - all children (if any) are signed
         - some children (if any) are larger
+        - some children are helper functions
     """
     width = ff.get_bv_width(node)
     return width not in (32,64) or \
         len(node.args()) == 0 or \
         all(map(lambda n: n.is_bv_constant() or n.is_symbol(), node.args())) or \
         all(map(is_signed, node.args())) or \
-        not all(map(lambda n: ff.get_bv_width(n)<=width,filter(lambda n: n.get_type().is_bv_type(),node.args())))
+        not all(map(lambda n: n.is_bv_udiv() or n.is_bv_urem() or ff.get_bv_width(n)<=width,filter(lambda n: n.get_type().is_bv_type(),node.args()))) or \
+        width == 32 and any(map(needs_downcasting, node.args()))
 
 def get_unsigned_cast(node: FNode, always=False) -> str:
     """ Returns the neede cast. Need to close a bracket ) if non-standard width ist used
@@ -121,14 +128,16 @@ def needs_signed_cast(node: FNode) -> bool:
         - is a constant or symbol or similar
         - some children (if any) are not signed
         - some children (if any) are larger
+        - some children are helper functions
     """
     width = ff.get_bv_width(node)
     return width not in (32,64) or \
         len(node.args()) == 0 or \
         all(map(lambda n: n.is_bv_constant() or n.is_symbol(), node.args())) or \
         not all(map(is_signed, node.args())) or \
-        not all(map(lambda n: ff.get_bv_width(n)<=width,filter(lambda n: n.get_type().is_bv_type(),node.args())))
-
+        not all(map(lambda n: ff.get_bv_width(n)<=width,filter(lambda n: n.get_type().is_bv_type(),node.args()))) or \
+        width == 32 and any(map(lambda n: n.is_bv_srem() or n.is_bv_urem(), node.args())) or \
+        width == 32 and any(map(needs_downcasting, node.args()))
 
 def type_to_c(ntype: node_type, constant_arrays: bool = False) -> str: # type: ignore
     """ Get corresponding C type for pySMT type 
@@ -251,16 +260,12 @@ class Converter():
                 helper = 'div_helper'
             else:
                 helper = 'sdiv_helper'
-            # cons.write(get_unsigned_cast(node, always=True))
             cons.write(helper)
             cons.write('(')
             self.write_cast(node,cons,l)
             cons.write(',')
             self.write_cast(node,cons,r)
             cons.write(f',{width})')
-            # if not has_matching_type(width):
-            #     cons.write(')')
-
         else:
             if node.is_bv_urem() or node.is_bv_srem():
                 op = '%'
@@ -435,12 +440,9 @@ class Converter():
             (l,) = node.args()
             width = ff.get_bv_width(node)
             self.check_shift_size(node)
-            cons.write(get_unsigned_cast(node, always=True))
             cons.write("rotate_helper(")
             self.write_unsigned(node,cons,l)
             cons.write(f",{node.bv_rotation_step()},{'1' if node.is_bv_rol() else '0'},{width})")
-            if not has_matching_type(width):
-                cons.write(')')
         elif node.is_bv_constant():
             value =  str(node.constant_value()) + 'U'
             if node.bv_width() > 32:
@@ -564,6 +566,12 @@ def get_bv_helpers(well_defined = True) -> str:
         return (long)(((((1ULL << (width-1)) - 1) << 1) + 1) - i) * (-1) - 1;
     }
     return i;\n}\n"""
+    res += """unsigned long rotate_helper(unsigned long bv, unsigned long ammount, int left, int width){
+    if(ammount == 0)
+        return bv;
+    if(left)
+        return (bv << ammount) | (bv >> (width-ammount));
+    return (bv >> ammount) | (bv << (width-ammount));\n}"""
 
     if well_defined:
         res += """signed long sdiv_helper(long l, long r, int width){
@@ -588,12 +596,6 @@ def get_bv_helpers(well_defined = True) -> str:
     if(r == 0)
         return l;
     return l % r;\n}\n"""
-    res += """unsigned long rotate_helper(unsigned long bv, unsigned long ammount, int left, int width){
-    if(ammount == 0)
-        return bv;
-    if(left)
-        return (bv << ammount) | (bv >> (width-ammount));
-    return (bv >> ammount) | (bv << (width-ammount));\n}"""
     return res
 
 def get_array_helpers(size):
