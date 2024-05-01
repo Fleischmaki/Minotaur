@@ -208,7 +208,7 @@ class Converter():
             if self.well_defined or not has_matching_type(width):
                 cons.write(f', {width})')
         else:
-            cons.write_node(node,cons)
+            self.write_node(node,cons)
 
     def write_cast(self, parent: FNode, cons, node: FNode, always=False):
         """ Writes a node as the type needed by the parent
@@ -474,7 +474,7 @@ class Converter():
                 cons.write(array_name)
                 self.symbs.add(array_name)
             else:
-                self.write_node( a,cons)
+                self.write_node(a,cons)
                 if dim == 1:
                     cons.write("[")
                     self.write_node(p,cons)
@@ -502,7 +502,7 @@ class Converter():
                 self.symbs.add(array_name)
                 cons.write(',')
             else:
-                self.write_node( a,cons)
+                self.write_node(a,cons)
                 cons.write(",")
             self.write_unsigned(a,cons,p)
             cons.write(",")
