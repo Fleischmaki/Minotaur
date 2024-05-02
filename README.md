@@ -80,6 +80,7 @@ Nr.  | Tool | Status | Type
 12 |ESBMC --cvc4 | [fixed](https://github.com/esbmc/esbmc/issues/1770) | SMT translation
 13 |CPA -InvariantsCPA | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1208) | Division
 14 |ESBMC --mathsat| [confirmed](https://github.com/esbmc/esbmc/issues/1771) | 
+15 | MOPSA congr | [open](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/179)
 ### Precision Issues
 Nr. |Tool | Status | Type
 | -- | -- | -- | -- |
