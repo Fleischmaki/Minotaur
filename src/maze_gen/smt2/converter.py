@@ -366,7 +366,7 @@ class Converter():
         elif node.is_bv_not():
             (b,) = node.args()
             cons.write("(~")
-            cons.write(get_unsigned_cast(node))
+            cons.write(get_unsigned_cast(node, True))
             self.write_node(b, cons)
             if not has_matching_type(ff.get_bv_width(node)):
                 cons.write(')')
@@ -386,7 +386,7 @@ class Converter():
                 if not has_matching_type(new_width):
                     cons.write(')')
             else:
-                self.write_unsigned(node,cons,l, True)
+                self.write_unsigned(l,cons,l, True)
         elif node.is_bv_concat():
             (l,r) = node.args()
             self.write_unsigned(node,cons,l, True)
@@ -401,7 +401,7 @@ class Converter():
             mask = binary_to_decimal("1" * (dif))
             newtype = bits_to_utype(dif)
             cons.write("(" + newtype +") (")
-            self.write_node(l,cons)
+            self.write_cast(l,cons,l, True)
             cons.write(" >> " + str(ext_start))
             if ext_end != m:
                 cons.write(" & " + mask)
