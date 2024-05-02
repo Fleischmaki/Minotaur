@@ -379,14 +379,14 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
     return has_bug
 
 def check_error(conf: dict, w: Target, tag: str, out_dir: str):
-    check_tag = 'fn' if tag == 'fp' else 'fp' if tag == 'fn' else 'er'
+    check_tag = 'tp' if tag == 'fn' else 'tn'
     out_dir = os.path.join(out_dir, 'check')
     w.params['m'] = maze_gen.get_params_from_maze(w.maze)['m']
     docker.run_pa(conf['check_error'][w.tool], w.variant, w.flags, 'check', w.params, out_dir, memory=conf['memory'], timeout=300, gen=conf['maze_gen'])
     maze = w.maze
     resdir = os.path.join(out_dir,maze)
     for file in os.listdir(resdir):
-        if len(file.split('_')) == 2: # Still false negative
+        if len(file.split('_')) == 2:
             LOGGER.info(file)
             commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(out_dir,'runs')))
             commands.run_cmd('rm -r %s' % os.path.join(out_dir,maze))
