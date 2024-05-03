@@ -262,9 +262,9 @@ class Converter():
                 helper = 'sdiv_helper'
             cons.write(helper)
             cons.write('(')
-            self.write_cast(node,cons,l)
+            self.write_cast(node,cons,l,width != 64)
             cons.write(',')
-            self.write_cast(node,cons,r)
+            self.write_cast(node,cons,r,width != 64)
             cons.write(f',{width})')
         else:
             if node.is_bv_urem() or node.is_bv_srem():
