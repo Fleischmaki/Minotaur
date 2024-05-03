@@ -176,7 +176,7 @@ class Converter():
             self.array_indices = array_indices
             self.node_cache = {}
             LOGGER.debug("Using the following indices for arrays: %s")
-            LOGGER.debug("Well definedness changed, have to clear node cache")
+            LOGGER.debug("Array indices changed, have to clear node cache")
 
     def write_unsigned(self, parent: FNode, cons, node: FNode, always=True):
         """ Writes a node as an unsigned integer
@@ -477,12 +477,12 @@ class Converter():
                 self.write_node(a,cons)
                 if dim == 1:
                     cons.write("[")
-                    self.write_node(p,cons)
+                    self.write_cast(node,cons,p)
                     cons.write("]")
                 else:
                     size = get_array_size_from_dim(dim-1)
                     cons.write(f"+({size}*")
-                    self.write_node(p,cons)
+                    self.write_cast(node,cons,p)
                     cons.write(")")
             if 'BV' in str(node.get_type()) and not has_matching_type(ff.get_bv_width(node)) and needs_unsigned_cast(node):
                 cons.write(")")
