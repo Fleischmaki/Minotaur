@@ -1,24 +1,18 @@
 {
 	"verbosity": "bug",
 	"repeats" : -1,
-	"duration" : 20,
+	"duration" : 60,
+	"batch_duration": 1,
 	"workers" : 190,
 	"memory" : 4,
-	"gen_time": 120,
-	"transforms" : 15,
-	"batch_size" : 180,
+	"gen_time": 180,
+	"transforms" : 300,
+	"batch_size" : 3600,
 	"maze_gen" : "container",
-	"expected_result": "error",
-	"batch_size" : 60,
+	"expected_result": "infer",
 	"tool" : { 
 		"cpa" : {
 			"variant" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution", "invariantGeneration", "smg2","bmc"]
-		},
-		"seahorn" : {
-			"variant" : ["spf", "bpf", "fpcf", "fpf"],
-			"choose" : {
-				"" : ["--bv-chc --step=large", "--bv-chc --step=small", "--bmc=mono","--bmc=opsem"]
-			}
 		},
 		"ultimate" : {
 			"variant" : ["Automizer Default","Taipan Default","Kojak Default","GemCutter Default", "Automizer Bitvector","Taipan Bitvector","Kojak Bitvector","GemCutter Bitvector"]
@@ -26,7 +20,6 @@
 		"cbmc": {
 			"variant" : ["--boolector","--mathsat","--cvc4","--yices","--z3"],
 			"choose" : {
-				"--paths " : [0,"fifo","lifo"],
 				"--" : [0,"full-slice","reachability-slice","reachability-slice-fb"]
 			},
 			"toggle" : ["--refine"]
@@ -42,7 +35,7 @@
 			"variant" : [""],
 			"toggle" : ["--array-flattener","--unwind 1024"],
 			"choose" : {
-				"" : ["--z3", "--boolector", "--cvc", "--mathsat", "--yices", "--bitwuzla"],
+				"" : ["--cvc","--z3", "--boolector", "--mathsat", "--yices"],
 				"--incremental-bmc" : [0,""," --falsification"],
 				"--tuple" : [0,"-node-flattener", "-sym-flattener"],
 				"--k-induction": [0,""," --bidirectional"],
@@ -76,7 +69,10 @@
 			"max" : 0
 		},
 		"t" : {
-			"storm": [1],
+			"fuzz": ["5x5","5x7","5x10",
+				"10x5","10x7","10x10",
+				"20x5","20x7","20x10"],
+			"ca": [0,1],
 			"wd": [0,1],
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
@@ -85,7 +81,7 @@
 		"s": "/Minotaur/../seeds",
 		"r" : {
 			"min" : 0,
-			"max" : 65536
+			"max" : 999999999
 		}
 	}
 }

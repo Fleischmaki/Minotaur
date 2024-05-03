@@ -73,7 +73,7 @@
 			"rw": [0,25,50]
 		},
 		"g": ["CVE_gen", "CVE-neg_gen"],
-		"s": "/home/mfleischmann/klee_smts",
+		"s": "/Minotaur/../klee_smts",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
