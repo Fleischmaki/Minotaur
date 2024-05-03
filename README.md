@@ -41,25 +41,44 @@ If you want to use STORM update the STORM home in the [config file](Minotaur/src
 ## Using Minotaur
 ### Test Analyzers
 Runs are configured via conf.json files located in the [test](Minotaur/test) folder.
-To perform a test using the config file test/conf_name.conf.json run `python3 Minotaur --t conf_name outdir`
+To perform a test using the config file test/conf_name.conf.json run 
+```
+python3 Minotaur --t conf_name outdir
+```
 For more info on config files check [config.md](./config.md) and the example config files provided.
 
-### Filter accepted seed files
-Running `python3 Minotaur --c seed_dir outfile {sat,unsat}` will recursively search for compatible smtfiles for sat/unsat seed generation (=> unsafe/safe programs).
-Compatible files will be written to outfile. Files can then be collected, e.g. with `mkdir safe_seeds && for f in $(cat outfile); do cp seed_dir/"$f" safe_seeds; done`.
-
-### Generate a single maze
-`python3 Minotaur --g {local,container} outdir params...` or ./Minotaur/scripts/generate.sh -o outdir [params...]. For parameter options see [params.md](./params.md)
+### Run experiments
+Before recreating experiments, build the necessary experiment Dockers. Then run the experiment for a given config similarly to test config: 
+```
+./Minotaur/scripts/build_experiment_dockers.sh
+python3 Minotaur --e experiment_name outdir
+```
+Experiment configurations are stored in the [experiments](experiments) folder. 
+#### Recreating paper results
+For more informations on the provided experiment configurations see [this guide](recreate_results.md) on how to recreate the experiment results. 
 
 ### Minimize a maze
-Run `python3 Minotaur --m report seed-dir out-dir {local,container}`, where 'report' the line of the summary.csv file from testing.
-Alternatively, first generate the maze and then run `python3 Minotaur --m maze.c seed-dir out-dir timeout {container,local} {fn,fp,er,...} tool [variant] [params]`.
+```
+python3 Minotaur --m report seed-dir out-dir {local,container}
+```
+'report' the line of the summary.csv file from testing.
+Alternatively if you have the maze file you want to minimize, generate the maze and then run 
+```
+python3 Minotaur --m maze.c seed-dir out-dir timeout {container,local} {fn,fp,er,...} tool [variant] [params]
+```
 
-### Run experiment 
-Before recreating experiments, build the necessary experiments with `./Minotaur/scripts/build_experiment_dockers.sh`.
-To run an experiment run `python3 Minotaur --e experiment_name outdir`. Experiment configurations are stored in the [experiments](experiments) folder. 
+### Generate a specific maze
+```
+python3 Minotaur --g {local,container} outdir params...
+```
+Will generate the maze + any transformations specified. For parameter options see [params.md](./params.md)
 
-For more informations on the provided experiment configurations see [this guide](recreate_results.md) on how to recreate the experiment results. 
+### Filter accepted seed files
+```
+python3 Minotaur --c seed_dir outfile {sat,unsat}
+```
+will recursively search for compatible smtfiles for sat/unsat seed generation (=> unsafe/safe programs).
+Compatible files will be written to outfile. Files can then be collected, e.g. with `mkdir safe_seeds && for f in $(cat outfile); do cp seed_dir/"$f" safe_seeds; done`.
 
 ### Logging
 For all tools the logging level can be set via --LEVEL with LEVEL being one of E(rror), W(arning), I(nfo) or D(ebug). E.g. `python3 --t --D conf outdir` runs tests with log-level `DEBUG`. 
