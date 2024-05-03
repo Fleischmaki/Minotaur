@@ -1,1 +1,1 @@
-config={"home":"/home/markus/MinotaurProject/Minotaur/src/maze_gen/storm"}
+config={"home":"/storm/root/path"}
