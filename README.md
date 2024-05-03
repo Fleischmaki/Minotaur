@@ -22,11 +22,16 @@ flowchart LR
 ## Installation
 ```
 git clone https://github.com/Fleischmaki/Minotaur.git
-pip install -r Minotaur/requirements.txt
 ./Minotaur/scripts/build_MC_dockers.sh
 ```
 Note that the provided dockers build most tools from source. Building might take up to a few hours and several GBs of memory.
 
+If you want to generate mazes directly rather than in the container you need to install the requirements
+```
+pip install -r Minotaur/requirements.txt
+```
+
+If you want to use STORM update the STORM home in the [config file](Minotaur/src/maze_gen/storm/config.py) 
 ## Using Minotaur
 ### Test Analyzers
 Runs are configured via conf.json files located in the [test](Minotaur/test) folder.
