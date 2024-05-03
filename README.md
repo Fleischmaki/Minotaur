@@ -31,7 +31,7 @@ If you want to generate mazes directly rather than in the container you need to 
 pip install -r Minotaur/requirements.txt
 ```
 
-If you want to use STORM update the STORM home in the [config file](Minotaur/src/maze_gen/storm/config.py) 
+If you want to use STORM update the STORM home in the [config file](Minotaur/src/maze_gen/storm/config.py).
 ## Using Minotaur
 ### Test Analyzers
 Runs are configured via conf.json files located in the [test](Minotaur/test) folder.
