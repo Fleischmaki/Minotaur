@@ -185,7 +185,7 @@ class Converter():
             self.write_node(node, cons)
             return
         width = ff.get_bv_width(parent)
-        if width < 32 and self.well_defined:
+        if width < 32:
             cons.write(f'({bits_to_utype(32)})')
         cons.write(get_unsigned_cast(parent, always))
         self.write_node(node,cons)
@@ -373,6 +373,10 @@ class Converter():
             cons.write(")")
         elif node.is_bv_sext():
             (l,) = node.args()
+            if needs_signed_cast(node):
+                cons.write('(')
+                cons.write(bits_to_stype(ff.get_bv_width(node)))
+                cons.write(')')
             self.write_signed(l,cons,l, True)
         elif node.is_bv_zext():
             new_width = ff.get_bv_width(node)
