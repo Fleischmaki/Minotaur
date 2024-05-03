@@ -50,7 +50,7 @@ def main(dest_dir,verbosity,expected_results):
         if ('RESULT: false(unreach-call)' in resfile):
             save_tc(file_dir, respath, start_time, end_time, 'positive', expected_result)
 
-        # False negatives #TODO
+        # False negatives
         elif ('RESULT: true' in resfile):
             save_tc(file_dir, respath, start_time, end_time, 'negative', expected_result)
 

@@ -30,7 +30,7 @@ def get_bv_width_from_array_type(array_type: smt_types._ArrayType):
     raise ValueError(f"Could not compute BVWidth for node of type {node_type}.")
 
 
-def get_bv_width(node: FNode) -> int: # TODO rewrite this, this is ugly as hell
+def get_bv_width(node: FNode) -> int: # 
     """Calculate bit width of a node"""
     res = 0
     if node.get_type().is_int_type():

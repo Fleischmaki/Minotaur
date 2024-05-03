@@ -109,7 +109,7 @@ def get_unsat_core(clauses, logic):
     return core
 
 def add_parsed_cons(check_neg:bool, clauses:list, parsed_cons:OrderedDict, clause:FNode, cons_in_c: str): 
-    """Add condition to the list of conditions""" # TODO weird functions
+    """Add condition to the list of conditions""" 
     if check_neg:
         neg_sat = ff.is_neg_sat(clause, clauses)
         parsed_cons[cons_in_c] = neg_sat

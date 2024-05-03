@@ -403,7 +403,7 @@ def write_summary(conf,out_dir, target,tag,runtime):
             return
     with open(out_dir + '/summary.csv', 'a') as f:
         u = '0' if 'u' not in params.keys() else '1'
-        f.write(tool + ',' + str(batch_id) + ',' + variant + ',' + flags + ',' + str(maze_gen.get_params_from_maze(maze)['m']) + ',' + u + ',') # TODO this is a liiiitle bit hacky
+        f.write(tool + ',' + str(batch_id) + ',' + variant + ',' + flags + ',' + str(maze_gen.get_params_from_maze(maze)['m']) + ',' + u + ',')
         for key, value in params.items():
             if key == 's':
                 f.write(str(params['s'].split('/')[-1] + ','))

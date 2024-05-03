@@ -132,7 +132,7 @@ class FormulaBuilder():
             return (argtypes[0].width + argtypes[1].width,) # type: ignore
         if op == ops.BV_EXTRACT:
             diff = argtypes[0].width - node_type.width#type: ignore
-            offset = self.random.get_random_integer(0,diff) # type: ignore # TODO: see what is correct here
+            offset = self.random.get_random_integer(0,diff) # type: ignore #
             return (node_type.width, offset, node_type.width+offset-1) #type: ignore
         if op in (ops.BV_ROL, ops.BV_ROR):
             return (argtypes[0].width, self.random.get_random_integer(0,node_type.width-1)) #type: ignore
