@@ -298,7 +298,7 @@ def is_array_constraint_of(cond: str,other: str, array_size: int):
     for cast in [f'({sign} {ctype})' for sign in ('signed', 'unsigned') for ctype in ('char','short','int','long')]:
         index = index.removeprefix(cast)
     index = index.strip().removesuffix('))')
-    return f'[{index}]' in other # TODO maybe refine this
+    return f'{index}]' in other # Only check for ] as there might be casts in front
 
 def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: int) -> tuple[list[str],dict[str,str]]: 
     negated_groups = []
