@@ -267,8 +267,9 @@ def independent_formulas(conds: dict[str,bool], variables: dict[str,str], array_
         for other in conds:
             if len(cond_vars.keys() & extract_vars(other, variables).keys()) > 0:
                 formula.add_edge(cond, other)
-            if is_array_constraint_of(cond,other,array_size):
+            if is_array_constraint_of(cond,other, array_size):
                 formula.add_edge(cond,other)
+                formula.add_edge(other,cond)
     groups = [sorted(g, key=lambda cond: list(conds.keys()).index(cond)) for g in formula.separate()]
     vars_by_groups = []
     for group in groups:
@@ -285,11 +286,19 @@ def extract_vars(cond: str, variables: dict[str,str]):
             used_variables[variable] = vartype
     return used_variables
 
-def is_array_constraint_of(cond: str,other: str,array_size: int):
-    if '[' not in cond:
+def is_array_constraint_of(cond: str,other: str, array_size: int):
+    if '[' not in other:
         return False
-    index = cond.split('[',1)[1].rsplit(']',1)[0]
-    return index in other and '0' in other and str(array_size) in other # TODO maybe refine this
+    if f'  <  ({array_size}U))  &&  ((0U)  <=  ' in cond:
+        index = cond.split(f'  <  ({array_size}U))  &&  ((0U)  <=  ')[1].strip('')
+    elif f'  <  ({array_size}ULL))  &&  ((0U)  <=  ' in cond:
+        index = cond.split(f'  <  ({array_size}ULL))  &&  ((0U)  <=  ')[1].strip('')
+    else:
+        return False
+    for cast in [f'({sign} {ctype})' for sign in ('signed', 'unsigned') for ctype in ('char','short','int','long')]:
+        index = index.removeprefix(cast)
+    index = index.strip().removesuffix('))')
+    return f'[{index}]' in other # TODO maybe refine this
 
 def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: int) -> tuple[list[str],dict[str,str]]: 
     negated_groups = []
