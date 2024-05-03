@@ -200,7 +200,7 @@ def constrain_array_size(formula: FNode):
         formula = Not(formula)
     max_dim = max(map(lambda op : get_array_dim(op.args()[0]),array_ops))
     assertions = set()
-    array_size = max(min_index,2)
+    array_size = max(min_index+1,2)
     sat = all_constant and array_size**max_dim <= MAXIMUM_ARRAY_SIZE
     if sat:
         array_size *= 2
