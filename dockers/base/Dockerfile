@@ -27,6 +27,8 @@ RUN apt-get update && apt-get install -y \
     python3 \
     gcc \
     make \
+    openjdk-11-jre \
+    openjdk-17-jre \
 && rm -rf /var/lib/apt/lists/*
 
 RUN echo 'maze  ALL=(root) NOPASSWD: ALL' >> /etc/sudoers

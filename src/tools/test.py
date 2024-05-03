@@ -8,7 +8,7 @@ import itertools as it
 from collections import namedtuple, OrderedDict
 from math import ceil
 import logging
-
+from typing import Iterable
 
 from ..runner import docker, commands, maze_gen
 
@@ -17,7 +17,6 @@ LOGGER = logging.getLogger(__name__)
 REMOVE_CMD = 'rm -r %s'
 CP_CMD = 'cp %s %s'
 
-Target = namedtuple(typename='Target',field_names=['maze','tool','index','params','variant','flags'])
 
 
 def load_config(path):
@@ -27,11 +26,13 @@ def load_config(path):
 
     set_default(conf,'verbosity','all')
     set_default(conf,'maze_gen','local')
-    set_default(conf,'expected_result','error')
-    set_default(conf,'abort_on_error',False)
+    set_default(conf,'expected_result','infer')
+    set_default(conf,'abort_on_error',[])
+    set_default(conf,'check_error',None)
     set_default(conf,'batch_size',1)
     set_default(conf,'gen_time',120)
     set_default(conf,'coverage',False)
+    set_default(conf,'batch_duration', conf['duration']*conf['batch_size'])
 
     assert conf['repeats'] != 0
     assert conf['duration'] > 0
@@ -40,11 +41,23 @@ def load_config(path):
     assert conf['transforms'] >= 0
     assert conf['maze_gen'] in ['local', 'container']
     assert conf['verbosity'] in ['all','summary','bug','bug_only']
-    assert conf['expected_result'] in ['error','safe']
+    assert conf['expected_result'] in ['error','safe','infer']
 
     return conf
 
-def pick_values(head: str, value: dict  | list,tail: str) -> str | None:
+def resolve_seed_path(seed: str):
+    if seed.startswith('/Minotaur/'):
+        return os.path.join(get_minotaur_root(),seed.removeprefix('/Minotaur/'))
+    return seed
+
+def pick_values(value: dict[str,int]  | list, head: str = "",tail: str = "") -> str | None:
+    """
+    Randomly pick values in the from either a list or a min/max range.
+    If the picked value is 0 nothing is returned, if the value is 1 only the head and tail 
+    :param value: Either a list or a dict containing 'min' and 'max' keys
+    :param head: String to prepend to the picked value
+    :param tail: String to append to the picked value
+    """
     if isinstance(value,dict):
         body = str(random.randint(value['min'], value['max']))
     else:
@@ -59,12 +72,18 @@ def pick_values(head: str, value: dict  | list,tail: str) -> str | None:
             body = str(choice)
     return head + body + tail
 
-def set_default(parameters, name, value):
+def set_default(parameters: dict, name: str, value):
+    """
+    Set option name in parameters to 'value' if it is already set.
+    """
     if name not in parameters.keys():
         parameters[name] = value
-        LOGGER.debug('Using default value %s for parameter %s', value, name)
+        LOGGER.debug('Using default value %s for parameter %s', value, name)        
 
-def get_random_params(conf):
+def get_random_params(conf: dict):
+    """
+    Pick random maze parameters from the options given in the config
+    """
     conf['repeats'] -= 1
     params = conf['parameters']
     res = {}
@@ -72,15 +91,15 @@ def get_random_params(conf):
         if key == 't':
             body = ''
             for tkey, tvalue in value.items():
-                transform = pick_values(tkey, tvalue, '_')
+                transform = pick_values(tvalue, tkey,  '_')
                 body += transform if transform is not None else ''
             body = body.strip('_') # remove last _
         elif key == 's':
-            body = value
+            body = resolve_seed_path(value)
             while os.path.isdir(body):
-                body = os.path.join(value,random.choice(os.listdir(value)))
+                body = os.path.join(body,random.choice(os.listdir(body)))
         else:
-            body = pick_values('', value, '')
+            body = pick_values(value)
 
         if body is not None:
             res[key] = body
@@ -106,8 +125,34 @@ def get_random_params(conf):
         res['h'] = 5 # mazelib gets stuck when generating 4x4 or smaller mazes
     return res
 
+def pick_tool_flags(conf: dict, tool: str):
+    """
+    Pick random parameters for a tool from the options given in conf
+    """
+    variant  = random.choice(conf['tool'][tool]['variant'])
+    flags = ""
+    if 'toggle' in conf['tool'][tool].keys():
+        for opt in conf['tool'][tool]['toggle']:
+            if random.randint(0,1) == 1:
+                flags += opt + ' '
+    if 'choose' in conf['tool'][tool].keys():
+        for flag, options in conf['tool'][tool]['choose'].items():
+            chosen = random.choice(options)
+            if chosen != 0:
+                flags += flag + chosen + ' '
+    return variant,flags
 
-class TargetGenerator():
+
+Target = namedtuple(typename='Target',field_names=['maze','tool','index','params','variant','flags'])
+
+class TargetGenerator(Iterable):
+    """ Keep track of everything we need to run.
+    The iterator returns batches of targets which can then be run in a docker. Handles:
+        - randomly picking parameters and tool flags,
+        - generating mazes at the right time,
+        - splitting up generated mazes into batches and writing batchfiles.
+        - keep count of generated batches to finish after the given number of repeats.
+    """
     def __init__(self, conf):
         self.conf = conf
         self.repeats = self.conf['repeats'] if self.conf['repeats'] >= 0 else sys.maxsize
@@ -118,60 +163,100 @@ class TargetGenerator():
         return self
 
     def __next__(self):
-        if not(self.has_targets()):
-            LOGGER.info("All batches generated")
-            raise StopIteration
-        if len(self.targets) == 0:
+        while len(self.targets) == 0:
+            if not(self.has_targets()):
+                LOGGER.info("All batches generated")
+                raise StopIteration
+
             LOGGER.info("Out of targets, fetching new batch.")
-            self.add_batch()              
+            self.add_batch()
         return self.targets.pop(0)
 
     def has_targets(self):
-        return self.repeats != 0 or len(self.targets) > 0 or len(self.mazes) > 0
+        return self.repeats > 0 or len(self.targets) > 0 or len(self.mazes) > 0
 
     def add_batch(self):
-        while(len(self.mazes) < self.conf['batch_size'] and self.repeats != 0):
+        """ Fetch a new batch.
+        If there are not enough mazes, generate new ones.
+        If we have already genearted all batches, this does nothing.
+        """
+        while len(self.mazes) < self.conf['batch_size'] and self.repeats > 0:
             LOGGER.info("Out of mazes, generating more.")
             self.generate_mazes()
 
         self.repeats -= 1
+        batch_id = random.randint(0,65535)
 
         maze_keys = list(self.mazes.keys())
+        maze_count = min(len(maze_keys),self.conf['batch_size'])
+        if self.conf['expected_result'] == 'infer':
+            with open(get_result_file(batch_id), 'w') as res_file:
+                expected_results = self.get_expected_results(maze_keys)
+                maze_count = min(len(expected_results), maze_count)
+                for i in range(maze_count):
+                    res_file.write(f"{maze_keys[i]} {expected_results[i]}\n")
 
-        batch_id = random.randint(0,65535)
+
+        with open(get_batch_file(batch_id), 'w') as batch_file:
+            for i in range(maze_count):
+                batch_file.write(f"{docker.HOST_NAME}/{maze_keys[i]}\n")
+
         for tool in self.conf['tool'].keys():
-            variant, flags = self.pick_tool_flags(tool) # Since we run whole batch at once can only pick one flag
-            for i in range(min(len(maze_keys),self.conf['batch_size'])):
+            variant, flags = pick_tool_flags(self.conf,tool) # Since we run whole batch at once can only pick one flag
+            for i in range(maze_count):
                 maze = maze_keys[i]
                 params = self.mazes[maze]
                 self.targets.append((False,Target(maze, tool,batch_id, params, variant, flags)))
-    
-        with open(get_batch_file(batch_id), 'w') as batch_file:
-            for i in range(min(len(maze_keys),self.conf['batch_size'])):
-                batch_file.write(f"{docker.HOST_NAME}/{maze_keys[i]}\n")
+
+
 
         if len(self.targets) > 0:
             self.targets[-1] = (True, self.targets[-1][1])
 
-        for i in range(min(len(maze_keys),self.conf['batch_size'])):
+        for i in range(maze_count):
             self.mazes.pop(maze_keys[i])
 
-    def pick_tool_flags(self, tool):
-        variant  = random.choice(self.conf['tool'][tool]['variant'])
-        flags = ""
-        if 'toggle' in self.conf['tool'][tool].keys():
-            for opt in self.conf['tool'][tool]['toggle']:
-                if random.randint(0,1) == 1:
-                    flags += opt + ' '
-        if 'choose' in self.conf['tool'][tool].keys():
-            for flag, options in self.conf['tool'][tool]['choose'].items():
-                chosen = random.choice(options)
-                if chosen != 0:
-                    flags += flag + chosen + ' '
-        return variant,flags
+    def get_expected_results(self, maze_keys):
+        expected_results = []
+        not_found = 0
+        for i in range(min(len(maze_keys),self.conf['batch_size'])):
+            maze = maze_keys[i-not_found]
+            params = self.mazes[maze]
+            res = None
+            try:
+                res = self.get_expected_result(params,maze_gen.get_params_from_maze(maze)['m']-1)
+                LOGGER.info("Expected result: %s", res)
+            except FileNotFoundError:
+                pass
+            if res is None:
+                LOGGER.warning("Could not determine expected result")
+                maze_keys.pop(i-not_found)
+                self.mazes.pop(maze)
+                not_found = not_found+1
+                continue
+            expected_results.append(res)
+        return expected_results
 
+    def get_expected_result(self,params,maze_id):
+        if self.conf['expected_result'] != 'infer':
+            return self.conf['expected_result']
+        if 'storm' in params['t']:
+            return 'error' if 'unsat' not in params['t'] else 'safe'
+        if 'fuzz' in params['t'] and 'unsat' in params['t']:
+            return 'safe'
+
+        smt_dir = os.path.join(get_temp_dir(), 'smt', str(params['r']))
+        for file in os.listdir(smt_dir):
+            file = str(file)
+            if f'_{maze_id}_' in file:
+                res = 'error' if file.removesuffix('.smt2').rsplit('_',1)[1] == 'sat' else 'safe'
+                commands.run_cmd(f"rm {os.path.join(smt_dir, file)}")
+                return res
 
     def generate_mazes(self):
+        """ Generate more mazes
+        If we are generating in containers, eagerly generate many mazes to utilize as many workers as possible.
+        """
         if self.conf['maze_gen'] == 'container':
             paramss = self.fetch_maze_params()
             LOGGER.info("Generating %d more mazes.", len(paramss))
@@ -183,27 +268,58 @@ class TargetGenerator():
             maze_gen.generate_maze(params, get_temp_dir(), get_minotaur_root())
             self.mazes.update({maze: params for maze in maze_gen.get_maze_names(params)})
 
-    def fetch_maze_params(self):                                                                 
-        return [get_random_params(self.conf) for _ in range(min(self.repeats,ceil(ceil(self.conf['workers']/len(self.conf['tool']))*self.conf['batch_size']/max(1,self.conf['transforms']))))] # NUMNB_BATCHES*SIZE / MAZES_PER_PARAMS
+    def fetch_maze_params(self) -> list[dict]:
+        """ Get as many maze parameters as needed to fully saturate workers
+        """
+        mazes_per_batch = ceil(self.conf['batch_size']/max(1,self.conf['transforms']))
+        batches_in_parallel = ceil(self.conf['workers']/len(self.conf['tool']))
+        return [get_random_params(self.conf) for _ in range(min(self.repeats*mazes_per_batch,batches_in_parallel*mazes_per_batch))]
+
+
 
 def fetch_works(conf: dict, gen: TargetGenerator) -> tuple[list[Target], list[Target]]:
+    """ Get necessary workesr and mazes we need to delete
+    """
     new_targets = list(it.islice(gen, 0, conf['workers']*conf['batch_size']))
     return list(map(lambda w: w[1],new_targets)), list(map(lambda w : w[1], filter(lambda w: w[0], new_targets)))
 
 
-def get_temp_dir():
+def get_temp_dir() -> str:
+    """ Get the temporary directory in use
+    Should be an absolute path
+    """
     return os.path.join('/tmp','minotaur_mazes')
 
-def get_maze_dir(maze=''):
+def get_maze_dir(maze: str = '') -> str:
+    """ Get the temporary directory for mazes.
+    :param maze: Optionally get the full path for a specific maze.
+    """
     return os.path.join(get_temp_dir(),'src', maze)
 
-def get_batch_file(batch: int):
+def get_batch_file(batch: int) -> str:
+    """ Get the batch file for a given batch.
+    Batchfiles contain a list of mazes and 
+    are used to tell solvers of each batch which mazes to solve.
+    """
     return get_maze_dir(docker.BATCH_FILE_FORMAT % batch)
 
-def get_containers_needed(conf, works): 
+def get_result_file(batch: int) -> str:
+    """ Get the expected result file for a given batch.
+    Result files contain the maze names + their expected results.
+    """
+    return get_maze_dir(docker.RESULT_FILE_FORMAT % batch)
+
+def get_minotaur_root() -> str:
+    mainfile = sys.modules['__main__'].__file__ # pylint: disable=no-member 
+    return os.path.dirname(os.path.realpath('' if mainfile is None else mainfile))
+
+
+def get_containers_needed(conf: dict, works: list[Target]):
+    """Compute the containers needed for the given workload"""
     return min(ceil(len(works)/conf['batch_size']), conf['workers'])
 
-def spawn_containers(conf, works):
+def spawn_containers(conf: dict, works: list[Target]):
+    """Spawn containers for the given workload"""
     procs = []
     for i in range(get_containers_needed(conf,works)):
         target = works[i*conf['batch_size']]
@@ -211,21 +327,23 @@ def spawn_containers(conf, works):
     commands.wait_for_procs(procs)
     time.sleep(5)
 
-def run_tools(conf: dict,works: 'list[Target]'):
+def run_tools(conf: dict,works: list[Target]):
+    """Run the tools on the given workload.
+    Call after spawn_containers()"""
     duration = conf['duration']
     procs = []
     for i in range(get_containers_needed(conf, works)):
         target  = works[i*conf['batch_size']]
-        procs.append(docker.run_docker(duration, target.tool, target.index, target.variant, target.flags, target.index))
+        procs.append(docker.run_docker(duration, conf['batch_duration']*conf['batch_size'], target.tool, target.index, variant=target.variant, flags=target.flags, batch_id=target.index))
     commands.wait_for_procs(procs)
-    time.sleep(3) 
+    time.sleep(3)
 
 def store_outputs(conf: dict, out_dir: str, works: list[Target]):
     has_bug = False
     procs = []
     for i in range(get_containers_needed(conf,works)):
         target = works[i*conf['batch_size']]
-        procs.append(docker.collect_docker_results(target.tool, target.index, conf['expected_result'],conf['verbosity']))
+        procs.append(docker.collect_docker_results(target.tool, target.index, conf['expected_result'], conf['verbosity']))
     commands.wait_for_procs(procs)
     time.sleep(5)
 
@@ -248,14 +366,33 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
             for filename in os.listdir(out_path):
                 if len(filename.split('_')) == 2:
                     runtime, tag = filename.split('_')
-                    if (tag == 'fn'):
-                        if conf['abort_on_error']:
-                            has_bug = True
+                    if tag in ('fp','fn'):
+                        if tag in conf['abort_on_error']:
+                            if conf['check_error'] is None:
+                                has_bug = True
+                            else:
+                                has_bug = check_error(conf, w, tag, out_dir)
                         commands.run_cmd(CP_CMD % (get_maze_dir(w.maze), out_path)) # Keep buggy mazes
                     write_summary(conf, out_dir, w, tag, runtime)
         if runtime == 'notFound' or tag == 'notFound':
             write_summary(conf, out_dir, w, tag, runtime)
     return has_bug
+
+def check_error(conf: dict, w: Target, tag: str, out_dir: str):
+    check_tag = 'tp' if tag == 'fn' else 'tn'
+    out_dir = os.path.join(out_dir, 'check')
+    w.params['m'] = maze_gen.get_params_from_maze(w.maze)['m']
+    docker.run_pa(conf['check_error'][w.tool], w.variant, w.flags, 'check', w.params, out_dir, memory=conf['memory'], timeout=300, gen=conf['maze_gen'])
+    maze = w.maze
+    resdir = os.path.join(out_dir,maze, maze)
+    for file in os.listdir(resdir):
+        if len(file.split('_')) == 2:
+            LOGGER.info(file)
+            commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(out_dir,'runs')))
+            commands.run_cmd('rm -r %s' % os.path.join(out_dir,maze))
+            if check_tag in file:
+                return True
+    return False
 
 def write_summary(conf,out_dir, target,tag,runtime):
     maze, tool, batch_id, params, variant, flags = target
@@ -266,7 +403,7 @@ def write_summary(conf,out_dir, target,tag,runtime):
             return
     with open(out_dir + '/summary.csv', 'a') as f:
         u = '0' if 'u' not in params.keys() else '1'
-        f.write(tool + ',' + str(batch_id) + ',' + variant + ',' + flags + ',' + str(maze_gen.get_params_from_maze(maze)['m']) + ',' + u + ',') # TODO this is a liiiitle bit hacky
+        f.write(tool + ',' + str(batch_id) + ',' + variant + ',' + flags + ',' + str(maze_gen.get_params_from_maze(maze)['m']) + ',' + u + ',')
         for key, value in params.items():
             if key == 's':
                 f.write(str(params['s'].split('/')[-1] + ','))
@@ -296,10 +433,6 @@ def cleanup(completed: 'list[Target]') -> None:
         procs.append(commands.spawn_cmd(REMOVE_CMD % get_batch_file(target.index)))
     commands.wait_for_procs(procs)
 
-def get_minotaur_root() -> str:
-    mainfile = sys.modules['__main__'].__file__ # pylint: disable=no-member 
-    return os.path.dirname(os.path.realpath('' if mainfile is None else mainfile))
-
 def store_coverage(conf,works: list[Target], out_dir: str) -> None:
     procs = []
     for i in range(get_containers_needed(conf,works)):
@@ -311,18 +444,6 @@ def store_coverage(conf,works: list[Target], out_dir: str) -> None:
         work = works[i * conf['batch_size']]
         docker.copy_docker_results(work.tool, work.index,os.path.join(out_dir,'cov'), docker_dir=docker.COVERAGE_DIR)
         docker.kill_docker(work.tool, work.index)
-
-def merge_coverage(conf,out_dir: str) -> None:
-    for tool in conf['tool']:
-        files = []
-        resfiles = os.listdir(os.path.join(out_dir,'cov'))
-        for file in resfiles:
-                if tool in file:
-                    files.append(os.path.join(out_dir, 'cov', file)) # For some reason filter + lambda does not work for this
-                    file_string = ' --json-add-tracefile '.join(files)
-                    outfile = f"{tool}_{len(files)}batches.json"
-                    cmd = f"python3 -m gcovr --json-add-tracefile {file_string}  --merge-mode-functions=separate --json-summary-pretty &> {os.path.join(out_dir, 'cov', outfile)}"
-                    commands.run_cmd(cmd)
 
 def main(conf, out_dir):
     os.system(f'mkdir -p {out_dir}')
@@ -344,9 +465,7 @@ def main(conf, out_dir):
         if conf['coverage']:
             store_coverage(conf,works,out_dir)
 
-    if conf['coverage']:
-        merge_coverage(conf,out_dir)
-    commands.run_cmd(REMOVE_CMD % get_temp_dir())
+    # commands.run_cmd(REMOVE_CMD % get_temp_dir())
 
 
 def load(argv):

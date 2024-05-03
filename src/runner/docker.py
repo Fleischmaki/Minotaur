@@ -8,6 +8,7 @@ LOGGER = logging.getLogger(__name__)
 
 HOST_NAME = '/mazes'
 BATCH_FILE_FORMAT = 'batch_%d.txt'
+RESULT_FILE_FORMAT = 'result_%d.txt'
 COVERAGE_DIR = 'coverage'
 GENERATION_DIR = 'outputs'
 
@@ -32,7 +33,7 @@ def spawn_cmd_in_docker(container, cmd_str, timeout=-1) -> subprocess.Popen: #ty
     """
     cmd_prefix =  f'{DOCKER_COMMAND} exec {container} /bin/bash -c'
     if timeout > 0:
-        cmd_prefix = f'{DOCKER_COMMAND} exec {container} timeout {timeout}s /bin/bash -c'
+        cmd_prefix = f'{DOCKER_COMMAND} exec {container} timeout -k 10s {timeout}s /bin/bash -c'
     cmd_args = cmd_prefix.split()
     cmd_args += [cmd_str]
     LOGGER.info('Executing (in container %s): %s', container, ' '.join(cmd_args[3:]))
@@ -72,7 +73,7 @@ def spawn_docker(memory: int | str, name: int | str, tool: str, maze_dir: str, c
     if cpu >= 0:
         cmd = SPAWN_CMD_CPU % (memory, cpu, get_container(tool,name), os.path.abspath(maze_dir), ',readonly' if host_is_readonly else '', DOCKER_PREFIX + tool)
     else:
-        cmd = SPAWN_CMD_NOCPU % (memory, get_container(tool,name), os.path.abspath(maze_dir), ',readonly' if host_is_readonly else '', DOCKER_PREFIX + tool) # TODO rewrite this, this is disgusting
+        cmd = SPAWN_CMD_NOCPU % (memory, get_container(tool,name), os.path.abspath(maze_dir), ',readonly' if host_is_readonly else '', DOCKER_PREFIX + tool) 
     return commands.spawn_cmd(cmd)
 
 def set_docker_seed(path, name, tool):
@@ -80,7 +81,7 @@ def set_docker_seed(path, name, tool):
     cmd = CP_SEED_CMD % (path, get_container(tool,name),get_user(tool), os.path.split(path)[1])
     return commands.spawn_cmd(cmd)
 
-def run_docker(duration, tool, name, variant='', flags='', batch_id=0):
+def run_docker(duration, batch_duration, tool, name, variant='', flags='', batch_id=0):
     """Run a tool docker
     :param duration: Duration per maze
     :param tool: The tool to run
@@ -92,12 +93,13 @@ def run_docker(duration, tool, name, variant='', flags='', batch_id=0):
     script = f'/home/{user}/tools/run_{tool}.sh'
     src_path = f'{HOST_NAME}/{BATCH_FILE_FORMAT % batch_id}'
     cmd = ' '.join(map(str,[script, src_path, duration,variant,flags]))
-    return spawn_cmd_in_docker(get_container(tool,name), cmd)
+    return spawn_cmd_in_docker(get_container(tool,name), cmd, batch_duration)
 
-def collect_docker_results(tool,name, expected_result='error', verbosity='all'):
+def collect_docker_results(tool: str,name: str | int, expected_result: str, verbosity: str ='all'):
     """Collects results of a docker, giving duration and results in simplified format"""
     user = get_user(tool)
-    cmd = f'python3 /home/{user}/tools/get_tcs.py /home/{user}/workspace/{GENERATION_DIR} {expected_result} {verbosity}'
+    expected_result = f'{HOST_NAME}/{RESULT_FILE_FORMAT % name}' if expected_result == 'infer' else expected_result
+    cmd = f"python3 /home/{user}/tools/get_tcs.py /home/{user}/workspace/{GENERATION_DIR} {verbosity} {expected_result}"
     return spawn_cmd_in_docker(get_container(tool,name), cmd)
 
 def copy_docker_results(tool, name , out_path, docker_dir=GENERATION_DIR):
@@ -127,7 +129,7 @@ def collect_coverage_info(tool,name, outfile):
     user = get_user(tool)
     return spawn_cmd_in_docker(get_container(tool,name), f'/home/{user}/tools/get_coverage.sh /home/{user}/workspace/{COVERAGE_DIR} {outfile}')
 
-def run_pa(tool,variant,flags, name, params,outdir, memory = 4,  timeout=60, gen='container', expected_result='error'):
+def run_pa(tool,variant,flags, name, params,outdir, memory = 4,  timeout=60, gen='container', expected_result='error', verbosity='all'):
     """Generate a maze and run a program analyzer on it.
     :param tool,variant,flags: Program analyzer to test
     :param params: Parameters for maze gen
@@ -148,7 +150,7 @@ def run_pa(tool,variant,flags, name, params,outdir, memory = 4,  timeout=60, gen
     with (open(os.path.join(outdir, 'src', BATCH_FILE_FORMAT % 0),'w')) as batchfile: 
         batchfile.write(f'{HOST_NAME}/{maze}')
     spawn_docker(memory,name,tool,os.path.join(outdir,'src')).wait()
-    run_docker(timeout, tool, name, variant,flags).wait()
-    collect_docker_results(tool,name,expected_result,'all').wait()
+    run_docker(timeout, timeout, tool, name, variant,flags).wait()
+    collect_docker_results(tool,name,expected_result,verbosity).wait()
     copy_docker_results(tool,name,os.path.join(outdir, maze))
     kill_docker(tool,name).wait()

@@ -9,92 +9,133 @@ from pysmt.shortcuts import get_env
 
 from storm.utils.randomness import Randomness # pylint: disable=import-error
 
-from  . import formula_transforms
+from  . import formula_operations
 
-BV_UNARY_OPS = frozenset([ops.BV_NOT, ops.BV_NEG ]) #TODO: FIX ROL;ROR Conversion, ops.BV_ROL,ops.BV_ROR])
+BV_UNARY_OPS = frozenset([ops.BV_NOT, ops.BV_NEG, ops.BV_ROL,ops.BV_ROR])
 BV_BINARY_OPS = frozenset([ ops.BV_AND, ops.BV_OR, ops.BV_XOR, ops.BV_ADD, \
                             ops.BV_SUB, ops.BV_MUL, ops.BV_UDIV,\
                             ops.BV_UREM,  ops.BV_SDIV, ops.BV_SREM])
 OTHER_BV_OPS = frozenset([ops.BV_ZEXT, ops.BV_SEXT, ops.BV_EXTRACT, ops.BV_CONCAT, ops.BV_COMP, ops.BV_LSHL, ops.BV_ASHR, ops.BV_LSHR])
-MY_IRA_OPS = frozenset(filter(lambda t: t not in (ops.BV_TONATURAL, ops.TOREAL),ops.IRA_OPERATORS))
-
-# assert BV_UNARY_OPS | BV_BINARY_OPS | OTHER_BV_OPS == ops.BV_OPERATORS
+MY_IRA_OPS = frozenset(filter(lambda t: t not in (ops.BV_TONATURAL, ops.TOREAL, ops.POW),ops.IRA_OPERATORS))
 
 
-def get_constants_for_type(node_type: types.PySMTType) -> set[FNode] | FrozenSet[FNode]:
+assert BV_UNARY_OPS | BV_BINARY_OPS | OTHER_BV_OPS == ops.BV_OPERATORS
+
+
+def get_constants_for_type(node_type: types.PySMTType,parent_is_array: bool=False) -> set[FNode] | FrozenSet[FNode]:
+    """Returns interesting constants of type node_type"""
     if node_type == types.BOOL:
         return frozenset([sc.FALSE(), sc.TRUE()])
     if node_type == types.INT:
-        return frozenset([sc.Int(0), sc.Int(1), sc.Int(2**63 - 1), sc.Int(2**63 + 1)])
+        return frozenset([sc.Int(0), sc.Int(1)])
     if node_type.is_bv_type():
         width = node_type.width # type: ignore
+        if parent_is_array:
+            return set([sc.BVZero(width), sc.BVOne(width)])
         return set([sc.BVZero(width), sc.BVOne(width), sc.BV(2**width - 1, width), sc.BV(2**(width-1), width)])
-    # if node_type.is_array_type(): # TODO
     return set()
 
 class FormulaBuilder():
-    def __init__(self, formula: FNode, logic: str, max_depth: int, rand: Randomness):
+    """Builds random formulas using subexpressions from a given seed formula
+    :param formula: Seeds formula
+    :param logic: The logic to use for the built formula
+    :param rand: A source of randomness
+    """
+    def __init__(self, formula: FNode, logic: str, rand: Randomness):
         self.variables_by_type = {}
-        for variable in formula_transforms.get_nodes(formula, lambda _: True):
+        for variable in formula_operations.get_nodes(formula, lambda _: True):
             node_type = variable.get_type()
             if variable.get_type() not in self.variables_by_type:
                 self.variables_by_type[node_type] = set()
             self.variables_by_type[node_type].add(variable)
         self.logic = logic
-        self.max_depth = max_depth
         self.bv_types = set(filter(lambda t: t.is_bv_type(), self.variables_by_type.keys()))
-        self.variables_depths = formula_transforms.label_formula_depth(formula)
+        self.variables_depths = formula_operations.label_formula_depth(formula)
         self.random = rand
+        self.arrays = set(filter(lambda t: t.is_array_type(), self.variables_by_type.keys()))
         
     def get_random_assertion(self, max_depth: int):
-        return self.build_formula_of_type(types.BOOL, max_depth)
-    
-    def build_formula_of_type(self, node_type: types.PySMTType, max_depth: int) -> FNode:
+        """ Build a random boolean formulas of maximum depth 
+        """
+        res = self.build_formula_of_type(types.BOOL, max_depth)
+        return res
+
+    def build_formula_of_type(self, node_type: types.PySMTType, max_depth: int, parent_is_array: bool = False) -> FNode:
+        """ Build a random formula of the given type and depth """
         if max_depth == 0:
-            return self.random.random_choice(self.get_leaves_for_type(node_type, max_depth))
+            return self.random.random_choice(self.get_leaves_for_type(node_type, max_depth, parent_is_array))
         res = self.random.random_choice(self.get_ops_for_outtype(node_type)\
-                                                             + [(l, []) for l in self.get_leaves_for_type(node_type, max_depth)])
+            + self.get_leaves_for_type(node_type, max_depth, parent_is_array))
+        
+        if isinstance(res, FNode):
+            return res
         next_operation, subtypes_needed = res
-        if isinstance(next_operation, FNode):
-            return next_operation
-        node_args = tuple(self.build_formula_of_type(t, max_depth-1) for t in subtypes_needed)
+        node_args = tuple(self.build_formula_of_type(t, max_depth-1, i != 0 or next_operation in (ops.ARRAY_OPERATORS)) for i, t in enumerate(subtypes_needed))
         payload = self.get_payload_for_op(next_operation, node_type, subtypes_needed)
         return get_env().formula_manager.create_node(next_operation, node_args, payload)
     
     def get_ops_for_outtype(self, out_type: types.PySMTType) -> list[tuple[int,list[types.PySMTType]]]:
+        """ Returns all possible supported operations for a given SMT-Node Type
+            BV Types are restrained to those present in the seed formula
+            Only arrays declared in the seed are used, i.e. no new Arrays are created.
+        """
         res = []
         if out_type == types.BOOL:
             res.append((ops.NOT,[types.BOOL]))
             res.extend([(o,[types.BOOL, types.BOOL]) for o in filter(lambda o: o != ops.NOT, ops.BOOL_CONNECTIVES)])
             if ('BV' in self.logic):
                 res.extend([(o,[t,t]) for o in ops.BV_RELATIONS for t in self.bv_types])
+                res.extend([(ops.EQUALS,[t,t]) for t in self.bv_types])
             if ('IA' in self.logic):
-                res.extend(ops.IRA_RELATIONS)
                 res.extend([(o,[types.INT,types.INT]) for o in ops.IRA_RELATIONS])
-            return res
-        if out_type.is_bv_type:
+                res.append((ops.EQUALS,[types.INT,types.INT]))
+        if out_type.is_bv_type():
             res.extend([(o,[out_type]) for o in BV_UNARY_OPS])
             res.extend([(o,[out_type, out_type]) for o in BV_BINARY_OPS])
-            return res
-        if out_type.is_int_type:
+            # Size changing types:
+            res.extend([(o,[smaller_type]) for o in (ops.BV_SEXT,ops.BV_ZEXT) \
+                        for smaller_type in filter(lambda st: st.width < out_type.width, self.bv_types)]) #type: ignore
+            res.extend([(ops.BV_EXTRACT,[larger_type]) \
+                        for larger_type in filter(lambda st: st.width > out_type.width, self.bv_types)]) #type: ignore
+            for type1 in self.bv_types:
+                for type2 in self.bv_types:
+                    if type1.width + type2.width == out_type.width: #type: ignore
+                        res.append((ops.BV_CONCAT,[type1,type2]))
+
+        if out_type.is_int_type():
             res.extend([(o,[types.INT, types.INT]) for o in MY_IRA_OPS])
-            return res
+
+        if 'ABV' in self.logic or 'AL' in self.logic or 'AN' in self.logic:
+            arrays_for_out_type = set(filter(lambda at: at.elem_type == out_type, self.arrays))
+            if len(arrays_for_out_type) > 0:
+                res.extend([(ops.ARRAY_SELECT,[at, at.index_type]) for at in arrays_for_out_type])
+                # Limit array indices to char
+                if out_type.is_bool_type():
+                    res.extend([(ops.EQUALS,[at,at]) for at in self.arrays])
+                if out_type.is_array_type():
+                    res.extend([(ops.ARRAY_STORE,[at,at.index_type,out_type]) for at in arrays_for_out_type])
         return res
     
-    def get_leaves_for_type(self,node_type: types.PySMTType, maximum_depth: int) -> list[FNode]:
-        return list(filter(lambda v: self.variables_depths[v] <= maximum_depth, self.variables_by_type[node_type])) + list(get_constants_for_type(node_type))
-    
+    def get_leaves_for_type(self,node_type: types.PySMTType, maximum_depth: int, parent_is_array: bool = False) -> list[FNode]:
+        """ Get constants or subexpressions so we don't need to generate subformulas 
+        """
+        res = list(get_constants_for_type(node_type, parent_is_array))
+        if node_type in self.variables_by_type:
+            res.extend(filter(lambda v: self.variables_depths[v] <= maximum_depth, self.variables_by_type[node_type]))
+        return res
+
     def get_payload_for_op(self,op: int, node_type: types.PySMTType, argtypes: list[types.PySMTType]):
+        """ Returns the necessary additional information pySMT needs to create a node """
         if op in (ops.BV_ZEXT, ops.BV_SEXT):
-            return (argtypes[0].width, argtypes[0].width - node_type.width) #type: ignore
+            return (node_type.width, node_type.width-argtypes[0].width) #type: ignore
         if op == ops.BV_CONCAT:
             return (argtypes[0].width + argtypes[1].width,) # type: ignore
         if op == ops.BV_EXTRACT:
             diff = argtypes[0].width - node_type.width#type: ignore
-            offset = self.random.get_random_integer(0,diff) # type: ignore # TODO: see what is correct here
-            return (diff, offset, argtypes[0].width+offset-1) #type: ignore
+            offset = self.random.get_random_integer(0,diff) # type: ignore #
+            return (node_type.width, offset, node_type.width+offset-1) #type: ignore
         if op in (ops.BV_ROL, ops.BV_ROR):
-            return (node_type.width, self.random.get_random_integer(0,node_type.width-1)) #type: ignore
+            return (argtypes[0].width, self.random.get_random_integer(0,node_type.width-1)) #type: ignore
         if op in ops.BV_OPERATORS:
-            return (node_type.width,) # type: ignore
+            return (argtypes[0].width,) # type: ignore
         return None

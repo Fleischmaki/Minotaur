@@ -3,13 +3,17 @@
 import os
 import logging
 from math import ceil
+
 from ..runner import maze_gen, commands, docker
 from ..maze_gen.smt2 import parser as sp
 
 LOGGER = logging.getLogger(__name__)
 
 class Minimizer:
-    def __init__(self,argv: 'list[str]'):
+    """ As we have a lot of local state, use a class instead of load()
+    :param argv:    The argv after the --m (and possibly debug) flag
+    """
+    def __init__(self,argv: list[str]):
         if ',' in argv[0]:
             run = argv[0][:-1] if argv[0].endswith(',') else argv[0]
             args = run.split(',')
@@ -43,6 +47,7 @@ class Minimizer:
 
 
     def minimize(self):
+        """Run the minimization"""
         commands.run_cmd('mkdir -p %s' % self.outdir)
         commands.run_cmd("mkdir -p %s" % os.path.join(self.outdir,'seeds'))
         commands.run_cmd("mkdir -p %s" % os.path.join(self.outdir,'runs'))
@@ -55,9 +60,9 @@ class Minimizer:
         seed = self.get_seed()
         self.set_fake_params()
 
-        clauses,logic = read_mutant(seed)
+        clauses,self.logic = read_mutant(seed)
         if self.expected_result == 'safe':
-            clauses, self.core = self.separate_unsat_core(clauses,logic)
+            clauses, self.core = self.separate_unsat_core(clauses)
 
         clauses = self.drop_batches(clauses)
         clauses = self.drop_individual(clauses)
@@ -68,8 +73,8 @@ class Minimizer:
         else:
             maze_gen.generate_maze(self.params, self.outdir) 
 
-    def separate_unsat_core(self,clauses: list,logic: str):
-        core = sp.get_unsat_core(clauses, logic)
+    def separate_unsat_core(self,clauses: list):
+        core = sp.get_unsat_core(clauses, self.logic)
         LOGGER.debug("Found core %s", core)
         return list(filter(lambda c : c not in core, clauses)), core
 
@@ -79,14 +84,15 @@ class Minimizer:
             w, h = self.params['w'], self.params['h']
             self.params.update({'u':'', 'w':1, 'h':1})
             if not self.result_is_err():
-                self.params.pop('u') 
+                self.params.pop('u')
                 self.params.update({'w':w,'h':h})
         
     def get_seed(self):
         if 'storm' in self.params['t']:
             return os.path.join(self.outdir,'smt',str(self.params['r']), 'mutant_%d.smt2' % (self.params['m'] - 1))
-        else:
-            return self.params['s']
+        if 'fuzz' in self.params['t'] or 'yinyang' in self.params['t']:
+            return os.path.join(self.outdir,'smt',str(self.params['r']), f"mutant_{self.params['m']-1}_{'sat' if self.expected_result == 'error' else 'unsat'}.smt2")
+        return self.params['s']
 
     def drop_batches(self, clauses: list):
         keep_first_half = True
@@ -133,20 +139,19 @@ class Minimizer:
         return sat
 
     def set_seed(self, seed: str, clauses: list):
+        seed = f"{seed.removesuffix('.smt2')}_{'sat' if self.expected_result == 'error' else 'unsat'}.smt2"
         seed = os.path.join(self.outdir, 'seeds', seed)
         constraints = self.core.union(clauses)
-        if not seed.endswith('.smt2'):
-            seed += '.smt2'
-        sp.write_to_file(constraints,seed)
+        sp.write_to_file(constraints,self.logic,seed)
         self.params['s'] = seed
 
 
     def is_err(self):
         maze = maze_gen.get_maze_names(self.params)[max(0,self.params['m']-1)]
-        resdir = os.path.join(self.outdir,maze,maze) # IDK why it's twice but thats just how it is
+        resdir = os.path.join(self.outdir,maze,maze) 
         for file in os.listdir(resdir):
             if len(file.split('_')) == 2: # Still false negative
-                print(file)
+                LOGGER.info(file)
                 commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(self.outdir,'runs')))
                 commands.run_cmd('rm -r %s' % os.path.join(self.outdir,maze))
                 if self.err in file: 
@@ -159,14 +164,17 @@ class Minimizer:
         return self.params
 
     def set_fake_params(self):
-        self.params['t'] = self.params['t'].replace('storm', '')
-        self.params['t'] = self.params['t'].replace('__', '_')
+        transforms = set(filter(lambda t: not ('storm' in t or 'fuzz' in t or 'yinyang' in t), self.params['t'].split('_')))
+        if self.expected_result == 'safe':
+            transforms.add('unsat')
+        self.params['t'] = '_'.join(transforms)
         self.params['t'] = self.params['t'].strip('_')
         if self.params['t'] == '' or self.params['t'] == 'last':
             self.params['t'] = 'keepId'
             self.params['m'] = 0
         else:
             self.params['m'] = 1
+        print(self.params['t'])
 
 def read_mutant(mutant: str):
     file_data = sp.read_file(mutant)

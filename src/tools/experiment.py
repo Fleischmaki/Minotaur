@@ -23,15 +23,20 @@ def load_config(path: str) -> dict:
     if 'maze_gen' not in conf.keys():
         conf['maze_gen'] = 'local'
     if 'expected_result' not in conf.keys():
-        conf['maze_gen'] = 'error'
+        conf['expected_result'] = 'error'
     if 'abort_on_error' not in conf.keys():
-        conf['abort_on_error'] = True
+        conf['abort_on_error'] = 1
     if 'avg' not in conf.keys():
         conf['avg'] = 1
     if 'gen_time' not in conf.keys():
         conf['gen_time'] = 30000
     if 'coverage' not in conf.keys():
-        conf['coverage'] = False
+        conf['coverage'] = 0
+    if 'batch_duration' not in conf.keys():
+        conf['batch_duration'] = conf['duration']
+    if 'check_error' not in conf.keys():
+        conf['check_error'] = None
+
 
     assert conf['repeats'] > 0
     assert conf['workers'] > 0
@@ -55,7 +60,7 @@ def load(argv):
         resfile.write("run_nr, time\n")
 
         runs = conf['repeats']
-        conf['repeats'] = conf['mazes']
+        conf['repeats'] = conf['batches']
 
         variable_keys = list(map(lambda kv: kv[0],(filter(lambda kv: isinstance(kv[1], list), conf.items()))))
         LOGGER.info("Found the following variable keys %s", str(variable_keys))
@@ -69,17 +74,18 @@ def load(argv):
             for j in range(conf['avg']):
                 start = time.time()
                 LOGGER.debug("Staring run %d/%d of experiment %d", j, conf['avg'],i)
+                LOGGER.debug("Using conf %s", curr_conf)
                 test.main(curr_conf, os.path.join(outdir, f'run{i}_{j}'))
                 end = time.time()
                 times.append(end-start)
             resfile.write(f"{i},{sum(times)/len(times)}\n")
+            resfile.flush()
 
 
 def set_param_value(new_conf: dict, old_conf: dict, key: str, i: int):
     """ Set new_conf[key] to i-th value of old_conf[key]
     """
     new_conf[key] = old_conf[key][i % len(old_conf[key])]
-    if key == 'transforms' and new_conf['transforms'] == 0:
-        new_conf['parameters']['t']['keepId'] = [1]
-    if key == 'neg' and new_conf['neg'] == 1:
-        new_conf['parameters']['t']['neg'] = [1]
+    LOGGER.debug("Running with value %s for key %s", new_conf[key], key)
+    if key == 'parameters' and old_conf['transforms'] == 0:
+        new_conf['parameters']['keepId'] = [1]

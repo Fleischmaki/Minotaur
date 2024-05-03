@@ -18,7 +18,13 @@ def save_tc(dest_dir, tc_path, start_time, end_time, sig, copy_content=True):
 WORKDIR = '/home/maze/workspace'
 OUTDIR = '/home/maze/workspace/outputs'
 
-def main(dest_dir,expected_result,verbosity):
+def main(dest_dir,verbosity,expected_results):
+    expected_result_by_maze = {}
+    if expected_results.endswith('.txt'):
+        with open(expected_results,'r') as results_file:
+            for result in results_file.readlines():
+                name, res = result.rsplit(' ',1)
+                expected_result_by_maze[name] = res.strip()
     # Create destination directory
     os.system('mkdir -p %s' % dest_dir)
     for file in filter(lambda f: 'res' in f, os.listdir(OUTDIR)):
@@ -32,6 +38,7 @@ def main(dest_dir,expected_result,verbosity):
             resfile = open(respath, "r").read()
             file_dir = os.path.join(dest_dir,name) 
             os.system('mkdir -p %s' % file_dir)
+            expected_result = expected_result_by_maze[name] if expected_results.endswith('.txt') else expected_results 
         except Exception as e:
             print("NOTE: Failed to parse file %s: %s" % (file, str(e)))
             continue
@@ -52,6 +59,6 @@ def main(dest_dir,expected_result,verbosity):
 
 if __name__ == '__main__':
     dest_dir = sys.argv[1]    
-    expected_result = sys.argv[2]
-    verbosity = sys.argv[3]
-    main(dest_dir,expected_result,verbosity)
+    expected_results = sys.argv[3]
+    verbosity = sys.argv[2]
+    main(dest_dir,verbosity,expected_results)

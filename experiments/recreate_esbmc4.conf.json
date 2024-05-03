@@ -1,20 +1,25 @@
 {
-	"verbosity": "summary",
+	"verbosity": "all",
 	"repeats" : 5,
-	"mazes" : [-1],
-	"duration" : [30],
-	"workers" : 5,
+	"batches": -1,
+	"duration" : 1000,
+	"workers" : 1,
 	"memory" : 4,
-	"transforms" : [15],
+	"transforms" : 20,
 	"seed": [1,2,3,4,5],
-	"batch_size": [1],
-	"maze_gen" : "container",
+	"batch_size": 1,
+	"maze_gen" : "local",
 	"expected_result": "error",
+	"abort_on_error": ["fn"],
 	"tool" : {
-		"esbmc-bug3": {
+		"esbmc-bug4": {
 			"variant" : ["--cvc --smt-during-symex --smt-symex-assert"]
 		}
 	},
+	"check_error": {
+		"esbmc-bug4": "esbmc-fixed4"
+	},
+
 	"avg": 1,
 	"parameters" : {
 		"u" : [0,1],
@@ -38,7 +43,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MinotaurProject/seeds/cvs_vc105353.smt2",
+		"s": "/Minotaur/bug_seeds/cvs_vc105353.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

@@ -1,0 +1,157 @@
+diff --git a/yinyang/config/operator_mutations.txt b/yinyang/config/operator_mutations.txt
+index c85c155..c4a040b 100644
+--- a/yinyang/config/operator_mutations.txt
++++ b/yinyang/config/operator_mutations.txt
+@@ -30,7 +30,7 @@
+ =,distinct
+ exists,forall
+ not -> and,or
+-and,or,=> :arity 3+
++and,or :arity 3+
+ and,or,=>,xor :arity 2
+ <=,>=,<,>
+ +,-,* :arity 2+
+diff --git a/yinyang/src/base/ArgumentParser.py b/yinyang/src/base/ArgumentParser.py
+index c38604d..5165839 100644
+--- a/yinyang/src/base/ArgumentParser.py
++++ b/yinyang/src/base/ArgumentParser.py
+@@ -72,6 +72,14 @@ def add_common_args(parser, rootpath, current_dir):
+         metavar="secs",
+         type=int,
+     )
++    parser.add_argument(
++        "-S",
++        "--seed",
++        default=-1,
++        metavar="<N>",
++        type=int,
++    )
++
+     parser.add_argument(
+         "-b",
+         "--bugsfolder",
+diff --git a/yinyang/src/base/Utils.py b/yinyang/src/base/Utils.py
+index f7a48d6..65df680 100644
+--- a/yinyang/src/base/Utils.py
++++ b/yinyang/src/base/Utils.py
+@@ -23,8 +23,8 @@
+ import random
+ import string
+ 
+-
+-def random_string(length=5):
++def random_string(seed, length=5):
++    random.seed(seed)
+     return "".join(random.sample(string.ascii_letters + string.digits, length))
+ 
+ 
+diff --git a/yinyang/src/core/Fuzzer.py b/yinyang/src/core/Fuzzer.py
+index 2791982..b295761 100644
+--- a/yinyang/src/core/Fuzzer.py
++++ b/yinyang/src/core/Fuzzer.py
+@@ -78,6 +78,9 @@ MAX_TIMEOUTS = 32
+ class Fuzzer:
+     def __init__(self, args, strategy):
+         self.args = args
++        if self.args.seed > 0:
++            random.seed(self.args.seed)
++
+         self.currentseeds = []
+         self.strategy = strategy
+         self.statistic = Statistic()
+@@ -85,7 +88,7 @@ class Fuzzer:
+         self.old_time = time.time()
+         self.start_time = time.time()
+         self.first_status_bar_printed = False
+-        self.name = random_string()
++        self.name = random_string(random.random())
+         self.timeout_of_current_seed = 0
+ 
+         init_logging(strategy, self.args.quiet, self.name, args)
+@@ -217,7 +220,7 @@ class Fuzzer:
+             self.args.scratchfolder,
+             escape("-".join(self.currentseeds)),
+             self.name,
+-            random_string(),
++            random_string(random.random()),
+         )
+         with open(testcase, "w") as testcase_writer:
+             testcase_writer.write(script.__str__())
+@@ -385,7 +388,7 @@ class Fuzzer:
+             bugtype,
+             plain_cli,
+             escape("-".join(self.currentseeds)),
+-            random_string(),
++            random_string(random.random()),
+         )
+         try:
+             with open(report, "w") as report_writer:
+@@ -398,7 +401,7 @@ class Fuzzer:
+             bugtype,
+             plain_cli,
+             escape("-".join(self.currentseeds)),
+-            random_string(),
++            random_string(random.random()),
+         )
+         with open(logpath, "w") as log:
+             log.write("command: " + cli + "\n")
+@@ -426,7 +429,7 @@ class Fuzzer:
+             bugtype,
+             plain_cli,
+             escape("-".join(self.currentseeds)),
+-            random_string(),
++            random_string(random.random()),
+         )
+         try:
+             with open(report, "w") as report_writer:
+@@ -440,7 +443,7 @@ class Fuzzer:
+             bugtype,
+             plain_cli,
+             escape("-".join(self.currentseeds)),
+-            random_string(),
++            random_string(random.random()),
+         )
+         with open(logpath, "w") as log:
+             log.write("*** REFERENCE \n")
+diff --git a/yinyang/src/mutators/GenTypeAwareMutation/GenTypeAwareMutation.py b/yinyang/src/mutators/GenTypeAwareMutation/GenTypeAwareMutation.py
+index 4a985eb..3c40862 100644
+--- a/yinyang/src/mutators/GenTypeAwareMutation/GenTypeAwareMutation.py
++++ b/yinyang/src/mutators/GenTypeAwareMutation/GenTypeAwareMutation.py
+@@ -40,6 +40,8 @@ class GenTypeAwareMutation(Mutator):
+         self.unique_expr = unique_expr
+         self.operators = []
+         self.parse_config_file()
++        if self.args.seed >= 0:
++            random.seed(self.args.seed)
+ 
+     def parse_config_file(self):
+         """
+diff --git a/yinyang/src/mutators/SemanticFusion/SemanticFusion.py b/yinyang/src/mutators/SemanticFusion/SemanticFusion.py
+index ff92d60..6373c39 100644
+--- a/yinyang/src/mutators/SemanticFusion/SemanticFusion.py
++++ b/yinyang/src/mutators/SemanticFusion/SemanticFusion.py
+@@ -64,6 +64,10 @@ class SemanticFusion(Mutator):
+             print("error: No oracle {sat,unsat} specified")
+             exit(ERR_USAGE)
+ 
++        if self.args.seed >= 0:
++            random.seed(self.args.seed)
++
++
+     def _parse_mrs(self):
+         with open(self.config) as f:
+             lines = f.readlines()
+diff --git a/yinyang/src/mutators/TypeAwareOpMutation.py b/yinyang/src/mutators/TypeAwareOpMutation.py
+index 5787d02..da09be7 100644
+--- a/yinyang/src/mutators/TypeAwareOpMutation.py
++++ b/yinyang/src/mutators/TypeAwareOpMutation.py
+@@ -31,7 +31,8 @@ class TypeAwareOpMutation(Mutator):
+         self.formula = formula
+         self.bidirectional = []
+         self.unidirectional = []
+-
++        if args.seed >= 0:
++            random.seed(args.seed)
+         self.parse_config_file()
+ 
+     def parse_config_file(self):

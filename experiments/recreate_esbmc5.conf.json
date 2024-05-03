@@ -1,7 +1,7 @@
 {
 	"verbosity": "summary",
 	"repeats" : 5,
-	"mazes" : [-1],
+	"batches": [-1],
 	"duration" : [600],
 	"workers" : 5,
 	"memory" : 4,
@@ -10,6 +10,7 @@
 	"batch_size": [1],
 	"maze_gen" : "container",
 	"expected_result": "error",
+	"abort_on_error": ["fn"],
 	"tool" : {
 		"esbmc": {
 			"variant" : ["--mathsat --tuple-node-flattener --smt-during-symex --smt-symex-guard"]
@@ -38,7 +39,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/home/markus/MinotaurProject/seeds/bitvector-s3_clnt_3.BV.c.cil-1a-test000036.smt2",
+		"s": "/Minotaur/bug_seeds/bitvector-s3_clnt_3.BV.c.cil-1a-test000036.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

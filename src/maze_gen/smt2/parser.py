@@ -4,24 +4,25 @@ import sys
 import random
 import logging
 import typing as t
-
 from collections import defaultdict, OrderedDict, namedtuple
 
 from pysmt.smtlib.parser import SmtLibParser
-from pysmt.shortcuts import is_sat, write_smtlib, And, Not, get_env
+from pysmt.shortcuts import is_sat, And, Not, get_env
 from pysmt.solvers.z3 import Z3Solver
 from pysmt.oracles import get_logic
 from pysmt.smtlib.commands import SET_LOGIC
 from pysmt.fnode import FNode
+from pysmt.smtlib.script import smtlibscript_from_formula
 import pysmt.exceptions
 
-from . import converter, formula_transforms as ff
 
+from . import formula_operations as ff
+from .converter import get_converter, clean_string, type_to_c
 LOGGER = logging.getLogger(__name__)
 
 SmtFileData = namedtuple('SmtFileData',['decl_arr','formula', 'logic', 'clauses'])
 
-def parse(file_path: str, transformations: dict, check_neg: bool, continue_on_error = True)\
+def parse(file_path: str, transformations: dict, check_neg: bool = False, continue_on_error = True)\
     -> tuple[OrderedDict[str,bool],dict[str,str],int]:
     """Parses an smt file, converts it into C clauses and extracts the corresponding variables
     :returns:   An OrderedDict containing the resulting C-expressions as keys and value indicating whether the negated expression is also sat
@@ -29,27 +30,26 @@ def parse(file_path: str, transformations: dict, check_neg: bool, continue_on_er
                 The minimal array size for the clauses to be valid
     """
     sys.setrecursionlimit(10000)
-    generate_well_defined=transformations['wd']
-    generate_sat=transformations['sat']
+    generate_sat, generate_well_defined = get_forced_parameters(file_path, transformations)
     limit=transformations['dag']
     negate_formula=transformations['neg']
-    set_well_defined(generate_well_defined)
     LOGGER.info("Converting %s: ", file_path)
     decl_arr, formula, logic, formula_clauses = read_file(file_path, limit, negate_formula)
     all_arrays_constant = False
     if generate_sat:
-        clauses, array_size, all_arrays_constant = run_checks(formula, logic, formula_clauses)
+        clauses, array_size, all_arrays_constant = run_checks(formula, logic, formula_clauses, generate_well_defined)
     else:
         array_size, array_calls = ff.get_array_index_calls(formula)
         array_size += 1
+        if array_size > ff.MAXIMUM_ARRAY_SIZE:
+            raise ValueError("Minimum array size too large!")
         clauses = list(ff.get_array_constraints(array_calls, array_size)) + list(formula_clauses)
 
+    converter = get_converter()
+    converter.set_well_defined(generate_well_defined)
     if all_arrays_constant and transformations['ca']:
-        converter.set_constant_array_indices(ff.get_indices_for_each_array(ff.get_array_index_calls(formula)[1]))
+        converter.set_array_indices(ff.get_indices_for_each_array(ff.get_array_index_calls(formula)[1]))
         array_size = -1
-    else:
-        converter.set_constant_array_indices({})
-
     try:
         core = set() if generate_sat else get_unsat_core(clauses, logic)
     except pysmt.exceptions.SolverStatusError as e:
@@ -58,7 +58,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool, continue_on_er
     parsed_cons = OrderedDict()
     variables = {}
 
-    if GENERATE_WELL_DEFINED:
+    if generate_well_defined:
         clauses.sort(key=lambda c: len(ff.get_array_index_calls(c)[1]))
 
     for c, clause in enumerate(clauses,start=1):
@@ -76,9 +76,10 @@ def parse(file_path: str, transformations: dict, check_neg: bool, continue_on_er
 
         try:
             LOGGER.debug("Converting clause %d/%d.", c,len(clauses))
-            result = converter.convert_to_string(symbs,clause)
-        except (ValueError, RecursionError) as e:
-            LOGGER.warning("Could not convert clause: %s", str(e))
+            clause_in_c, symbs = converter.convert(clause)
+        except (Exception) as e:
+            LOGGER.warning("Could not convert clause!")
+            LOGGER.exception(e)
             if continue_on_error:
                 if clause not in core:
                     continue
@@ -87,11 +88,15 @@ def parse(file_path: str, transformations: dict, check_neg: bool, continue_on_er
                 raise e
         LOGGER.debug("Done.")
 
-            
-        add_parsed_cons(check_neg, clauses, parsed_cons, clause, result)
-        add_used_variables(variables, ldecl_arr, symbs, all_arrays_constant)
+        add_parsed_cons(check_neg, clauses, parsed_cons, clause, clause_in_c)
+        add_used_variables(variables, ldecl_arr, symbs, all_arrays_constant and transformations['ca'])
 
     return parsed_cons, variables, array_size
+
+def get_forced_parameters(file_path, transformations):
+    generate_sat=(transformations['sat'] and not transformations['fuzz']) or not file_path.removesuffix('.smt2').endswith('unsat')
+    generate_well_defined=transformations['wd'] or not generate_sat
+    return generate_sat,generate_well_defined
 
 def get_unsat_core(clauses, logic):
     """Copmutes the unsat core"""
@@ -104,7 +109,7 @@ def get_unsat_core(clauses, logic):
     return core
 
 def add_parsed_cons(check_neg:bool, clauses:list, parsed_cons:OrderedDict, clause:FNode, cons_in_c: str): 
-    """Add condition to the list of conditions""" # TODO weird functions
+    """Add condition to the list of conditions""" 
     if check_neg:
         neg_sat = ff.is_neg_sat(clause, clauses)
         parsed_cons[cons_in_c] = neg_sat
@@ -114,39 +119,36 @@ def add_parsed_cons(check_neg:bool, clauses:list, parsed_cons:OrderedDict, claus
 def add_used_variables(variables: dict, ldecl_arr: list[FNode], symbs: t.Set[str], constant_arrays:bool):
     """Add a variable to the variable dict"""
     for symb in symbs:
-        decls = list(map(converter.clean_string, ldecl_arr))
+        decls = list(map(clean_string, ldecl_arr))
         if symb in decls:
             decl = symb
         elif 'c' in decls and symb == '__original_smt_name_was_c__':
             decl = 'c'
         else:
-            decl = "_".join(symb.split("_")[:-1])
+            decl = symb.rsplit("_",1)[0]
+            while decl not in decls:
+                decl = decl.rsplit("_",1)[0]
         i = decls.index(decl)
         vartype = ldecl_arr[i].get_type()
-        type_in_c = converter.type_to_c(vartype, constant_arrays)
+        type_in_c = type_to_c(vartype, constant_arrays)
         if vartype.is_array_type() and not constant_arrays:
             first_bracket = type_in_c.find('[')
             symb += type_in_c[first_bracket:]
-            type_in_c = type_in_c[:first_bracket]
+            type_in_c = f"{ff.get_bv_width_from_array_type(vartype)}_{type_in_c[:first_bracket]}"
         variables[symb] = type_in_c
 
-def set_well_defined(generate_well_defined: bool):
-    global GENERATE_WELL_DEFINED
-    GENERATE_WELL_DEFINED = generate_well_defined
-    converter.set_well_defined(generate_well_defined)
-
-def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
+def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode], well_defined: bool):
     """Check whether the translated formula is going to have valid soltuions"""
     constraints = set()
     clauses = list(formula_clauses)
 
-    if 'BV' not in logic and GENERATE_WELL_DEFINED:
+    if 'BV' not in logic and well_defined:
         LOGGER.warning("Can only guarantee well-definedness on bitvectors")
 
     if logic.split('_')[-1].startswith('A'):
         array_size, array_constraints, _, all_constant = ff.constrain_array_size(formula)
-        if GENERATE_WELL_DEFINED:
-            clauses.extend(filter(lambda c: len(c.get_free_variables()) > 0, array_constraints))
+        if well_defined:
+            clauses.extend(array_constraints)
         constraints.update(array_constraints)
     else:
         array_size = -1
@@ -157,7 +159,7 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
         LOGGER.info("Generating integer constraints")
         constraints.update(ff.get_integer_constraints(formula))
 
-    if not GENERATE_WELL_DEFINED:
+    if not well_defined:
         LOGGER.info("Generating divsion constraints")
         constraints.update(ff.get_division_constraints(formula))
 
@@ -169,37 +171,39 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode]):
     
     return clauses,array_size, all_constant
 
+
 def read_file(file_path: str, limit : int = 0, negate_formula : bool = False) -> SmtFileData:
     """Read an SMTfile and extract important fields"""
     parser = SmtLibParser()
     script = parser.get_script_fname(file_path)
-    decl_arr = list()
+    decl_arr = []
     decls = script.filter_by_command_name("declare-fun")
     for d in decls:
         for arg in d.args:
             # if (str)(arg) != "model_version":
             decl_arr.append(arg)
     formula = script.get_strict_formula()
-    formula = formula if not negate_formula else Not(formula)
+    if negate_formula:
+        formula = formula if is_sat(formula, solver_name='z3') else Not(formula)
     if limit > 0:
         formula, new_decls = ff.daggify(formula, limit)
         decl_arr.extend(new_decls)
     
-    logic = get_logic_from_script(script)  
+    logic = get_logic_from_script(script)
     clauses = conjunction_to_clauses(formula)
     return SmtFileData(decl_arr,formula,logic,clauses)
 
 def get_logic_from_script(script):
     """Read logic from an pysmt script, or guess minimal logic if none is provided"""
     if script.contains_command(SET_LOGIC):
-        logic = str(script.filter_by_command_name(SET_LOGIC).__next__().args[0])
+        logic = str(next(script.filter_by_command_name(SET_LOGIC)).args[0])
     else:
         formula = script.get_strict_formula()
         logic = str(get_logic(formula))
         LOGGER.info('Logic not found in script. Using logic from formula: %s', logic)
     return logic
 
-def conjunction_to_clauses(formula: FNode):
+def conjunction_to_clauses(formula: FNode) -> set[FNode]:
     """Transform top-level conjuncts of a formula into a set of clauses"""
     clauses = set()
     if formula.is_and():
@@ -209,13 +213,15 @@ def conjunction_to_clauses(formula: FNode):
         clauses.add(formula)
     return clauses
 
-def write_to_file(formula : FNode | t.Iterable[FNode], file: str):
+def write_to_file(formula : FNode | t.Iterable[FNode], logic: str, file: str):
     """Write a formula to a file
     :param formula: If an iterable is provided, takes a conjunction of those clauses
     """
     if isinstance(formula,t.Iterable):
         formula = And(*formula)
-    return write_smtlib(formula, file)
+    with open(file, "w") as fout:
+        script = smtlibscript_from_formula(formula, logic)
+        script.serialize(fout)
 
 
 class Graph:
@@ -253,7 +259,7 @@ class Graph:
                 groups.append(group)
         return groups
 
-def independent_formulas(conds: dict[str,bool], variables: dict[str,str]) -> tuple[list[list],list[dict]]:
+def independent_formulas(conds: dict[str,bool], variables: dict[str,str], array_size: int) -> tuple[list[list],list[dict]]:
     formula = Graph()
     for cond in conds:
         formula.add_edge(cond,cond)
@@ -261,6 +267,9 @@ def independent_formulas(conds: dict[str,bool], variables: dict[str,str]) -> tup
         for other in conds:
             if len(cond_vars.keys() & extract_vars(other, variables).keys()) > 0:
                 formula.add_edge(cond, other)
+            if is_array_constraint_of(cond,other, array_size):
+                formula.add_edge(cond,other)
+                formula.add_edge(other,cond)
     groups = [sorted(g, key=lambda cond: list(conds.keys()).index(cond)) for g in formula.separate()]
     vars_by_groups = []
     for group in groups:
@@ -270,14 +279,28 @@ def independent_formulas(conds: dict[str,bool], variables: dict[str,str]) -> tup
         vars_by_groups.append(used_vars)
     return groups, vars_by_groups
 
-def extract_vars(cond: str, variables: dict[str,str]): 
+def extract_vars(cond: str, variables: dict[str,str]):
     used_variables = {}
-    for var, vartype in variables.items():
-        if var + " " in cond or var + ")" in cond or var.split('[')[0] in cond:
-            used_variables[var] = vartype
+    for variable, vartype in variables.items():
+        if variable + " " in cond or variable + ")" in cond or variable.split('[')[0] in cond:
+            used_variables[variable] = vartype
     return used_variables
 
-def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: int) -> tuple[list[str],dict[str,str]]:
+def is_array_constraint_of(cond: str,other: str, array_size: int):
+    if '[' not in other:
+        return False
+    if f'  <  ({array_size}U))  &&  ((0U)  <=  ' in cond:
+        index = cond.split(f'  <  ({array_size}U))  &&  ((0U)  <=  ')[1].strip('')
+    elif f'  <  ({array_size}ULL))  &&  ((0U)  <=  ' in cond:
+        index = cond.split(f'  <  ({array_size}ULL))  &&  ((0U)  <=  ')[1].strip('')
+    else:
+        return False
+    for cast in [f'({sign} {ctype})' for sign in ('signed', 'unsigned') for ctype in ('char','short','int','long')]:
+        index = index.removeprefix(cast)
+    index = index.strip().removesuffix('))')
+    return f'{index}]' in other # Only check for ] as there might be casts in front
+
+def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: int) -> tuple[list[str],dict[str,str]]: 
     negated_groups = []
     new_vars = {}
     n = 0
@@ -301,8 +324,6 @@ def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: i
         for i in range(numb):
             cond_neg = f"(c {'>=' if i == numb-1 else '=='} {i})"
             negated_groups.append([cond_neg])
-        return negated_groups, new_vars
-
     else:
         for i in range(numb):
             new_group = set()
