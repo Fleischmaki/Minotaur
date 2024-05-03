@@ -27,9 +27,7 @@ def get_constants_for_type(node_type: types.PySMTType,parent_is_array: bool=Fals
     if node_type == types.BOOL:
         return frozenset([sc.FALSE(), sc.TRUE()])
     if node_type == types.INT:
-        if parent_is_array:
-            return frozenset([sc.Int(0), sc.Int(1)])
-        return frozenset([sc.Int(0), sc.Int(1), sc.Int(2**63 - 1), sc.Int(2**63 + 1)])
+        return frozenset([sc.Int(0), sc.Int(1)])
     if node_type.is_bv_type():
         width = node_type.width # type: ignore
         if parent_is_array:
