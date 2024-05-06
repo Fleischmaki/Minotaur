@@ -224,7 +224,7 @@ class TargetGenerator(Iterable):
             params = self.mazes[maze]
             res = None
             try:
-                res = self.get_expected_result(params,maze_gen.get_params_from_maze(maze)['m']-1)
+                res = self.get_expected_result(params,maze_gen.get_params_from_maze(maze)['m'])
                 LOGGER.info("Expected result: %s", res)
             except FileNotFoundError:
                 pass
@@ -248,7 +248,7 @@ class TargetGenerator(Iterable):
         smt_dir = os.path.join(get_temp_dir(), 'smt', str(params['r']))
         for file in os.listdir(smt_dir):
             file = str(file)
-            if f'_{maze_id}_' in file:
+            if file == f'mutant_{maze_id - 1}_sat' or file == f'mutant_{maze_id - 1}_unsat':
                 res = 'error' if file.removesuffix('.smt2').rsplit('_',1)[1] == 'sat' else 'safe'
                 commands.run_cmd(f"rm {os.path.join(smt_dir, file)}")
                 return res
@@ -382,12 +382,13 @@ def check_error(conf: dict, w: Target, tag: str, out_dir: str):
     check_tag = 'tp' if tag == 'fn' else 'tn'
     out_dir = os.path.join(out_dir, 'check')
     w.params['m'] = maze_gen.get_params_from_maze(w.maze)['m']
-    docker.run_pa(conf['check_error'][w.tool], w.variant, w.flags, 'check', w.params, out_dir, memory=conf['memory'], timeout=300, gen=conf['maze_gen'])
     maze = w.maze
+    docker.run_pa(conf['check_error'][w.tool], w.variant, w.flags, 'check', w.params, out_dir, memory=conf['memory'], timeout=conf['duration']*5, maze=get_maze_dir(maze), expected_result=conf['expected_result'])
     resdir = os.path.join(out_dir,maze, maze)
     for file in os.listdir(resdir):
         if len(file.split('_')) == 2:
             LOGGER.info(file)
+            commands.run_cmd('mkdir -p %s' % os.path.join(out_dir,'runs'))
             commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(out_dir,'runs')))
             commands.run_cmd('rm -r %s' % os.path.join(out_dir,maze))
             if check_tag in file:
@@ -431,6 +432,9 @@ def cleanup(completed: 'list[Target]') -> None:
         target = completed.pop()
         procs.append(commands.spawn_cmd(REMOVE_CMD % get_maze_dir(target.maze)))
         procs.append(commands.spawn_cmd(REMOVE_CMD % get_batch_file(target.index)))
+        procs.append(commands.spawn_cmd(REMOVE_CMD % get_result_file(target.index)))
+        if 'storm' in target.params['t'] or 'fuzz' in target.params['t'] or 'yinyang' in target.params['t']:
+            procs.append(commands.spawn_cmd(REMOVE_CMD % os.path.join(get_temp_dir(), 'smt', str(target.params['r']))))
     commands.wait_for_procs(procs)
 
 def store_coverage(conf,works: list[Target], out_dir: str) -> None:

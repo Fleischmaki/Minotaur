@@ -13,7 +13,7 @@
 	"abort_on_error": ["fn"],
 	"tool" : {
 		"ultimate-bug1": {
-			"variant" : ["ut", "ua", "ugc", "uk"]
+			"variant" : ["ut", "ua", "ugc"]
 		}
 	},
 	"check_error": {
