@@ -19,8 +19,8 @@ In particular config files accept the following values
     -  `"choose"`: An object containing flags of the form `'prefix': [0,'opt1','opt2',...]`. This chooses one of the option and writes it + the prefix. If the option is 0, nothing will be written. E.g. `'--paths ': [0,'fifo','lifo']` will write one of `['','--paths fifo', '--paths lifo']`.
  -  `cov=[0,1]`: Collect coverage data. Currently only supported by ESBMC, CBMC, SeaHorn dockers
  -  `gen_time`: Timeout maze generation after this many seconds
- -  `abort_on_error=[0,1]`: Stop the test if a bug is found. Mainly useful when attemting to recreate a specific bug
-
+ -  `abort_on_error=[flag]`: Stop the test if one of the flags is triggered. Mainly useful when attemting to recreate a specific bug
+ -  `check-error`: For recreating bugs, specify a fixed version for each buggy tool version container to check if the bug found is solved in the new version.
 ### Configuring experiments
 Experiments essentially consists of multiple test configuratinos run in sequence. How many tests can be specified via the following parameter: 
 - `repeats`: This specifies the number of tests to run.
