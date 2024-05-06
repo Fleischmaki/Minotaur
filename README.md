@@ -102,6 +102,7 @@ Nr.  | Tool | Status | Type
 13 |CPA -InvariantsCPA | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1208) | Division
 14 |ESBMC --mathsat| [confirmed](https://github.com/esbmc/esbmc/issues/1771) | 
 15 | MOPSA congr | [fixed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/179) | 
+16 | Ultimate | [open](https://github.com/ultimate-pa/ultimate/issues/664)
 ### Precision Issues
 Nr. |Tool | Status | Type
 | -- | -- | -- | -- |
