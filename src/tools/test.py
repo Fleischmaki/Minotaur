@@ -382,12 +382,13 @@ def check_error(conf: dict, w: Target, tag: str, out_dir: str):
     check_tag = 'tp' if tag == 'fn' else 'tn'
     out_dir = os.path.join(out_dir, 'check')
     w.params['m'] = maze_gen.get_params_from_maze(w.maze)['m']
-    docker.run_pa(conf['check_error'][w.tool], w.variant, w.flags, 'check', w.params, out_dir, memory=conf['memory'], timeout=300, gen=conf['maze_gen'])
+    docker.run_pa(conf['check_error'][w.tool], w.variant, w.flags, 'check', w.params, out_dir, memory=conf['memory'], timeout=conf['duration']*5, gen=conf['maze_gen'])
     maze = w.maze
     resdir = os.path.join(out_dir,maze, maze)
     for file in os.listdir(resdir):
         if len(file.split('_')) == 2:
             LOGGER.info(file)
+            commands.run_cmd('mkdir -p %s' % os.path.join(out_dir,'runs'))
             commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(out_dir,'runs')))
             commands.run_cmd('rm -r %s' % os.path.join(out_dir,maze))
             if check_tag in file:
@@ -431,6 +432,8 @@ def cleanup(completed: 'list[Target]') -> None:
         target = completed.pop()
         procs.append(commands.spawn_cmd(REMOVE_CMD % get_maze_dir(target.maze)))
         procs.append(commands.spawn_cmd(REMOVE_CMD % get_batch_file(target.index)))
+        procs.append(commands.spawn_cmd(REMOVE_CMD % get_result_file(target.index)))
+        procs.append(commands.spawn_cmd(REMOVE_CMD % os.path.join(get_temp_dir(), 'smt', str(target.params['r']))))
     commands.wait_for_procs(procs)
 
 def store_coverage(conf,works: list[Target], out_dir: str) -> None:
