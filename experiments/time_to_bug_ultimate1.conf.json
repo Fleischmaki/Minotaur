@@ -14,7 +14,7 @@
 	"gen_time" : 1000,
 	"tool" : {
 		"ultimate-bug1": {
-			"variant" : ["ut", "ua", "ugc", "uk"]
+			"variant" : ["ut", "ua", "ugc"]
 		}
 	},
 	"check_error": {
@@ -47,7 +47,7 @@
 			"max" : 7
 		},
 		"t" : {
-			"storm": [0],
+			"neg": [1],
 			"wd": [0,1],
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
