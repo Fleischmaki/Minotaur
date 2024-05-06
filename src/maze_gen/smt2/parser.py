@@ -50,6 +50,9 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     if all_arrays_constant and transformations['ca']:
         converter.set_array_indices(ff.get_indices_for_each_array(ff.get_array_index_calls(formula)[1]))
         array_size = -1
+    else:
+        converter.set_array_indices({})
+
     try:
         core = set() if generate_sat else get_unsat_core(clauses, logic)
     except pysmt.exceptions.SolverStatusError as e:
