@@ -14,6 +14,9 @@ RUN ninja install
 RUN pip3 install gcovr
 
 WORKDIR /home/maze/tools
-
+ADD run_esbmc.sh /home/maze/tools/run_esbmc.sh
+USER root
+RUN chmod +x run_esbmc.sh
+USER maze
 ### Cleanup
 WORKDIR /home/maze/workspace

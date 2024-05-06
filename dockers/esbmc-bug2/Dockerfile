@@ -27,7 +27,7 @@ COPY --from=build /home/maze/tools/get_tcs.py /home/maze/tools/
 
 
 WORKDIR /home/maze/tools
-ADD run_esbmc.sh /home/maze/tools/run_esbmc-bug2.sh
+RUN mv /home/maze/tools/run_esbmc.sh /home/maze/tools/run_esbmc-bug2.sh
 RUN sudo chmod +x /home/maze/tools/run_esbmc-bug2.sh
 
 ### Cleanup
