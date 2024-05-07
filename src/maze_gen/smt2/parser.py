@@ -65,7 +65,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     for c, clause in enumerate(clauses,start=1):
         ldecl_arr = decl_arr
 
-        if logic.split('_')[-1].startswith('A'):
+        if logic.split('_')[-1].startswith('A') and transformations['ca'] and all_arrays_constant:
             LOGGER.debug("Renaming array stores")
             clause, constraints = ff.rename_arrays(clause)
             if len(constraints) > 0:
@@ -165,7 +165,6 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode], well_d
         LOGGER.info("Generating divsion constraints")
         div_constraints = ff.get_division_constraints(formula)
         constraints.update(div_constraints)
-        clauses = div_constraints + clauses
 
     LOGGER.info("Generating shift constraints")
     shift_constraints = ff.get_shift_constraints(formula)
