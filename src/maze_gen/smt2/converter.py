@@ -40,9 +40,6 @@ def error(flag: int, *info):
     if flag == 1:
         raise ValueError("ERROR: nodes not supported", info)
     raise ValueError("ERROR: an unknown error occurred")
-
-
-
     
 def binary_to_decimal(binary: str, unsigned : bool = True) -> str:
     """Takes BV in binary and translated into decimal number
@@ -79,7 +76,7 @@ def bits_to_utype(num_bits: int) -> str:
 def has_matching_type(numb_bits: int) -> bool:
     """ Check if a C-Type exists that matches width exactly
     """
-    return numb_bits in (1,8,16,32,64)
+    return numb_bits in (8,16,32,64)
 
 def needs_signed_children(node: FNode) -> bool:
     """ Check if a function needs signed arguments
@@ -87,6 +84,8 @@ def needs_signed_children(node: FNode) -> bool:
     return node.is_bv_sle() or node.is_bv_slt() or node.is_bv_ashr() or node.is_bv_srem() or node.is_bv_sdiv()
 
 def needs_downcasting(node: FNode) -> bool:
+    """ CHeck if we need to cast down after converting a node
+    """
     return node.is_bv_sdiv() or node.is_bv_udiv() or node.is_bv_srem() or node.is_bv_urem() \
         or node.is_bv_ror() or node.is_bv_rol() \
         or node.is_select()
