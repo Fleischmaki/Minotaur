@@ -182,12 +182,19 @@ def get_indices_for_each_array(array_operations: list[FNode]) -> dict[str,set[in
     return res
 
 def label_formula_depth(formula: FNode) -> dict[FNode, int]:
-    if formula.is_constant() or formula.is_symbol():
-        return {formula: 0}
+    node_queue = [formula]
+    compute_queue = [formula]
     depths = {}
-    for sub_formula in formula.args():
-        depths.update(label_formula_depth(sub_formula))
-    depths[formula] = max(map(lambda s: depths[s], formula.args()))
+    while len(node_queue) > 0:
+        node = node_queue.pop(0) # BFS so we do bottom up afterwards
+        for sub_formula in node.args():
+            if sub_formula.is_constant() or sub_formula.is_symbol():
+                depths[sub_formula] = 0
+            else:
+                node_queue.append(sub_formula)
+                compute_queue.append(sub_formula)
+    for node in reversed(compute_queue):
+        depths[node] = max(map(lambda s: depths[s], node.args())) + 1
     return depths
 
 def constrain_array_size(formula: FNode):
