@@ -209,7 +209,7 @@ class Converter():
         if always or needs_signed_cast(parent):
             if self.well_defined or not has_matching_type(width):
                 if width != 64:
-                    cons.write(f'({scast})')
+                    cons.wite(f'({scast})')
                 cons.write('scast_helper(')
             else:
                 cons.write(f'({scast})')
@@ -222,7 +222,7 @@ class Converter():
     def write_cast(self, parent: FNode, cons, node: FNode, always=False):
         """ Writes a node as the type needed by the parent
         """
-        if parent.get_type().is_bv_type() or (parent.get_type().is_array_type() and parent.get_type().elem.type().is_bv_type()) or parent.is_theory_relation() and parent.arg(0).get_type().is_bv_type():
+        if parent.get_type().is_bv_type() or (parent.get_type().is_array_type() and parent.get_type().elem_type().is_bv_type()) or parent.is_theory_relation() and parent.arg(0).get_type().is_bv_type():
             if needs_signed_children(parent):
                 self.write_signed(parent, cons,node, always)
             else:
