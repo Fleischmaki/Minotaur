@@ -215,11 +215,14 @@ def get_logic_from_script(script):
 def conjunction_to_clauses(formula: FNode) -> set[FNode]:
     """Transform top-level conjuncts of a formula into a set of clauses"""
     clauses = set()
-    if formula.is_and():
+    node_queue = [formula]
+    while len(node_queue) > 0:
+        formula = node_queue.pop()
         for node in formula.args():
-            clauses = clauses.union(conjunction_to_clauses(node))
-    else:
-        clauses.add(formula)
+            if node.is_and():
+                node_queue.append(formula)
+            else:
+                clauses.add(formula)
     return clauses
 
 def write_to_file(formula : FNode | t.Iterable[FNode], logic: str, file: str):
