@@ -616,6 +616,6 @@ def get_array_helpers(size):
     res += ("""void init(long* array, int width,int size){
     for(int i = 0; i < size; i++){
     \tarray[i] = __VERIFIER_nondet_long();
-    \tarray[i] &= (((1LL << (width-1)) - 1) << 1) + 1;
+    \tarray[i] &= (((1ULL << (width-1)) - 1) << 1) + 1;
     }\n}""")
     return res
