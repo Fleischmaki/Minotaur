@@ -1,12 +1,13 @@
 """ Build self.random smt formulas from scratch or using given subexpressions
 """
 from typing import FrozenSet
+from logging import getLogger
+
 from pysmt.fnode import FNode
 import pysmt.operators as ops
 import pysmt.typing as types
 import pysmt.shortcuts as sc
 from pysmt.shortcuts import get_env
-
 from storm.utils.randomness import Randomness # pylint: disable=import-error
 
 from  . import formula_operations
@@ -20,7 +21,7 @@ MY_IRA_OPS = frozenset(filter(lambda t: t not in (ops.BV_TONATURAL, ops.TOREAL, 
 
 
 assert BV_UNARY_OPS | BV_BINARY_OPS | OTHER_BV_OPS == ops.BV_OPERATORS
-
+LOGGER = getLogger(__name__)
 
 def get_constants_for_type(node_type: types.PySMTType,parent_is_array: bool=False) -> set[FNode] | FrozenSet[FNode]:
     """Returns interesting constants of type node_type"""
@@ -49,7 +50,9 @@ class FormulaBuilder():
                 self.variables_by_type[node_type] = set()
             self.variables_by_type[node_type].add(variable)
         self.logic = logic
-        self.bv_types = set(filter(lambda t: t.is_bv_type(), self.variables_by_type.keys()))
+        self.bv_types = set(filter(lambda t: t.is_bv_type() and t.width <= 64, self.variables_by_type.keys()))
+        if 'BV' in logic and len(self.bv_types) == 0:
+            LOGGER.warn()
         self.variables_depths = formula_operations.label_formula_depth(formula)
         self.random = rand
         self.arrays = set(filter(lambda t: t.is_array_type(), self.variables_by_type.keys()))
