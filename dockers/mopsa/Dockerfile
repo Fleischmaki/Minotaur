@@ -19,16 +19,26 @@ RUN apt-get update && apt-get install -y \
 
 USER maze
 WORKDIR /home/maze/tools/
-RUN git clone https://gitlab.com/mopsa/mopsa-analyzer.git
-WORKDIR /home/maze/tools/mopsa-analyzer
-
+RUN git clone https://github.com/antoinemine/apron.git apron
+WORKDIR /home/maze/tools/apron
 RUN \
     opam init --disable-sandboxing -y && \
     eval $(opam env) && \
     opam switch create 4.14.0 && \
     eval $(opam env) && \
     opam update -y && \
-    opam install -y dune apron zarith menhir yojson
+    opam install -y ocamlfind camlidl mlgmpidl 
+RUN opam config exec ./configure
+RUN make
+RUN sudo make install
+
+WORKDIR /home/maze/tools
+RUN git clone https://gitlab.com/mopsa/mopsa-analyzer.git
+WORKDIR /home/maze/tools/mopsa-analyzer
+RUN \
+    eval $(opam env) && \
+    opam update -y && \
+    opam install -y dune zarith menhir yojson
 RUN opam config exec ./configure
 RUN make
 RUN make install
