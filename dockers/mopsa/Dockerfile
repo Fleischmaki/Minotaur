@@ -28,7 +28,7 @@ RUN \
     opam switch create 4.14.0 && \
     eval $(opam env) && \
     opam update -y && \
-    opam install -y -j 8 $OPAM_DEPS
+    opam install -y dune apron zarith menhir yojson
 RUN opam config exec ./configure
 RUN make
 RUN make install
