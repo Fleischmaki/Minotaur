@@ -85,6 +85,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
                 if clause not in core:
                     continue
                 parsed_cons['(1==0)'] = True if check_neg else "" # Make sure condition remains unsat
+                continue
             else:
                 raise e
         LOGGER.debug("Done.")
