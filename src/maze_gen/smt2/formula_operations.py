@@ -208,7 +208,7 @@ def constrain_array_size(formula: FNode):
     all_constant = all(map(lambda node: node.args()[1].is_constant(), array_ops))
     if len(array_ops) == 0:
         LOGGER.info("No arrays found")
-        return -1, set(), -1, True
+        return -1, [], -1, True
     if not is_sat(formula, solver_name = "z3"):
         formula = Not(formula)
     max_dim = max(map(lambda op : get_array_dim(op.args()[0]),array_ops))
