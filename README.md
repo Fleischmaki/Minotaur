@@ -104,7 +104,7 @@ Nr.  | Tool | Status | Type
 15 | MOPSA congr | [fixed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/179) | 
 16 | Ultimate | [closed](https://github.com/ultimate-pa/ultimate/issues/664) |
 17 | MOPSA excluded-powerset | [open](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/182) |
-18 | MOPSA cell-rel-itv | [open](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/183) |
+18 | MOPSA cell-rel-itv | [closed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/183) | Outdated dependency | 
 
 ### Precision Issues
 Nr. |Tool | Status | Type
