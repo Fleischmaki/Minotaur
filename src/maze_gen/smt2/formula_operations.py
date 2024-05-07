@@ -246,9 +246,10 @@ def get_array_dim(node: FNode):
         dim += 1
     return dim
 
-def get_array_constraints(array_ops, array_size) -> set[FNode]:
+def get_array_constraints(array_ops, array_size) -> list[FNode]:
     """Helper"""
-    return {And(i < array_size, i >= 0) for i in filter(lambda index: not index.is_constant(), map(lambda x: x.arg(1), array_ops))}
+    return sorted({And(i < array_size, i >= 0) for i in filter(lambda index: not index.is_constant(), map(lambda x: x.arg(1), array_ops))},
+                  key = lambda op: len(get_array_index_calls(op)[1]))
 
 def get_integer_constraints(formula: FNode):
     """ Collect constraints that no integer expression in the formula overflows

@@ -34,7 +34,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     limit=transformations['dag']
     negate_formula=transformations['neg']
     LOGGER.info("Converting %s: ", file_path)
-    decl_arr, formula, logic, formula_clauses = read_file(file_path, limit, negate_formula)
+    declarations, formula, logic, formula_clauses = read_file(file_path, limit, negate_formula)
     all_arrays_constant = False
     if generate_sat:
         clauses, array_size, all_arrays_constant = run_checks(formula, logic, formula_clauses, generate_well_defined)
@@ -46,7 +46,6 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
         clauses = list(ff.get_array_constraints(array_calls, array_size)) \
         + list(ff.get_shift_constraints(formula)) \
         + list(formula_clauses)
-
     converter = get_converter()
     converter.set_well_defined(generate_well_defined)
     if all_arrays_constant and transformations['ca']:
@@ -54,7 +53,6 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
         array_size = -1
     else:
         converter.set_array_indices({})
-
     try:
         core = set() if generate_sat else get_unsat_core(clauses, logic)
     except pysmt.exceptions.SolverStatusError as e:
@@ -64,7 +62,8 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     variables = {}
 
     for c, clause in enumerate(clauses,start=1):
-        ldecl_arr = decl_arr
+        print(clause)
+        local_declarations = declarations
 
         if logic.split('_')[-1].startswith('A') and transformations['ca'] and all_arrays_constant:
             LOGGER.debug("Renaming array stores")
@@ -72,7 +71,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
             if len(constraints) > 0:
                 LOGGER.info("Added %d new arrays", len(constraints)//2)
             clause = And(*constraints, clause) # Make sure to render constraints first
-            ldecl_arr.extend(map(lambda c: c.args()[1],constraints))
+            local_declarations.extend(map(lambda c: c.args()[1],constraints))
 
         symbs = set()
 
@@ -92,8 +91,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
         LOGGER.debug("Done.")
 
         add_parsed_cons(check_neg, clauses, parsed_cons, clause, clause_in_c)
-        add_used_variables(variables, ldecl_arr, symbs, all_arrays_constant and transformations['ca'])
-
+        add_used_variables(variables, local_declarations, symbs, all_arrays_constant and transformations['ca'])
     return parsed_cons, variables, array_size
 
 def get_forced_parameters(file_path, transformations):
@@ -151,7 +149,7 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode], well_d
     if logic.split('_')[-1].startswith('A'):
         array_size, array_constraints, _, all_constant = ff.constrain_array_size(formula)
         if well_defined:
-            clauses = sorted(array_constraints, key=lambda c: len(ff.get_array_index_calls(c)[1])) + clauses
+            clauses = array_constraints + clauses
         constraints.update(array_constraints)
     else:
         array_size = -1
