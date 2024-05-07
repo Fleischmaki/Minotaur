@@ -221,7 +221,7 @@ class Converter():
     def write_cast(self, parent: FNode, cons, node: FNode, always=False):
         """ Writes a node as the type needed by the parent
         """
-        if parent.get_type().is_bv_type() or (parent.get_type().is_array_type() and parent.get_type().elem_type().is_bv_type()) or parent.is_theory_relation() and parent.arg(0).get_type().is_bv_type():
+        if parent.get_type().is_bv_type() or (parent.get_type().is_array_type() and parent.get_type().elem_type.is_bv_type()) or parent.is_theory_relation() and parent.arg(0).get_type().is_bv_type():
             if needs_signed_children(parent):
                 self.write_signed(parent, cons,node, always)
             else:
@@ -459,15 +459,16 @@ class Converter():
             self.symbs.add(var)
         elif node.is_select():
             (a, p) = node.args()
-            if 'BV' in str(node.get_type()):
+            dim = ff.get_array_dim(a)
+            if node.get_type().is_bv_type(): #or node.get_type().elem_type.is_bv_type():
                 ucast = get_unsigned_cast(node)
                 cons.write(ucast)
-            dim = ff.get_array_dim(a)
             if len(self.array_indices) > 0:
                 array_name = f'{clean_string(ff.get_array_name(a))}_{p.constant_value()}'
                 cons.write(array_name)
                 self.symbs.add(array_name)
             else:
+                cons.write('(')
                 self.write_node(a,cons)
                 if dim == 1:
                     cons.write("[")
@@ -478,6 +479,7 @@ class Converter():
                     cons.write(f"+({size}*")
                     self.write_cast(node,cons,p)
                     cons.write(")")
+                cons.write(")")
             if 'BV' in str(node.get_type()) and not has_matching_type(ff.get_bv_width(node)) and needs_unsigned_cast(node):
                 cons.write(")")
         elif node.is_store():
@@ -498,7 +500,7 @@ class Converter():
             else:
                 self.write_node(a,cons)
                 cons.write(",")
-            self.write_unsigned(a,cons,p)
+            self.write_unsigned(p,cons,p)
             cons.write(",")
             self.write_unsigned(a,cons,v)
             if v_dim > 0:
