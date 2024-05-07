@@ -209,7 +209,7 @@ class Converter():
         if always or needs_signed_cast(parent):
             if self.well_defined or not has_matching_type(width):
                 if width != 64:
-                    cons.wite(f'({scast})')
+                    cons.write(f'({scast})')
                 cons.write('scast_helper(')
             else:
                 cons.write(f'({scast})')
