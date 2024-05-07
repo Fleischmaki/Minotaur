@@ -43,7 +43,9 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
         array_size += 1
         if array_size > ff.MAXIMUM_ARRAY_SIZE:
             raise ValueError("Minimum array size too large!")
-        clauses = list(ff.get_array_constraints(array_calls, array_size)) + list(formula_clauses)
+        clauses = list(ff.get_array_constraints(array_calls, array_size)) \
+        + list(ff.get_shift_constraints(formula)) \
+        + list(formula_clauses)
 
     converter = get_converter()
     converter.set_well_defined(generate_well_defined)
@@ -168,6 +170,7 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode], well_d
     LOGGER.info("Generating shift constraints")
     shift_constraints = ff.get_shift_constraints(formula)
     if well_defined:
+        print(shift_constraints)
         clauses = shift_constraints + clauses
     constraints.update(shift_constraints)
 
@@ -217,13 +220,11 @@ def conjunction_to_clauses(node: FNode) -> set[FNode]:
     node_queue = [node]
     while len(node_queue) > 0:
         node = node_queue.pop()
-        print(node)
         if node.is_and():
             for subnode in node.args():
                 node_queue.append(subnode)
         else:
             clauses.add(node)
-        print(clauses)
     return clauses
 
 def write_to_file(formula : FNode | t.Iterable[FNode], logic: str, file: str):
