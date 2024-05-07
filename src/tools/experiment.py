@@ -43,8 +43,6 @@ def load_config(path: str) -> dict:
     assert conf['memory'] > 0
     assert conf['maze_gen'] in ['local', 'container']
     assert conf['verbosity'] in ['all','summary','bug','bug_only']
-    assert conf['expected_result'] in ['error','safe']
-
     return conf
 
 

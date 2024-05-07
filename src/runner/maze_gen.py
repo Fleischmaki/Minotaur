@@ -33,7 +33,7 @@ def get_maze_names(p):
         If transformatinons are perforemd, returns one name per transformation.
         :param p: Maze parameters"""
     if p['g'] in ('CVE_gen', 'CVE-neg_gen'):
-        generator = f"{p['s'].split('/')[-1][0:-5]}_gen" 
+        generator = f"{p['s'].split('/')[-1][0:-5]}_gen"
     else:
         generator = p['g']
     min_transform = 0 if 'keepId' in p['t'] else 1
