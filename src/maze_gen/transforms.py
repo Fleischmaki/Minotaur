@@ -3,6 +3,7 @@ import logging
 import typing as t
 import math as m
 import os
+import sys
 import subprocess
 from pysmt.shortcuts import And, TRUE, Not, is_sat, FALSE
 
@@ -118,6 +119,7 @@ def run_formula_builder(smt_file: str, mutant_path: str, seed: int, n: int, tran
     if n <= 0:
         return []
     LOGGER.info("Building %s new assertions.", n)
+    sys.setrecursionlimit(10000)
     filedata = parser.read_file(smt_file)
     if not transformations['sat']:
         core = parser.get_unsat_core(filedata.clauses, filedata.logic)
