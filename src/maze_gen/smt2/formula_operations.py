@@ -117,20 +117,18 @@ def rename_arrays(formula: FNode):
 def get_nodes(formula: FNode, cond: t.Callable[[FNode], bool]):
     """ Get all nodes that satisfy a condition 
     """
-    return get_nodes_helper(formula,cond,set())
-
-def get_nodes_helper(node: FNode,cond: t.Callable[[FNode], bool],visited_nodes: set) -> t.Set[FNode]:
-    """ Helper function for get_nodes
-    """
-    visited_nodes.add(node.node_id())
+    node_queue = [formula]
+    visited_nodes = set()
     matching = set()
-    if cond(node):
-        matching.add(node)
-    for sub in node.args():
-        if sub.node_id() not in visited_nodes:
-            matching.update(get_nodes_helper(sub, cond, visited_nodes))
+    while len(node_queue) > 0:
+        node = node_queue.pop()
+        visited_nodes.add(node.node_id())
+        if cond(node):
+            matching.add(node)
+        for sub in node.args():
+            if sub.node_id() not in visited_nodes:
+                node_queue.append(sub)
     return matching
-
 
 def get_division_constraints(formula: FNode) -> list[FNode]:
     """ Returns constraints encoding that divisors should not be zero  
