@@ -221,9 +221,9 @@ def conjunction_to_clauses(formula: FNode) -> set[FNode]:
         formula = node_queue.pop()
         for node in formula.args():
             if node.is_and():
-                node_queue.append(formula)
+                node_queue.append(node)
             else:
-                clauses.add(formula)
+                clauses.add(node)
     return clauses
 
 def write_to_file(formula : FNode | t.Iterable[FNode], logic: str, file: str):
