@@ -4,10 +4,12 @@ import typing as t
 import logging
 
 from pysmt.shortcuts import And, Not, is_sat,\
-    get_env,FreshSymbol, Equals, Int, GT, LT, BV, EqualsOrIff
+    get_env,FreshSymbol, Equals, Int, GT, LT, BV, EqualsOrIff, BVULT
 from pysmt import typing as smt_types
 from pysmt.fnode import FNode
 from pysmt.solvers.z3 import Z3Solver
+
+from yinyang.tests.integration.misc.FileSizeLimit import FN
 
 
 LOGGER = logging.getLogger(__name__)
@@ -132,11 +134,21 @@ def get_nodes_helper(node: FNode,cond: t.Callable[[FNode], bool],visited_nodes: 
     return matching
 
 
-def get_division_constraints(formula: FNode):
+def get_division_constraints(formula: FNode) -> list[FNode]:
     """ Returns constraints encoding that divisors should not be zero  
     """
     divisions = get_nodes(formula, (lambda f : f.is_div() or f.is_bv_udiv() or f.is_bv_sdiv() or f.is_bv_urem() or f.is_bv_srem()))
     return [Not(Equals(BV(0,get_bv_width(div)),div)) for div in map(lambda division : division.args()[1], divisions)]
+
+def get_shift_constraint(formula: FNode) -> list[FNode]:
+    """ Returns constraints encoding that shifts cannot be larger than the width of the index  
+    """
+    shifts = get_nodes(formula, lambda f: f.is_bv_ashr() or f.is_bv_lshr() or f.is_bv_lshl())
+    rotates = get_nodes(formula, lambda f: f.is_bv_rol() or f.is_bv_ror())
+
+    return  [BVULT(shift.arg(1), BV(get_bv_width(shift), get_bv_width(shift))) for shift in shifts] \
+        +   [BVULT(rotate.bv_rotation_step(),BV(get_bv_width(rotate),get_bv_width(rotate))) for rotate in rotates]
+
 
 def get_array_index_calls(formula: FNode):
     """ Collect all array calls and maximum index for formula

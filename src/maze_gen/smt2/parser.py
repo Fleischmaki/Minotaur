@@ -61,8 +61,6 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     parsed_cons = OrderedDict()
     variables = {}
 
-    if generate_well_defined:
-        clauses.sort(key=lambda c: len(ff.get_array_index_calls(c)[1]))
 
     for c, clause in enumerate(clauses,start=1):
         ldecl_arr = decl_arr
@@ -151,7 +149,7 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode], well_d
     if logic.split('_')[-1].startswith('A'):
         array_size, array_constraints, _, all_constant = ff.constrain_array_size(formula)
         if well_defined:
-            clauses.extend(array_constraints)
+            clauses = sorted(array_constraints, key=lambda c: len(ff.get_array_index_calls(c)[1])) + clauses
         constraints.update(array_constraints)
     else:
         array_size = -1
@@ -164,7 +162,15 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode], well_d
 
     if not well_defined:
         LOGGER.info("Generating divsion constraints")
-        constraints.update(ff.get_division_constraints(formula))
+        div_constraints = ff.get_division_constraints(formula)
+        constraints.update(div_constraints)
+        clauses = div_constraints + clauses
+
+    LOGGER.info("Generating shift constraints")
+    shift_constraints = ff.get_shift_constraint(formula)
+    if well_defined:
+        clauses = shift_constraints + clauses
+    constraints.update(shift_constraints)
 
     if len(constraints) > len(array_constraints):
         LOGGER.info("Checking satisfiability with global constraints")

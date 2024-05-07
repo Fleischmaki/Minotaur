@@ -79,7 +79,7 @@ def bits_to_utype(num_bits: int) -> str:
 def has_matching_type(numb_bits: int) -> bool:
     """ Check if a C-Type exists that matches width exactly
     """
-    return numb_bits in (8,16,32,64)
+    return numb_bits in (1,8,16,32,64)
 
 def needs_signed_children(node: FNode) -> bool:
     """ Check if a function needs signed arguments
@@ -159,6 +159,9 @@ def type_to_c(ntype: node_type, constant_arrays: bool = False) -> str: # type: i
     error(0, ntype)
 
 class Converter():
+    """ Handles conversion of formulas
+    Caches C-strings for FNodes so don't reset pySMT enviroment and use the same converter.
+    """
     def __init__(self):
         self.well_defined = False
         self.array_indices = {}
@@ -166,16 +169,22 @@ class Converter():
         self.symbs = set()
 
     def set_well_defined(self, well_defined: bool):
+        """ Sets the converters well-definedness.
+        If it is different from before, we have to clear the cache to ensure translations remain valid.
+        """
         if well_defined != self.well_defined:
             self.well_defined = well_defined
             self.node_cache = {}
             LOGGER.debug("Well definedness changed, have to clear node cache")
 
     def set_array_indices(self, array_indices: dict[str,set[int]]):
+        """ Sets the converters array-indices if all arrays are constant.
+        If it is different from before, we have to clear the cache to ensure translations remain valid.
+        """
+        LOGGER.debug("Using the following indices for arrays: %s", array_indices)
         if array_indices != self.array_indices:
             self.array_indices = array_indices
             self.node_cache = {}
-            LOGGER.debug("Using the following indices for arrays: %s")
             LOGGER.debug("Array indices changed, have to clear node cache")
 
     def write_unsigned(self, parent: FNode, cons, node: FNode, always=True):
@@ -229,20 +238,6 @@ class Converter():
         self.write_cast(node,cons,l, always=always_cast_args)
         cons.write(f" {op} ")
         self.write_cast(node,cons,r, always=always_cast_args)
-
-    def check_shift_size(self,node: FNode) -> None:
-        """ Check if shift is valid
-        :param node: Some bv-shift FNode
-        Shift is valid if it is contant and that ammount <= size of the bv 
-        """
-        if self.well_defined:
-            if node.is_bv_rol() or node.is_bv_ror():
-                if node.bv_rotation_step() > ff.get_bv_width(node):
-                    error(1, "Invalid rotate: ", node)
-                return
-            (_,r)= node.args()
-            if not r.is_bv_constant() or r.constant_value() > ff.get_bv_width(node):
-                error(1, "Invalid shift: ", node)
 
     def div_helper(self,node: FNode, cons: io.TextIOBase):
         """ Converts divisons and remainders
@@ -341,10 +336,8 @@ class Converter():
         elif node.is_bv_slt() or node.is_bv_ult():
             self.convert_helper(node, cons, " < ")
         elif node.is_bv_lshr():
-            self.check_shift_size(node)
             self.convert_helper(node, cons, " >> ", True) # C >> is logical for unsigned, arithmetic for signed
         elif node.is_bv_ashr():
-            self.check_shift_size(node)
             self.convert_helper(node, cons, " >> ", True) # Always need to cast for shifts, as we dont only look at left operand
         elif node.is_bv_add():
             self.convert_helper(node, cons, " + ") # Recast result on all operations that can exceed value ranges
@@ -361,7 +354,6 @@ class Converter():
         elif node.is_bv_and():
             self.convert_helper(node, cons, " & ")
         elif node.is_bv_lshl():
-            self.check_shift_size(node)
             self.convert_helper(node, cons, " << ", True)
         elif node.is_bv_not():
             (b,) = node.args()
@@ -443,7 +435,6 @@ class Converter():
         elif node.is_bv_rol() or node.is_bv_ror():
             (l,) = node.args()
             width = ff.get_bv_width(node)
-            self.check_shift_size(node)
             cons.write("rotate_helper(")
             self.write_unsigned(node,cons,l)
             cons.write(f",{node.bv_rotation_step()},{'1' if node.is_bv_rol() else '0'},{width})")
