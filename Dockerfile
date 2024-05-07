@@ -31,11 +31,6 @@ RUN git apply /home/maze/tools/yinyang.patch
 ENV PATH=/home/maze/tools/yinyang/bin:$PATH
 
 WORKDIR /home/maze/workspace
-# ADD token.txt /home/maze/workspace/token.txt
-# RUN sudo chmod +r token.txt
-# RUN git clone https://$(cat /home/maze/workspace/token.txt)@github.com/Fleischmaki/Minotaur.git -c core.sshCommand 
-# WORKDIR /home/maze/workspace/Minotaur
-# RUN git checkout working
-ADD . /home/maze/workspace//Minotaur
+ADD . /home/maze/workspace/Minotaur
 
 WORKDIR /home/maze/workspace
