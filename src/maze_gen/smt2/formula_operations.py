@@ -4,7 +4,7 @@ import typing as t
 import logging
 
 from pysmt.shortcuts import And, Not, is_sat,\
-    get_env,FreshSymbol, Equals, Int, GT, LT, BV, EqualsOrIff, BVULT
+    get_env,FreshSymbol, Equals, BV, EqualsOrIff
 from pysmt import typing as smt_types
 from pysmt.fnode import FNode
 from pysmt.solvers.z3 import Z3Solver
@@ -140,7 +140,7 @@ def get_shift_constraints(formula: FNode) -> list[FNode]:
     """ Returns constraints encoding that shifts cannot be larger than the width of the index  
     """
     shifts = get_nodes(formula, lambda f: f.is_bv_ashr() or f.is_bv_lshr() or f.is_bv_lshl())
-    return  [BVULT(shift.arg(1), BV(get_bv_width(shift), get_bv_width(shift))) for shift in shifts]
+    return  [(shift.arg(1) < get_bv_width(shift)) for shift in shifts]
 
 def get_array_index_calls(formula: FNode):
     """ Collect all array calls and maximum index for formula
@@ -252,7 +252,7 @@ def get_integer_constraints(formula: FNode):
     """ Collect constraints that no integer expression in the formula overflows
     """
     integer_operations = get_nodes(formula, lambda f: f.get_type().is_int_type())
-    return {(GT(i, Int(-(2**63)))) for i in integer_operations}.union((LT(i, Int(2**63 - 1))) for i in integer_operations)
+    return {(i > -(2**63)) for i in integer_operations}.union((i < (2**63 - 1)) for i in integer_operations)
 
 def extract_vars(cond: t.List[str], variables: t.Dict[str,str]):
     """ Find all variables appearing in a condition
