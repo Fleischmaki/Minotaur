@@ -61,7 +61,6 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     parsed_cons = OrderedDict()
     variables = {}
 
-
     for c, clause in enumerate(clauses,start=1):
         ldecl_arr = decl_arr
 
@@ -212,17 +211,19 @@ def get_logic_from_script(script):
         LOGGER.info('Logic not found in script. Using logic from formula: %s', logic)
     return logic
 
-def conjunction_to_clauses(formula: FNode) -> set[FNode]:
+def conjunction_to_clauses(node: FNode) -> set[FNode]:
     """Transform top-level conjuncts of a formula into a set of clauses"""
     clauses = set()
-    node_queue = [formula]
+    node_queue = [node]
     while len(node_queue) > 0:
-        formula = node_queue.pop()
-        for node in formula.args():
-            if node.is_and():
-                node_queue.append(node)
-            else:
-                clauses.add(node)
+        node = node_queue.pop()
+        print(node)
+        if node.is_and():
+            for subnode in node.args():
+                node_queue.append(subnode)
+        else:
+            clauses.add(node)
+        print(clauses)
     return clauses
 
 def write_to_file(formula : FNode | t.Iterable[FNode], logic: str, file: str):
