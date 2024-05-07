@@ -9,8 +9,6 @@ from pysmt import typing as smt_types
 from pysmt.fnode import FNode
 from pysmt.solvers.z3 import Z3Solver
 
-from yinyang.tests.integration.misc.FileSizeLimit import FN
-
 
 LOGGER = logging.getLogger(__name__)
 MAXIMUM_ARRAY_SIZE = 2**8
