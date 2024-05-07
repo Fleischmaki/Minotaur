@@ -196,7 +196,6 @@ class TargetGenerator(Iterable):
                 for i in range(maze_count):
                     res_file.write(f"{maze_keys[i]} {expected_results[i]}\n")
 
-
         with open(get_batch_file(batch_id), 'w') as batch_file:
             for i in range(maze_count):
                 batch_file.write(f"{docker.HOST_NAME}/{maze_keys[i]}\n")
@@ -248,10 +247,11 @@ class TargetGenerator(Iterable):
         smt_dir = os.path.join(get_temp_dir(), 'smt', str(params['r']))
         for file in os.listdir(smt_dir):
             file = str(file)
-            if file == f'mutant_{maze_id - 1}_sat' or file == f'mutant_{maze_id - 1}_unsat':
+            if file == f'mutant_{maze_id - 1}_sat.smt2' or file == f'mutant_{maze_id - 1}_unsat.smt2':
                 res = 'error' if file.removesuffix('.smt2').rsplit('_',1)[1] == 'sat' else 'safe'
                 commands.run_cmd(f"rm {os.path.join(smt_dir, file)}")
                 return res
+        return None
 
     def generate_mazes(self):
         """ Generate more mazes
@@ -352,7 +352,7 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
         out_path = os.path.join(out_dir, w.tool, str(w.index))
         os.system(f'mkdir -p {out_path}')
         docker.copy_docker_results(w.tool, w.index, out_path)
-        if not conf['coverage']: 
+        if not conf['coverage']:
             docker.kill_docker(w.tool, w.index)
     time.sleep(5)
 
