@@ -18,7 +18,7 @@ class Generator:
         try:
             self.constraints, self.vars_all, self.array_size = parser.parse(smt_file, transformations, check_neg = False)
         except Exception as e:
-            LOGGER.warning('Error while parsing smt file')
+            LOGGER.warning('Error while parsing smt file %s', smt_file)
             LOGGER.exception(e)
             self.constraints = {} if self.is_sat else {'(1==0)': False}
             self.vars_all = {}
