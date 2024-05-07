@@ -138,15 +138,11 @@ def get_division_constraints(formula: FNode) -> list[FNode]:
     divisions = get_nodes(formula, (lambda f : f.is_div() or f.is_bv_udiv() or f.is_bv_sdiv() or f.is_bv_urem() or f.is_bv_srem()))
     return [Not(Equals(BV(0,get_bv_width(div)),div)) for div in map(lambda division : division.args()[1], divisions)]
 
-def get_shift_constraint(formula: FNode) -> list[FNode]:
+def get_shift_constraints(formula: FNode) -> list[FNode]:
     """ Returns constraints encoding that shifts cannot be larger than the width of the index  
     """
     shifts = get_nodes(formula, lambda f: f.is_bv_ashr() or f.is_bv_lshr() or f.is_bv_lshl())
-    rotates = get_nodes(formula, lambda f: f.is_bv_rol() or f.is_bv_ror())
-
-    return  [BVULT(shift.arg(1), BV(get_bv_width(shift), get_bv_width(shift))) for shift in shifts] \
-        +   [BVULT(rotate.bv_rotation_step(),BV(get_bv_width(rotate),get_bv_width(rotate))) for rotate in rotates]
-
+    return  [BVULT(shift.arg(1), BV(get_bv_width(shift), get_bv_width(shift))) for shift in shifts]
 
 def get_array_index_calls(formula: FNode):
     """ Collect all array calls and maximum index for formula

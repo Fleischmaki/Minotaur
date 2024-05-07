@@ -167,7 +167,7 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode], well_d
         clauses = div_constraints + clauses
 
     LOGGER.info("Generating shift constraints")
-    shift_constraints = ff.get_shift_constraint(formula)
+    shift_constraints = ff.get_shift_constraints(formula)
     if well_defined:
         clauses = shift_constraints + clauses
     constraints.update(shift_constraints)
