@@ -62,7 +62,6 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     variables = {}
 
     for c, clause in enumerate(clauses,start=1):
-        print(clause)
         local_declarations = declarations
 
         if logic.split('_')[-1].startswith('A') and transformations['ca'] and all_arrays_constant:
@@ -168,7 +167,6 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode], well_d
     LOGGER.info("Generating shift constraints")
     shift_constraints = ff.get_shift_constraints(formula)
     if well_defined:
-        print(shift_constraints)
         clauses = shift_constraints + clauses
     constraints.update(shift_constraints)
 
