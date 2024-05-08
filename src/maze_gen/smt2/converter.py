@@ -1,6 +1,5 @@
 """ Implements translation from SMT Formulas to C Expressions 
 """
-from operator import is_
 import re
 import io
 import typing as t
@@ -310,7 +309,11 @@ class Converter():
                 else:
                     error(1, "Cannot compare array with non-array", node)
             else:
+                if node.is_bv_comp():
+                    cons.write('1U & (')
                 self.convert_helper(node, cons, " == ")
+                if node.is_bv_comp():
+                    cons.write(')')
         elif node.is_int_constant():
             value = str(node.constant_value())
             if int(value) > 2**32:

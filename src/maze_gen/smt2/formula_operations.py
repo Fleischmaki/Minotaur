@@ -42,8 +42,6 @@ def get_bv_width(node: FNode) -> int: #
             res = get_bv_width(node.args()[0]) ## Boolean relations
     elif node.get_type().is_array_type():
         return get_bv_width_from_array_type(node.get_type())
-    elif node.is_bv_comp():
-        return 1
     elif not (node.get_type().is_bv_type()):
         raise ValueError(f"Could not compute BVWidth for node {node} of type {node.get_type()}.")
     elif node.is_bv_extract():
