@@ -64,7 +64,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     for c, clause in enumerate(clauses,start=1):
         local_declarations = declarations
 
-        if logic.split('_')[-1].startswith('A') and transformations['ca'] and all_arrays_constant:
+        if logic.split('_')[-1].startswith('A') and not (transformations['ca'] and all_arrays_constant):
             LOGGER.debug("Renaming array stores")
             clause, constraints = ff.rename_arrays(clause)
             if len(constraints) > 0:
