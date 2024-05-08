@@ -1,4 +1,5 @@
 """Contains functions that handle formulas (but not files or transforms)"""
+import array
 import math
 import typing as t
 import logging
@@ -13,20 +14,18 @@ from pysmt.solvers.z3 import Z3Solver
 LOGGER = logging.getLogger(__name__)
 MAXIMUM_ARRAY_SIZE = 2**8
 
-def get_bv_width_from_array_type(array_type: smt_types._ArrayType):
+def get_bv_width_from_array_type(array_type: smt_types._ArrayType) -> int:
     """ Returns the width for the base element type of an array.
         User get_bv_width(FNode) for more precise width computation. 
     :param array_type: type of the array
     """
-    node_type = array_type.elem_type
+    node_type = get_array_base_type(array_type)
     if node_type.is_bool_type():
         return 1
     if node_type.is_int_type():
         return 64
     if node_type.is_bv_type():
-        return node_type.width
-    if node_type.is_array_type():
-        return get_bv_width_from_array_type(node_type)
+        return node_type.width # type: ignore
     raise ValueError(f"Could not compute BVWidth for node of type {node_type}.")
 
 
@@ -197,7 +196,7 @@ def label_formula_depth(formula: FNode) -> dict[FNode, int]:
         depths[node] = max(map(lambda s: depths[s], node.args())) + 1
     return depths
 
-def constrain_array_size(formula: FNode):
+def constrain_array_size(formula: FNode, logic: str):
     """ Compute a minimal array size for the formula
     Returns the minimal array_size and the list of generated constraints 
     """
@@ -210,22 +209,31 @@ def constrain_array_size(formula: FNode):
     if not is_sat(formula, solver_name = "z3"):
         formula = Not(formula)
     max_dim = max(map(lambda op : get_array_dim(op.args()[0]),array_ops))
-    assertions = set()
-    array_size = max(min_index+1,2)
-    sat = all_constant and array_size**max_dim <= MAXIMUM_ARRAY_SIZE
+    assertions = []
+    array_size = max(min_index,2)
+    max_size = MAXIMUM_ARRAY_SIZE if 'BV' not in logic else min(MAXIMUM_ARRAY_SIZE, *map(lambda op: 2**(op.arg(0).get_type().index_type.width), array_ops))
+    for op in array_ops:
+        print(op.arg(0).get_type(), get_bv_width_from_array_type(op.arg(0).get_type()))
+    print(max_size)
+    sat = all_constant and array_size**max_dim <= max_size
     if sat:
         array_size *= 2
     while not sat:
         LOGGER.debug("Checking size: %d",  array_size)
-        if (math.pow(array_size,max_dim)) > MAXIMUM_ARRAY_SIZE:
+        if (math.pow(array_size,max_dim)) > max_size:
             raise ValueError("Minimum array size too large")
         assertions = get_array_constraints(array_ops, array_size)
         new_formula = And(*assertions, formula)
-        sat = is_sat(new_formula, solver_name = "z3")
+        sat = is_sat(new_formula, solver_name = "z3", logic=logic)
         array_size *= 2
     array_size //= 2
     LOGGER.info("Sat on size %d.", array_size)
     return array_size, assertions, min_index, all_constant
+
+def get_array_base_type(node_type: smt_types.PySMTType) -> smt_types.PySMTType:
+    while node_type.is_array_type():
+        node_type = node_type.elem_type # type: ignore
+    return node_type
 
 def get_array_name(node: FNode) -> str:
     """Get the name of an array from a sequence of stores/selects
@@ -246,7 +254,7 @@ def get_array_dim(node: FNode):
 
 def get_array_constraints(array_ops, array_size) -> list[FNode]:
     """Helper"""
-    return sorted({And(i < array_size, i >= 0) for i in filter(lambda index: not index.is_constant(), map(lambda x: x.arg(1), array_ops))},
+    return sorted({And(i <= array_size, i >= 0) for i in filter(lambda index: not index.is_constant(), map(lambda x: x.arg(1), array_ops))},
                   key = lambda op: len(get_array_index_calls(op)[1]))
 
 def get_integer_constraints(formula: FNode):

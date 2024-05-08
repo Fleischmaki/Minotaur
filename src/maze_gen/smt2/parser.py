@@ -40,7 +40,6 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
         clauses, array_size, all_arrays_constant = run_checks(formula, logic, formula_clauses, generate_well_defined)
     else:
         array_size, array_calls = ff.get_array_index_calls(formula)
-        array_size += 1
         if array_size > ff.MAXIMUM_ARRAY_SIZE:
             raise ValueError("Minimum array size too large!")
         clauses = list(ff.get_array_constraints(array_calls, array_size)) \
@@ -91,7 +90,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
 
         add_parsed_cons(check_neg, clauses, parsed_cons, clause, clause_in_c)
         add_used_variables(variables, local_declarations, symbs, all_arrays_constant and transformations['ca'])
-    return parsed_cons, variables, array_size
+    return parsed_cons, variables, array_size+1 
 
 def get_forced_parameters(file_path, transformations):
     generate_sat=(transformations['sat'] and not transformations['fuzz']) or not file_path.removesuffix('.smt2').endswith('unsat')
@@ -146,7 +145,7 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode], well_d
         LOGGER.warning("Can only guarantee well-definedness on bitvectors")
 
     if logic.split('_')[-1].startswith('A'):
-        array_size, array_constraints, _, all_constant = ff.constrain_array_size(formula)
+        array_size, array_constraints, _, all_constant = ff.constrain_array_size(formula, logic)
         if well_defined:
             clauses = array_constraints + clauses
         constraints.update(array_constraints)
@@ -371,5 +370,5 @@ def get_minimum_array_size_from_file(smt_file: str):
     """Computes the minimum array size for an SMT_File
     :param smt_file: Path to the file
     """
-    formula = read_file(smt_file).formula
-    return ff.constrain_array_size(formula)
+    fd = read_file(smt_file)
+    return ff.constrain_array_size(fd.formula, fd.logic)
