@@ -92,7 +92,7 @@ def needs_downcasting(node: FNode) -> bool:
 def is_signed(node: FNode) -> str:
     """ Check if a function needs signed arguments
     """
-    return node.is_bv_ashr() or node.is_bv_sext() or node.is_bv_srem() or node.is_bv_sdiv()
+    return node.is_bv_ashr() or node.is_bv_sext() or node.is_bv_srem() or node.is_bv_sdiv() or node.is_select()
 
 def needs_unsigned_cast(node: FNode):
     """ Checks if a node needs children to be recast. This is the case if:
