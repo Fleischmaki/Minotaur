@@ -20,10 +20,14 @@ class Minimizer:
             if len(args) == 16:
                 self.tool,self.batch_id,self.variant,self.flags,index,u,a,w,h,c,t,g,s,r,timeout,self.err = args
             else:
-                self.tool,self.variant,self.flags,index,u,a,w,h,c,t,g,s,r,timeout,self.err = args
+                self.tool,self.batch_id,self.variant,self.flags,index,u,a,w,h,t,g,s,r,timeout,self.err = args
+                c = 0
 
             self.timeout = ceil(float(timeout)) + 60 # Add a minute for buffer
-            self.seeddir = argv[1]
+            self.seeddir = find_seed_dir(argv[1], s)
+            if self.seeddir is None:
+                raise ValueError(f"Could not find seed in dir {argv[1]}.")
+            LOGGER.debug("Found seed in dir %s", self.seeddir)
             self.outdir = argv[2]
             self.gen = argv[3]
             self.params= {'m':int(index),'a':a,'w':int(w),'h':int(h),'c':int(c),'t':('last_' + t).strip('_'),'g':g,'s':os.path.join(self.seeddir,s+('' if s.endswith('.smt2') else '.smt2')),'r':int(r)}
@@ -71,7 +75,8 @@ class Minimizer:
         if self.gen == 'container':
             maze_gen.generate_mazes([self.params],self.outdir)
         else:
-            maze_gen.generate_maze(self.params, self.outdir) 
+            maze_gen.generate_maze(self.params, self.outdir)
+        LOGGER.info("Done!")
 
     def separate_unsat_core(self,clauses: list):
         core = sp.get_unsat_core(clauses, self.logic)
@@ -174,8 +179,18 @@ class Minimizer:
             self.params['m'] = 0
         else:
             self.params['m'] = 1
-        print(self.params['t'])
 
 def read_mutant(mutant: str):
     file_data = sp.read_file(mutant)
     return list(file_data.clauses), file_data.logic
+
+def find_seed_dir(root: str, seed: str) -> str | None:
+    if os.path.isdir(root):
+        files = os.listdir(root)
+        if seed in files:
+            return root
+        for file in files:
+            res = find_seed_dir(os.path.join(root,file),seed)
+            if res is not None:
+                return res
+    return None
