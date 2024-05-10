@@ -498,8 +498,10 @@ class Converter():
                 cons.write(",")
             self.write_unsigned(p,cons,p)
             cons.write(",")
-            self.write_unsigned(a,cons,v)
-            if v_dim > 0:
+            if v_dim == 0:
+                self.write_signed(a,cons,v)
+            else:
+                self.write_node(v, cons)
                 cons.write(",")
                 cons.write(get_array_size_from_dim(v_dim))
             cons.write(")")
