@@ -88,11 +88,11 @@ For all tools the logging level can be set via --LEVEL with LEVEL being one of E
 Nr.  | Tool | Status | Type
 | --  | -- | -- | -- |
 1 | CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1114) | Overflow
-2 | Ultimate | [fixed](https://github.com/ultimate-pa/ultimate/issues/642#issuecomment-1661186726) | Overflow
+2 | Ultimate integer | [fixed](https://github.com/ultimate-pa/ultimate/issues/642#issuecomment-1661186726) | Overflow
 3 |CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1130) | Bitwise Operations
 4 |CPA - Intervallanalysis | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1132#note_1544904422) | Overflow
 5 |Symbiotic | [open](https://github.com/staticafi/symbiotic/issues/247) | ??
-6 |Ultimate Automizer/Gemcutter | [fixed](https://github.com/ultimate-pa/ultimate/issues/646) | Bitwise Operators
+6 |Ultimate Automizer/Gemcutter integer | [fixed](https://github.com/ultimate-pa/ultimate/issues/646) | Bitwise Operators
 7 |ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1363) | Type Casts
 8 |ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1392) | Type Casts
 9 |CPA -InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1194) | Modulo Operator
@@ -102,9 +102,10 @@ Nr.  | Tool | Status | Type
 13 |CPA -InvariantsCPA | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1208) | Division
 14 |ESBMC --mathsat| [confirmed](https://github.com/esbmc/esbmc/issues/1771) | 
 15 | MOPSA congr | [fixed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/179) | 
-16 | Ultimate | [closed](https://github.com/ultimate-pa/ultimate/issues/664) |
+16 | Ultimate integer| [closed](https://github.com/ultimate-pa/ultimate/issues/664) | Division-by-zero
 17 | MOPSA excluded-powerset | [open](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/182) |
 18 | MOPSA cell-rel-itv | [closed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/183) | Outdated dependency | 
+19 | Ultimate integer| [fixed](https://github.com/ultimate-pa/ultimate/issues/665) | Overflowing shift | 
 
 ### Precision Issues
 Nr. |Tool | Status | Type
