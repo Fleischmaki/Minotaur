@@ -613,7 +613,6 @@ def get_array_helpers(size):
     return 1;\n}\n""")
     res += ("""void init(long* array, int width,int size){
     for(int i = 0; i < size; i++){
-    \tarray[i] = __VERIFIER_nondet_long();
-    \tarray[i] &= (long)(((1ULL << (width-1)) - 1) << 1)*(-1) - 1;
+    \tarray[i] = scast_helper(__VERIFIER_nondet_ulong(), size);
     }\n}""")
     return res
