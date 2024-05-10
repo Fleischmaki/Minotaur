@@ -90,7 +90,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
 
         add_parsed_cons(check_neg, clauses, parsed_cons, clause, clause_in_c)
         add_used_variables(variables, local_declarations, symbs, all_arrays_constant and transformations['ca'])
-    return parsed_cons, variables, array_size+1 
+    return parsed_cons, variables, array_size+1
 
 def get_forced_parameters(file_path, transformations):
     generate_sat=(transformations['sat'] and not transformations['fuzz']) or not file_path.removesuffix('.smt2').endswith('unsat')
@@ -296,18 +296,22 @@ def extract_vars(cond: str, variables: dict[str,str]):
     return used_variables
 
 def is_array_constraint_of(cond: str,other: str, array_size: int):
-    if '[' not in other:
+    """Check if cond is likely to be an array constraint of other
+    If they are they have to be in the same group.
+    This is a bit imprecise, but should be sound.
+    """
+    if not ('[' in other or 'store' in other):
         return False
-    if f'  <  ({array_size}U))  &&  ((0U)  <=  ' in cond:
-        index = cond.split(f'  <  ({array_size}U))  &&  ((0U)  <=  ')[1].strip('')
-    elif f'  <  ({array_size}ULL))  &&  ((0U)  <=  ' in cond:
-        index = cond.split(f'  <  ({array_size}ULL))  &&  ((0U)  <=  ')[1].strip('')
+    if f'  <=  ({array_size-1}U))  &&  ((0U)  <=  ' in cond:
+        index = cond.split(f'  <=  ({array_size-1}U))  &&  ((0U)  <=  ')[1].strip('')
+    elif f'  <=  ({array_size-1}ULL))  &&  ((0ULL)  <=  ' in cond:
+        index = cond.split(f'  <=  ({array_size-1}ULL))  &&  ((0ULL)  <=  ')[1].strip('')
     else:
         return False
     for cast in [f'({sign} {ctype})' for sign in ('signed', 'unsigned') for ctype in ('char','short','int','long')]:
         index = index.removeprefix(cast)
     index = index.strip().removesuffix('))')
-    return f'{index}]' in other # Only check for ] as there might be casts in front
+    return index in other # Not sure how to check for brackets and value_store
 
 def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: int) -> tuple[list[str],dict[str,str]]: 
     negated_groups = []
