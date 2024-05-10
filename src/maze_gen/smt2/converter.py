@@ -229,13 +229,13 @@ class Converter():
             self.write_node(node,cons)
 
 
-    def convert_helper(self, node: FNode, cons: io.TextIOBase, op: str, always_cast_args=False):
+    def convert_helper(self, node: FNode, cons: io.TextIOBase, op: str, always_cast_args=False, keep_arg_size=False):
         """ Helper for normal binary convert operations
         """
         (l, r) = node.args()
-        self.write_cast(node,cons,l, always=always_cast_args)
+        self.write_cast(l if keep_arg_size else node,cons,l, always=always_cast_args)
         cons.write(f" {op} ")
-        self.write_cast(node,cons,r, always=always_cast_args)
+        self.write_cast(r if keep_arg_size else node,cons,r, always=always_cast_args)
 
     def div_helper(self,node: FNode, cons: io.TextIOBase):
         """ Converts divisons and remainders
@@ -309,11 +309,7 @@ class Converter():
                 else:
                     error(1, "Cannot compare array with non-array", node)
             else:
-                if node.is_bv_comp():
-                    cons.write('1U & (')
-                self.convert_helper(node, cons, " == ")
-                if node.is_bv_comp():
-                    cons.write(')')
+                self.convert_helper(node, cons, " == ", keep_arg_size=node.is_bv_comp())
         elif node.is_int_constant():
             value = str(node.constant_value())
             if int(value) > 2**32:
@@ -360,10 +356,7 @@ class Converter():
         elif node.is_bv_not():
             (b,) = node.args()
             cons.write("(~")
-            cons.write(get_unsigned_cast(node, True))
-            self.write_node(b, cons)
-            if not has_matching_type(ff.get_bv_width(node)):
-                cons.write(')')
+            self.write_cast(node, cons, b, True)
             cons.write(")")
         elif node.is_bv_sext():
             (l,) = node.args()
