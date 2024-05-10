@@ -34,8 +34,12 @@ COPY --from=build /home/maze/tools/UGemCutter-linux /home/maze/tools/UGemCutter-
 COPY --from=build /home/maze/tools/UKojak-linux /home/maze/tools/UKojak-linux
 
 ADD run_ultimate.sh /home/maze/tools/run_ultimate.sh
+ADD reduce.sh /home/maze/tools/reduce.sh
+ADD reduce_helper.sh /home/maze/tools/reduce_helper.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD unreach.prp /home/maze/workspace/unreach.prp
+
+RUN sudo chmod +x *.sh
 
 ENV PATH=$PATH:/home/maze/tools/UAutomizer-linux/
 

@@ -51,4 +51,13 @@ RUN sudo chmod +x run_mopsa.sh
 
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 
+USER root
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y install \
+    software-properties-common \
+    cvise \
+&& rm -rf /var/lib/apt/lists/*
+
+ENV PATH=$PATH:/home/maze/tools/mopsa-analyzer/bin
+USER maze
+
 WORKDIR /home/maze/workspace/
