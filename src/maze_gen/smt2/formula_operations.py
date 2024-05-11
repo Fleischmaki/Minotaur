@@ -204,7 +204,7 @@ def constrain_array_size(formula: FNode, logic: str):
     """
     LOGGER.info("Calculating array size.")
     min_index, array_ops = get_array_index_calls(formula)
-    all_constant = all(map(lambda node: node.args()[1].is_constant(), array_ops))
+    all_constant = all(map(lambda node: node.args()[1].is_constant(), array_ops)) and not any(map(lambda op: op.is_store(), array_ops))
     if len(array_ops) == 0:
         LOGGER.info("No arrays found")
         return -1, [], -1, True
