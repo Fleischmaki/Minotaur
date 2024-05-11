@@ -366,20 +366,19 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
             for filename in os.listdir(out_path):
                 if len(filename.split('_')) == 2:
                     runtime, tag = filename.split('_')
-                    if tag in ('fp','fn'):
-                        if tag in conf['abort_on_error']:
-                            if conf['check_error'] is None:
-                                has_bug = True
-                            else:
-                                has_bug = check_error(conf, w, tag, out_dir)
-                        commands.run_cmd(CP_CMD % (get_maze_dir(w.maze), out_path)) # Keep buggy mazes
+                    if tag in conf['abort_on_error']:
+                        if conf['check_error'] is None:
+                            has_bug = True
+                        else:
+                            has_bug = check_error(conf, w, tag, out_dir)
+                    commands.run_cmd(CP_CMD % (get_maze_dir(w.maze), out_path)) # Keep buggy mazes
                     write_summary(conf, out_dir, w, tag, runtime)
         if runtime == 'notFound' or tag == 'notFound':
             write_summary(conf, out_dir, w, tag, runtime)
     return has_bug
 
 def check_error(conf: dict, w: Target, tag: str, out_dir: str):
-    check_tag = 'tp' if tag == 'fn' else 'tn'
+    check_tag = 'tn' if tag == 'fp' else 'tp'
     out_dir = os.path.join(out_dir, 'check')
     w.params['m'] = maze_gen.get_params_from_maze(w.maze)['m']
     maze = w.maze
