@@ -468,12 +468,12 @@ class Converter():
                 self.write_node(a,cons)
                 if dim == 1:
                     cons.write("[")
-                    self.write_cast(p,cons,p)
+                    self.write_unsigned(p,cons,p)
                     cons.write("]")
                 else:
                     size = get_array_size_from_dim(dim-1)
                     cons.write(f"+({size}*")
-                    self.write_cast(p,cons,p)
+                    self.write_unsigned(p,cons,p)
                     cons.write(")")
                 cons.write(")")
             if 'BV' in str(node.get_type()) and not has_matching_type(ff.get_bv_width(node)) and needs_unsigned_cast(node):
