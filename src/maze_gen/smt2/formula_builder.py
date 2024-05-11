@@ -23,7 +23,7 @@ MY_IRA_OPS = frozenset(filter(lambda t: t not in (ops.BV_TONATURAL, ops.TOREAL, 
 assert BV_UNARY_OPS | BV_BINARY_OPS | OTHER_BV_OPS == ops.BV_OPERATORS
 LOGGER = getLogger(__name__)
 
-def get_constants_for_type(node_type: types.PySMTType,parent_is_array: bool=False) -> set[FNode] | FrozenSet[FNode]:
+def get_constants_for_type(node_type: types.PySMTType,is_index_or_shift: bool=False) -> set[FNode] | FrozenSet[FNode]:
     """Returns interesting constants of type node_type"""
     if node_type == types.BOOL:
         return frozenset([sc.FALSE(), sc.TRUE()])
@@ -31,7 +31,7 @@ def get_constants_for_type(node_type: types.PySMTType,parent_is_array: bool=Fals
         return frozenset([sc.Int(0), sc.Int(1)])
     if node_type.is_bv_type():
         width = node_type.width # type: ignore
-        if parent_is_array:
+        if is_index_or_shift:
             return set([sc.BVZero(width), sc.BVOne(width)])
         return set([sc.BVZero(width), sc.BVOne(width), sc.BV(2**width - 1, width), sc.BV(2**(width-1), width)])
     return set()
@@ -52,7 +52,7 @@ class FormulaBuilder():
         self.logic = logic
         self.bv_types = set(filter(lambda t: t.is_bv_type() and t.width <= 64, self.variables_by_type.keys()))
         if 'BV' in logic and len(self.bv_types) == 0:
-            LOGGER.warn()
+            LOGGER.warning("No valid bv types in seed!")
         self.variables_depths = formula_operations.label_formula_depth(formula)
         self.random = rand
         self.arrays = set(filter(lambda t: t.is_array_type(), self.variables_by_type.keys()))
@@ -63,17 +63,20 @@ class FormulaBuilder():
         res = self.build_formula_of_type(types.BOOL, max_depth)
         return res
 
-    def build_formula_of_type(self, node_type: types.PySMTType, max_depth: int, parent_is_array: bool = False) -> FNode:
+    def build_formula_of_type(self, node_type: types.PySMTType, max_depth: int, is_index_or_shift: bool = False) -> FNode:
         """ Build a random formula of the given type and depth """
         if max_depth == 0:
-            return self.random.random_choice(self.get_leaves_for_type(node_type, max_depth, parent_is_array))
+            return self.random.random_choice(self.get_leaves_for_type(node_type, max_depth, is_index_or_shift))
         res = self.random.random_choice(self.get_ops_for_outtype(node_type)\
-            + self.get_leaves_for_type(node_type, max_depth, parent_is_array))
+            + self.get_leaves_for_type(node_type, max_depth, is_index_or_shift))
         
         if isinstance(res, FNode):
             return res
         next_operation, subtypes_needed = res
-        node_args = tuple(self.build_formula_of_type(t, max_depth-1, i != 0 or next_operation in (ops.ARRAY_OPERATORS)) for i, t in enumerate(subtypes_needed))
+        node_args = tuple(self.build_formula_of_type(t, max_depth-1, \
+                                                    i == 1 and (next_operation in (ops.ARRAY_OPERATORS) or next_operation in \
+                                                                                  (ops.BV_LSHL, ops.BV_ASHR, ops.BV_LSHR))) \
+                                                                                  for i, t in enumerate(subtypes_needed))
         payload = self.get_payload_for_op(next_operation, node_type, subtypes_needed)
         return get_env().formula_manager.create_node(next_operation, node_args, payload)
     
@@ -119,11 +122,11 @@ class FormulaBuilder():
                     res.extend([(ops.ARRAY_STORE,[at,at.index_type,out_type]) for at in arrays_for_out_type])
         return res
     
-    def get_leaves_for_type(self,node_type: types.PySMTType, maximum_depth: int, parent_is_array: bool = False) -> list[FNode]:
+    def get_leaves_for_type(self,node_type: types.PySMTType, maximum_depth: int, is_index_or_shift: bool = False) -> list[FNode]:
         """ Get constants or subexpressions so we don't need to generate subformulas 
         """
-        res = list(get_constants_for_type(node_type, parent_is_array))
-        if node_type in self.variables_by_type:
+        res = list(get_constants_for_type(node_type, is_index_or_shift))
+        if node_type in self.variables_by_type and not is_index_or_shift:
             res.extend(filter(lambda v: self.variables_depths[v] <= maximum_depth, self.variables_by_type[node_type]))
         return res
 
