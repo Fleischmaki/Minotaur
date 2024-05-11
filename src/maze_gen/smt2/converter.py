@@ -612,7 +612,8 @@ def get_array_helpers(size):
     }
     return 1;\n}\n""")
     res += ("""void init(long* array, int width,int size){
+    unsigned long mask = (((1ULL << (width-1)) - 1) << 1) + 1;
     for(int i = 0; i < size; i++){
-    \tarray[i] = scast_helper(__VERIFIER_nondet_ulong(), size);
+    \tarray[i] = scast_helper(mask & __VERIFIER_nondet_ulong(), width);
     }\n}""")
     return res
