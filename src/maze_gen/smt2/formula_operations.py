@@ -141,7 +141,7 @@ def get_shift_constraints(formula: FNode) -> list[FNode]:
     """ Returns constraints encoding that shifts cannot be larger than the width of the index  
     """
     shifts = get_nodes(formula, lambda f: f.is_bv_ashr() or f.is_bv_lshr() or f.is_bv_lshl())
-    return  [(shift.arg(1) < get_bv_width(shift)) for shift in filter(lambda s: not s.arg(1).is_constant(),shifts)]
+    return  [(shift.arg(1) < get_bv_width(shift)) for shift in shifts]
 
 def get_array_index_calls(formula: FNode):
     """ Collect all array calls and maximum index for formula

@@ -166,7 +166,7 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode], well_d
     LOGGER.info("Generating shift constraints")
     shift_constraints = ff.get_shift_constraints(formula)
     if well_defined:
-        clauses = shift_constraints + clauses
+        clauses =  list(filter(lambda s: not s.arg(1).is_constant(),shift_constraints)) + clauses
     constraints.update(shift_constraints)
 
     if len(constraints) > len(array_constraints):

@@ -126,7 +126,7 @@ class FormulaBuilder():
         """ Get constants or subexpressions so we don't need to generate subformulas 
         """
         res = list(get_constants_for_type(node_type, is_index_or_shift))
-        if node_type in self.variables_by_type and not is_index_or_shift:
+        if node_type in self.variables_by_type:
             res.extend(filter(lambda v: self.variables_depths[v] <= maximum_depth, self.variables_by_type[node_type]))
         return res
 
