@@ -119,7 +119,7 @@ class FormulaBuilder():
                 if out_type.is_bool_type():
                     res.extend([(ops.EQUALS,[at,at]) for at in self.arrays])
                 if out_type.is_array_type():
-                    res.extend([(ops.ARRAY_STORE,[at,at.index_type,out_type]) for at in arrays_for_out_type])
+                    res.append((ops.ARRAY_STORE,[out_type,out_type.index_type,out_type.elem_type])) #type: ignore
         return res
     
     def get_leaves_for_type(self,node_type: types.PySMTType, maximum_depth: int, is_index_or_shift: bool = False) -> list[FNode]:
@@ -128,7 +128,9 @@ class FormulaBuilder():
         res = list(get_constants_for_type(node_type, is_index_or_shift))
         if node_type in self.variables_by_type:
             res.extend(filter(lambda v: self.variables_depths[v] <= maximum_depth, self.variables_by_type[node_type]))
-        return res
+        if len(res) > 0:
+            return res
+        return list(self.variables_by_type[node_type])
 
     def get_payload_for_op(self,op: int, node_type: types.PySMTType, argtypes: list[types.PySMTType]):
         """ Returns the necessary additional information pySMT needs to create a node """
