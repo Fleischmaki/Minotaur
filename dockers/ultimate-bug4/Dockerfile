@@ -42,15 +42,7 @@ COPY --from=build /home/maze/tools/ut /home/maze/tools/ut
 COPY --from=build /home/maze/tools/ugc /home/maze/tools/ugc
 COPY --from=build /home/maze/tools/uk /home/maze/tools/uk
 
-ADD run_ultimate.sh /home/maze/tools/run_ultimate-release.sh
-ADD get_tcs.py /home/maze/tools/get_tcs.py
-ADD unreach.prp /home/maze/workspace/unreach.prp
-
-ENV PATH=$PATH:/home/maze/tools/ua
-
-WORKDIR /home/maze/workspace
-
-ADD run_ultimate.sh /home/maze/tools/run_ultimate-bug2.sh
+ADD run_ultimate.sh /home/maze/tools/run_ultimate-bug4.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD unreach.prp /home/maze/workspace/unreach.prp
 
