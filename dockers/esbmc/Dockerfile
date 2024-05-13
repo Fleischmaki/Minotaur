@@ -13,10 +13,16 @@ RUN ninja install
 
 RUN pip3 install gcovr
 
-WORKDIR /home/maze/tools
-ADD run_esbmc.sh /home/maze/tools/run_esbmc.sh
 USER root
-RUN chmod +x run_esbmc.sh
+RUN apt-get update && apt-get install -y \
+    cvise \
+&& rm -rf /var/lib/apt/lists/*
+
+WORKDIR /home/maze/tools
 USER maze
+ADD run_esbmc.sh /home/maze/tools/run_esbmc.sh
+ADD reduce.sh /home/maze/tools/reduce.sh
+ADD reduce_helper.sh /home/maze/tools/reduce_helper.sh
+
 ### Cleanup
 WORKDIR /home/maze/workspace

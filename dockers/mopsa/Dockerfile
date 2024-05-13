@@ -1,6 +1,10 @@
 FROM minotaur-base
 
+RUN sudo dpkg --add-architecture i386 
+
 RUN apt-get update && apt-get install -y \
+    zlib1g-dev \
+    libc6-i386 \
     opam \
     llvm \
     clang \
@@ -15,23 +19,30 @@ RUN apt-get update && apt-get install -y \
 
 USER maze
 WORKDIR /home/maze/tools/
+RUN git clone https://github.com/antoinemine/apron.git apron
+WORKDIR /home/maze/tools/apron
+RUN \
+    opam init --disable-sandboxing -y && \
+    eval $(opam env) && \
+    opam switch create 4.14.0 && \
+    eval $(opam env) && \
+    opam update -y && \
+    opam install -y ocamlfind camlidl mlgmpidl 
+RUN opam config exec ./configure
+RUN make
+RUN sudo make install
+
+WORKDIR /home/maze/tools
 RUN git clone https://gitlab.com/mopsa/mopsa-analyzer.git
 WORKDIR /home/maze/tools/mopsa-analyzer
-RUN opam init --yes --disable-sandboxing
-RUN opam switch create 4.14.1
-RUN eval $(opam env)
-
-RUN sudo dpkg --add-architecture i386 
-RUN sudo apt-get update && sudo apt-get install -y \
-    zlib1g-dev \
-    libc6-i386 \
-&& sudo rm -rf /var/lib/apt/lists/*
-
-RUN opam install --deps-only --with-doc --with-test --yes .
+RUN \
+    eval $(opam env) && \
+    opam update -y && \
+    opam install -y dune zarith menhir yojson
 RUN opam config exec ./configure
 RUN make
 RUN make install
-
+    
 ADD svcomp.c /home/maze/tools/mopsa-analyzer/share/mopsa/stubs/c/mopsa/svcomp.c
 
 WORKDIR /home/maze/tools
@@ -39,5 +50,14 @@ ADD run_mopsa.sh /home/maze/tools/run_mopsa.sh
 RUN sudo chmod +x run_mopsa.sh 
 
 ADD get_tcs.py /home/maze/tools/get_tcs.py
+
+USER root
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y install \
+    software-properties-common \
+    cvise \
+&& rm -rf /var/lib/apt/lists/*
+
+ENV PATH=$PATH:/home/maze/tools/mopsa-analyzer/bin
+USER maze
 
 WORKDIR /home/maze/workspace/

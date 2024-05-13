@@ -95,10 +95,10 @@ def run_docker(duration, batch_duration, tool, name, variant='', flags='', batch
     cmd = ' '.join(map(str,[script, src_path, duration,variant,flags]))
     return spawn_cmd_in_docker(get_container(tool,name), cmd, batch_duration)
 
-def collect_docker_results(tool: str,name: str | int, expected_result: str, verbosity: str ='all'):
+def collect_docker_results(tool: str,name: str | int, expected_result: str, verbosity: str ='all', batch_id=0):
     """Collects results of a docker, giving duration and results in simplified format"""
     user = get_user(tool)
-    expected_result = f'{HOST_NAME}/{RESULT_FILE_FORMAT % name}' if expected_result == 'infer' else expected_result
+    expected_result = f'{HOST_NAME}/{RESULT_FILE_FORMAT % batch_id}' if expected_result == 'infer' else expected_result
     cmd = f"python3 /home/{user}/tools/get_tcs.py /home/{user}/workspace/{GENERATION_DIR} {verbosity} {expected_result}"
     return spawn_cmd_in_docker(get_container(tool,name), cmd)
 
@@ -129,7 +129,7 @@ def collect_coverage_info(tool,name, outfile):
     user = get_user(tool)
     return spawn_cmd_in_docker(get_container(tool,name), f'/home/{user}/tools/get_coverage.sh /home/{user}/workspace/{COVERAGE_DIR} {outfile}')
 
-def run_pa(tool,variant,flags, name, params,outdir, memory = 4,  timeout=60, gen='container', expected_result='error', verbosity='all'):
+def run_pa(tool,variant,flags, name, params,outdir, memory = 4,  timeout=60, gen='container', expected_result='error', verbosity='all', maze=''):
     """Generate a maze and run a program analyzer on it.
     :param tool,variant,flags: Program analyzer to test
     :param params: Parameters for maze gen
@@ -139,15 +139,22 @@ def run_pa(tool,variant,flags, name, params,outdir, memory = 4,  timeout=60, gen
     :param gen: ['container'|'local'] Generate tool in container or locally
     :param expected_result: ['safe'|'error'] kind of program generated
     """
-    if gen == 'container':
-        maze_gen.setup_generation_docker(params,outdir,name)
-        maze_gen.generate_maze_in_docker(params,name).wait()
-        kill_docker('gen', name)
+    commands.run_cmd(f"mkdir -p {os.path.join(outdir,'src')}")
+    if maze=='':
+        if gen == 'container':
+            maze_gen.setup_generation_docker(params,outdir,name)
+            maze_gen.generate_maze_in_docker(params,name).wait()
+            kill_docker('gen', name)
+        else:
+            maze_gen.generate_maze(params,outdir)
+        t_index = params['m'] - (0 if 'keepId' in params['t'] else 1)
+        maze = maze_gen.get_maze_names(params)[t_index]
     else:
-        maze_gen.generate_maze(params,outdir)
-    t_index = params['m'] - (0 if 'keepId' in params['t'] else 1)
-    maze = maze_gen.get_maze_names(params)[t_index]
-    with (open(os.path.join(outdir, 'src', BATCH_FILE_FORMAT % 0),'w')) as batchfile: 
+        _, maze_name = os.path.split(maze)
+        commands.run_cmd(f"cp {maze} {os.path.join(outdir, 'src', maze_name)}")
+        maze = maze_name
+    commands.run_cmd(f"mkdir -p {os.path.join(outdir,'src')}")
+    with (open(os.path.join(outdir, 'src', BATCH_FILE_FORMAT % 0),'w')) as batchfile:
         batchfile.write(f'{HOST_NAME}/{maze}')
     spawn_docker(memory,name,tool,os.path.join(outdir,'src')).wait()
     run_docker(timeout, timeout, tool, name, variant,flags).wait()

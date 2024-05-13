@@ -242,13 +242,15 @@ def generate_maze_chain(mazes, cycle, t_index, unit):
 
 def main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, unit, smt_file, CVE_name):
     transformations = transforms.parse_transformations(t_type)
-    min = 0 if transformations['keepId'] == 1 else t_numb if transformations['last'] else 1
     if transformations["storm"]:
         smt_files = [smt_file] + transforms.run_storm(smt_file, os.path.join(output_dir,'smt',str(seed)), seed, t_numb, transformations)
     elif transformations["fuzz"]:
         smt_files = [smt_file] + transforms.run_formula_builder(smt_file, os.path.join(output_dir,'smt',str(seed)), seed, t_numb, transformations)
+    elif transformations["yinyang"]:
+        smt_files = [smt_file] + transforms.run_yinyang(smt_file, os.path.join(output_dir,'smt',str(seed)), seed, t_numb, transformations)
     else:
         smt_files = [smt_file]*(t_numb+1)
+    min = t_numb if transformations['last'] else 0 if transformations['keepId'] == 1 else  1
     for t_index in range(min, t_numb+1):
         size, graph, solution = generate_maze_chain(mazes, cycle, t_index, unit)
         c_file = mazes[0]["sol_file"] + "_t" + str(t_index) + "_" + str(cycle) + "percent_" + CVE_name + "_" + bugtype + ".c"
@@ -258,7 +260,7 @@ def main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, uni
             render_program(c_file, graph.graph, size, generator, solution, bugtype, smt_files[t_index],transforms.parse_transformations(""))
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s', style='%')
+    logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s', style='%')
     seed = int(sys.argv[1])
     bugtype = sys.argv[2]
     t_type = sys.argv[3]

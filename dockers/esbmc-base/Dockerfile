@@ -90,9 +90,6 @@ ADD run_esbmc.sh /home/maze/tools/run_esbmc.sh
 ADD get_coverage.sh /home/maze/tools/get_coverage.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 
-USER root
-RUN chmod +x /home/maze/tools/*.sh
 
-USER maze 
 WORKDIR /home/maze/tools/esbmc 
 ENV PATH=/home/maze/tools/cvc4/bin:/home/maze/tools/z3/bin:/home/maze/tools/yices/bin:/home/maze/tools/boolector-release/bin:/home/maze/tools/mathsat/bin:$PATH

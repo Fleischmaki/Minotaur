@@ -34,17 +34,17 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     limit=transformations['dag']
     negate_formula=transformations['neg']
     LOGGER.info("Converting %s: ", file_path)
-    decl_arr, formula, logic, formula_clauses = read_file(file_path, limit, negate_formula)
+    declarations, formula, logic, formula_clauses = read_file(file_path, limit, negate_formula)
     all_arrays_constant = False
     if generate_sat:
         clauses, array_size, all_arrays_constant = run_checks(formula, logic, formula_clauses, generate_well_defined)
     else:
         array_size, array_calls = ff.get_array_index_calls(formula)
-        array_size += 1
         if array_size > ff.MAXIMUM_ARRAY_SIZE:
             raise ValueError("Minimum array size too large!")
-        clauses = list(ff.get_array_constraints(array_calls, array_size)) + list(formula_clauses)
-
+        clauses = list(ff.get_array_constraints(array_calls, array_size)) \
+        + list(ff.get_shift_constraints(formula)) \
+        + list(formula_clauses)
     converter = get_converter()
     converter.set_well_defined(generate_well_defined)
     if all_arrays_constant and transformations['ca']:
@@ -52,7 +52,6 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
         array_size = -1
     else:
         converter.set_array_indices({})
-
     try:
         core = set() if generate_sat else get_unsat_core(clauses, logic)
     except pysmt.exceptions.SolverStatusError as e:
@@ -61,19 +60,16 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     parsed_cons = OrderedDict()
     variables = {}
 
-    if generate_well_defined:
-        clauses.sort(key=lambda c: len(ff.get_array_index_calls(c)[1]))
-
     for c, clause in enumerate(clauses,start=1):
-        ldecl_arr = decl_arr
+        local_declarations = declarations
 
-        if logic.split('_')[-1].startswith('A'):
+        if logic.split('_')[-1].startswith('A') and not (transformations['ca'] and all_arrays_constant):
             LOGGER.debug("Renaming array stores")
             clause, constraints = ff.rename_arrays(clause)
             if len(constraints) > 0:
                 LOGGER.info("Added %d new arrays", len(constraints)//2)
             clause = And(*constraints, clause) # Make sure to render constraints first
-            ldecl_arr.extend(map(lambda c: c.args()[1],constraints))
+            local_declarations.extend(map(lambda c: c.args()[1],constraints))
 
         symbs = set()
 
@@ -87,14 +83,14 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
                 if clause not in core:
                     continue
                 parsed_cons['(1==0)'] = True if check_neg else "" # Make sure condition remains unsat
+                continue
             else:
                 raise e
         LOGGER.debug("Done.")
 
         add_parsed_cons(check_neg, clauses, parsed_cons, clause, clause_in_c)
-        add_used_variables(variables, ldecl_arr, symbs, all_arrays_constant and transformations['ca'])
-
-    return parsed_cons, variables, array_size
+        add_used_variables(variables, local_declarations, symbs, all_arrays_constant and transformations['ca'])
+    return parsed_cons, variables, array_size+1
 
 def get_forced_parameters(file_path, transformations):
     generate_sat=(transformations['sat'] and not transformations['fuzz']) or not file_path.removesuffix('.smt2').endswith('unsat')
@@ -149,9 +145,9 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode], well_d
         LOGGER.warning("Can only guarantee well-definedness on bitvectors")
 
     if logic.split('_')[-1].startswith('A'):
-        array_size, array_constraints, _, all_constant = ff.constrain_array_size(formula)
+        array_size, array_constraints, _, all_constant = ff.constrain_array_size(formula, logic)
         if well_defined:
-            clauses.extend(array_constraints)
+            clauses = array_constraints + clauses
         constraints.update(array_constraints)
     else:
         array_size = -1
@@ -164,7 +160,14 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode], well_d
 
     if not well_defined:
         LOGGER.info("Generating divsion constraints")
-        constraints.update(ff.get_division_constraints(formula))
+        div_constraints = ff.get_division_constraints(formula)
+        constraints.update(div_constraints)
+
+    LOGGER.info("Generating shift constraints")
+    shift_constraints = ff.get_shift_constraints(formula)
+    if well_defined:
+        clauses =  list(filter(lambda s: not s.arg(1).is_constant(),shift_constraints)) + clauses
+    constraints.update(shift_constraints)
 
     if len(constraints) > len(array_constraints):
         LOGGER.info("Checking satisfiability with global constraints")
@@ -206,14 +209,17 @@ def get_logic_from_script(script):
         LOGGER.info('Logic not found in script. Using logic from formula: %s', logic)
     return logic
 
-def conjunction_to_clauses(formula: FNode) -> set[FNode]:
+def conjunction_to_clauses(node: FNode) -> set[FNode]:
     """Transform top-level conjuncts of a formula into a set of clauses"""
     clauses = set()
-    if formula.is_and():
-        for node in formula.args():
-            clauses = clauses.union(conjunction_to_clauses(node))
-    else:
-        clauses.add(formula)
+    node_queue = [node]
+    while len(node_queue) > 0:
+        node = node_queue.pop()
+        if node.is_and():
+            for subnode in node.args():
+                node_queue.append(subnode)
+        else:
+            clauses.add(node)
     return clauses
 
 def write_to_file(formula : FNode | t.Iterable[FNode], logic: str, file: str):
@@ -270,7 +276,10 @@ def independent_formulas(conds: dict[str,bool], variables: dict[str,str], array_
         for other in conds:
             if len(cond_vars.keys() & extract_vars(other, variables).keys()) > 0:
                 formula.add_edge(cond, other)
-            if is_array_constraint_of(cond,other, array_size):
+            if is_array_constraint_of(cond,other,array_size):
+                formula.add_edge(cond,other)
+                formula.add_edge(other,cond)
+            if is_shift_constraint_of(cond,other):
                 formula.add_edge(cond,other)
                 formula.add_edge(other,cond)
     groups = [sorted(g, key=lambda cond: list(conds.keys()).index(cond)) for g in formula.separate()]
@@ -290,20 +299,42 @@ def extract_vars(cond: str, variables: dict[str,str]):
     return used_variables
 
 def is_array_constraint_of(cond: str,other: str, array_size: int):
-    if '[' not in other:
+    """Check if cond is likely to be an array constraint of other
+    If they are they have to be in the same group.
+    This is a bit imprecise, but should be sound.
+    """
+    if not ('[' in other or 'store' in other):
         return False
-    if f'  <  ({array_size}U))  &&  ((0U)  <=  ' in cond:
-        index = cond.split(f'  <  ({array_size}U))  &&  ((0U)  <=  ')[1].strip('')
-    elif f'  <  ({array_size}ULL))  &&  ((0U)  <=  ' in cond:
-        index = cond.split(f'  <  ({array_size}ULL))  &&  ((0U)  <=  ')[1].strip('')
+    if f'  <=  ({array_size-1}U))  &&  ((0U)  <=  ' in cond:
+        index = cond.split(f'  <=  ({array_size-1}U))  &&  ((0U)  <=  ')[1].strip('')
+    elif f'  <=  ({array_size-1}ULL))  &&  ((0ULL)  <=  ' in cond:
+        index = cond.split(f'  <=  ({array_size-1}ULL))  &&  ((0ULL)  <=  ')[1].strip('')
     else:
         return False
     for cast in [f'({sign} {ctype})' for sign in ('signed', 'unsigned') for ctype in ('char','short','int','long')]:
         index = index.removeprefix(cast)
     index = index.strip().removesuffix('))')
-    return f'{index}]' in other # Only check for ] as there might be casts in front
+    return index in other # Not sure how to check for brackets and value_store
 
-def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: int) -> tuple[list[str],dict[str,str]]: 
+def is_shift_constraint_of(cond: str,other: str):
+    """Check if cond is likely to be a shift constraint of other
+    If they are they have to be in the same group.
+    This is a bit imprecise, but should be sound.
+    """
+    if not ('<<' in other or '>>' in other):
+        return False
+    if ' < ' in cond:
+        index = cond.split(' < ')[0].strip('')
+    else:
+        return False
+    for cast in [f'({sign} {ctype})' for sign in ('signed', 'unsigned') for ctype in ('char','short','int','long')]:
+        index = index.removeprefix(cast)
+    index = index.strip().removesuffix('))').removeprefix('(')
+    if '<<' in other:
+        return index in other.split('<<',1)[1] # Imprecise if multiple splits, but not sure how this is sound otherwise
+    return index in other.split('>>',1)[1]
+
+def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: int) -> tuple[list[str],dict[str,str]]:
     negated_groups = []
     new_vars = {}
     n = 0
@@ -364,5 +395,5 @@ def get_minimum_array_size_from_file(smt_file: str):
     """Computes the minimum array size for an SMT_File
     :param smt_file: Path to the file
     """
-    formula = read_file(smt_file).formula
-    return ff.constrain_array_size(formula)
+    fd = read_file(smt_file)
+    return ff.constrain_array_size(fd.formula, fd.logic)

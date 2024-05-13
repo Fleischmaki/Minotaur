@@ -1,6 +1,5 @@
 """ Implements translation from SMT Formulas to C Expressions 
 """
-from operator import is_
 import re
 import io
 import typing as t
@@ -40,9 +39,6 @@ def error(flag: int, *info):
     if flag == 1:
         raise ValueError("ERROR: nodes not supported", info)
     raise ValueError("ERROR: an unknown error occurred")
-
-
-
     
 def binary_to_decimal(binary: str, unsigned : bool = True) -> str:
     """Takes BV in binary and translated into decimal number
@@ -87,6 +83,8 @@ def needs_signed_children(node: FNode) -> bool:
     return node.is_bv_sle() or node.is_bv_slt() or node.is_bv_ashr() or node.is_bv_srem() or node.is_bv_sdiv()
 
 def needs_downcasting(node: FNode) -> bool:
+    """ CHeck if we need to cast down after converting a node
+    """
     return node.is_bv_sdiv() or node.is_bv_udiv() or node.is_bv_srem() or node.is_bv_urem() \
         or node.is_bv_ror() or node.is_bv_rol() \
         or node.is_select()
@@ -94,7 +92,7 @@ def needs_downcasting(node: FNode) -> bool:
 def is_signed(node: FNode) -> str:
     """ Check if a function needs signed arguments
     """
-    return node.is_bv_ashr() or node.is_bv_sext() or node.is_bv_srem() or node.is_bv_sdiv()
+    return node.is_bv_ashr() or node.is_bv_sext() or node.is_bv_srem() or node.is_bv_sdiv() or node.is_select()
 
 def needs_unsigned_cast(node: FNode):
     """ Checks if a node needs children to be recast. This is the case if:
@@ -159,6 +157,9 @@ def type_to_c(ntype: node_type, constant_arrays: bool = False) -> str: # type: i
     error(0, ntype)
 
 class Converter():
+    """ Handles conversion of formulas
+    Caches C-strings for FNodes so don't reset pySMT enviroment and use the same converter.
+    """
     def __init__(self):
         self.well_defined = False
         self.array_indices = {}
@@ -166,16 +167,22 @@ class Converter():
         self.symbs = set()
 
     def set_well_defined(self, well_defined: bool):
+        """ Sets the converters well-definedness.
+        If it is different from before, we have to clear the cache to ensure translations remain valid.
+        """
         if well_defined != self.well_defined:
             self.well_defined = well_defined
             self.node_cache = {}
             LOGGER.debug("Well definedness changed, have to clear node cache")
 
     def set_array_indices(self, array_indices: dict[str,set[int]]):
+        """ Sets the converters array-indices if all arrays are constant.
+        If it is different from before, we have to clear the cache to ensure translations remain valid.
+        """
+        LOGGER.debug("Using the following indices for arrays: %s", array_indices)
         if array_indices != self.array_indices:
             self.array_indices = array_indices
             self.node_cache = {}
-            LOGGER.debug("Using the following indices for arrays: %s")
             LOGGER.debug("Array indices changed, have to clear node cache")
 
     def write_unsigned(self, parent: FNode, cons, node: FNode, always=True):
@@ -213,7 +220,7 @@ class Converter():
     def write_cast(self, parent: FNode, cons, node: FNode, always=False):
         """ Writes a node as the type needed by the parent
         """
-        if parent.get_type().is_bv_type() or (parent.get_type().is_array_type() and parent.get_type().elem.type().is_bv_type()) or parent.is_theory_relation() and parent.arg(0).get_type().is_bv_type():
+        if parent.get_type().is_bv_type() or (parent.get_type().is_array_type() and parent.get_type().elem_type.is_bv_type()) or parent.is_theory_relation() and parent.arg(0).get_type().is_bv_type():
             if needs_signed_children(parent):
                 self.write_signed(parent, cons,node, always)
             else:
@@ -222,27 +229,13 @@ class Converter():
             self.write_node(node,cons)
 
 
-    def convert_helper(self, node: FNode, cons: io.TextIOBase, op: str, always_cast_args=False):
+    def convert_helper(self, node: FNode, cons: io.TextIOBase, op: str, always_cast_args=False, keep_arg_size=False):
         """ Helper for normal binary convert operations
         """
         (l, r) = node.args()
-        self.write_cast(node,cons,l, always=always_cast_args)
+        self.write_cast(l if keep_arg_size else node,cons,l, always=always_cast_args)
         cons.write(f" {op} ")
-        self.write_cast(node,cons,r, always=always_cast_args)
-
-    def check_shift_size(self,node: FNode) -> None:
-        """ Check if shift is valid
-        :param node: Some bv-shift FNode
-        Shift is valid if it is contant and that ammount <= size of the bv 
-        """
-        if self.well_defined:
-            if node.is_bv_rol() or node.is_bv_ror():
-                if node.bv_rotation_step() > ff.get_bv_width(node):
-                    error(1, "Invalid rotate: ", node)
-                return
-            (_,r)= node.args()
-            if not r.is_bv_constant() or r.constant_value() > ff.get_bv_width(node):
-                error(1, "Invalid shift: ", node)
+        self.write_cast(r if keep_arg_size else node,cons,r, always=always_cast_args)
 
     def div_helper(self,node: FNode, cons: io.TextIOBase):
         """ Converts divisons and remainders
@@ -308,15 +301,13 @@ class Converter():
                     else:
                         lname = ff.get_array_name(l)
                         rname = ff.get_array_name(r)
-                        all_indices = self.array_indices[lname].union(self.array_indices[rname])
-                        for index in all_indices:
-                            self.symbs.add(f"{lname}_{index}")
-                            self.symbs.add(f"{rname}_{index}")
+                        common_indices = self.array_indices[lname].intersection(self.array_indices[rname])
+                        for index in common_indices:
                             cons.write(f'({lname}_{index}=={rname}_{index})')
                 else:
                     error(1, "Cannot compare array with non-array", node)
             else:
-                self.convert_helper(node, cons, " == ")
+                self.convert_helper(node, cons, " == ", keep_arg_size=node.is_bv_comp())
         elif node.is_int_constant():
             value = str(node.constant_value())
             if int(value) > 2**32:
@@ -341,10 +332,8 @@ class Converter():
         elif node.is_bv_slt() or node.is_bv_ult():
             self.convert_helper(node, cons, " < ")
         elif node.is_bv_lshr():
-            self.check_shift_size(node)
             self.convert_helper(node, cons, " >> ", True) # C >> is logical for unsigned, arithmetic for signed
         elif node.is_bv_ashr():
-            self.check_shift_size(node)
             self.convert_helper(node, cons, " >> ", True) # Always need to cast for shifts, as we dont only look at left operand
         elif node.is_bv_add():
             self.convert_helper(node, cons, " + ") # Recast result on all operations that can exceed value ranges
@@ -361,15 +350,11 @@ class Converter():
         elif node.is_bv_and():
             self.convert_helper(node, cons, " & ")
         elif node.is_bv_lshl():
-            self.check_shift_size(node)
             self.convert_helper(node, cons, " << ", True)
         elif node.is_bv_not():
             (b,) = node.args()
             cons.write("(~")
-            cons.write(get_unsigned_cast(node, True))
-            self.write_node(b, cons)
-            if not has_matching_type(ff.get_bv_width(node)):
-                cons.write(')')
+            self.write_cast(node, cons, b, True)
             cons.write(")")
         elif node.is_bv_sext():
             (l,) = node.args()
@@ -443,7 +428,6 @@ class Converter():
         elif node.is_bv_rol() or node.is_bv_ror():
             (l,) = node.args()
             width = ff.get_bv_width(node)
-            self.check_shift_size(node)
             cons.write("rotate_helper(")
             self.write_unsigned(node,cons,l)
             cons.write(f",{node.bv_rotation_step()},{'1' if node.is_bv_rol() else '0'},{width})")
@@ -469,25 +453,27 @@ class Converter():
             self.symbs.add(var)
         elif node.is_select():
             (a, p) = node.args()
-            if 'BV' in str(node.get_type()):
+            dim = ff.get_array_dim(a)
+            if node.get_type().is_bv_type(): #or node.get_type().elem_type.is_bv_type():
                 ucast = get_unsigned_cast(node)
                 cons.write(ucast)
-            dim = ff.get_array_dim(a)
             if len(self.array_indices) > 0:
                 array_name = f'{clean_string(ff.get_array_name(a))}_{p.constant_value()}'
                 cons.write(array_name)
                 self.symbs.add(array_name)
             else:
+                cons.write('(')
                 self.write_node(a,cons)
                 if dim == 1:
                     cons.write("[")
-                    self.write_cast(node,cons,p)
+                    self.write_unsigned(p,cons,p)
                     cons.write("]")
                 else:
                     size = get_array_size_from_dim(dim-1)
                     cons.write(f"+({size}*")
-                    self.write_cast(node,cons,p)
+                    self.write_unsigned(p,cons,p)
                     cons.write(")")
+                cons.write(")")
             if 'BV' in str(node.get_type()) and not has_matching_type(ff.get_bv_width(node)) and needs_unsigned_cast(node):
                 cons.write(")")
         elif node.is_store():
@@ -508,10 +494,12 @@ class Converter():
             else:
                 self.write_node(a,cons)
                 cons.write(",")
-            self.write_unsigned(a,cons,p)
+            self.write_unsigned(p,cons,p)
             cons.write(",")
-            self.write_unsigned(a,cons,v)
-            if v_dim > 0:
+            if v_dim == 0:
+                self.write_signed(a,cons,v)
+            else:
+                self.write_node(v, cons)
                 cons.write(",")
                 cons.write(get_array_size_from_dim(v_dim))
             cons.write(")")
@@ -622,8 +610,8 @@ def get_array_helpers(size):
     }
     return 1;\n}\n""")
     res += ("""void init(long* array, int width,int size){
+    unsigned long mask = (((1ULL << (width-1)) - 1) << 1) + 1;
     for(int i = 0; i < size; i++){
-    \tarray[i] = __VERIFIER_nondet_long();
-    \tarray[i] &= (((1LL << (width-1)) - 1) << 1) + 1;
+    \tarray[i] = scast_helper(mask & __VERIFIER_nondet_ulong(), width);
     }\n}""")
     return res
