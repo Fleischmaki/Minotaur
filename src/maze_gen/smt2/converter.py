@@ -301,10 +301,8 @@ class Converter():
                     else:
                         lname = ff.get_array_name(l)
                         rname = ff.get_array_name(r)
-                        all_indices = self.array_indices[lname].union(self.array_indices[rname])
-                        for index in all_indices:
-                            self.symbs.add(f"{lname}_{index}")
-                            self.symbs.add(f"{rname}_{index}")
+                        common_indices = self.array_indices[lname].intersection(self.array_indices[rname])
+                        for index in common_indices:
                             cons.write(f'({lname}_{index}=={rname}_{index})')
                 else:
                     error(1, "Cannot compare array with non-array", node)
