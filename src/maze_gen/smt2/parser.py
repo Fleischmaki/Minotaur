@@ -276,7 +276,10 @@ def independent_formulas(conds: dict[str,bool], variables: dict[str,str], array_
         for other in conds:
             if len(cond_vars.keys() & extract_vars(other, variables).keys()) > 0:
                 formula.add_edge(cond, other)
-            if is_array_constraint_of(cond,other, array_size):
+            if is_array_constraint_of(cond,other,array_size):
+                formula.add_edge(cond,other)
+                formula.add_edge(other,cond)
+            if is_shift_constraint_of(cond,other):
                 formula.add_edge(cond,other)
                 formula.add_edge(other,cond)
     groups = [sorted(g, key=lambda cond: list(conds.keys()).index(cond)) for g in formula.separate()]
@@ -313,7 +316,25 @@ def is_array_constraint_of(cond: str,other: str, array_size: int):
     index = index.strip().removesuffix('))')
     return index in other # Not sure how to check for brackets and value_store
 
-def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: int) -> tuple[list[str],dict[str,str]]: 
+def is_shift_constraint_of(cond: str,other: str):
+    """Check if cond is likely to be a shift constraint of other
+    If they are they have to be in the same group.
+    This is a bit imprecise, but should be sound.
+    """
+    if not ('<<' in other or '>>' in other):
+        return False
+    if ' < ' in cond:
+        index = cond.split(' < ')[0].strip('')
+    else:
+        return False
+    for cast in [f'({sign} {ctype})' for sign in ('signed', 'unsigned') for ctype in ('char','short','int','long')]:
+        index = index.removeprefix(cast)
+    index = index.strip().removesuffix('))').removeprefix('(')
+    if '<<' in other:
+        return index in other.split('<<',1)[1] # Imprecise if multiple splits, but not sure how this is sound otherwise
+    return index in other.split('>>',1)[1]
+
+def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: int) -> tuple[list[str],dict[str,str]]:
     negated_groups = []
     new_vars = {}
     n = 0
