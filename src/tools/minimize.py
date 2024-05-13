@@ -154,13 +154,14 @@ class Minimizer:
     def is_err(self):
         maze = maze_gen.get_maze_names(self.params)[self.params['m'] - (0 if 'keepId' in self.params['t'] else 1)]
         resdir = os.path.join(self.outdir,maze,maze) 
-        for file in os.listdir(resdir):
-            if len(file.split('_')) == 2: # Still false negative
-                LOGGER.info(file)
-                commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(self.outdir,'runs')))
-                commands.run_cmd('rm -r %s' % os.path.join(self.outdir,maze))
-                if self.err in file: 
-                    return True
+        if os.path.isdir(resdir):
+            for file in os.listdir(resdir):
+                if len(file.split('_')) == 2: # Still false negative
+                    LOGGER.info(file)
+                    commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(self.outdir,'runs')))
+                    commands.run_cmd('rm -r %s' % os.path.join(self.outdir,maze))
+                    if self.err in file: 
+                        return True
         return False
 
     def get_params(self, maze, smt_path = ''):
