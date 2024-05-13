@@ -28,19 +28,15 @@ RUN mv *-linux /home/maze/tools
 
 WORKDIR /home/maze/tools/
 
-RUN mv UAutomizer-linux ua
-RUN mv UGemCutter-linux ugc
-RUN mv UTaipan-linux ut
-RUN mv UKojak-linux uk
 
 FROM minotaur-base
 USER maze
 RUN sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java 
 WORKDIR /home/maze/tools/
-COPY --from=build /home/maze/tools/ua /home/maze/tools/ua
-COPY --from=build /home/maze/tools/ut /home/maze/tools/ut
-COPY --from=build /home/maze/tools/ugc /home/maze/tools/ugc
-COPY --from=build /home/maze/tools/uk /home/maze/tools/uk
+COPY --from=build /home/maze/tools/UAutomizer-linux /home/maze/tools/UAutomizer-linux
+COPY --from=build /home/maze/tools/UTaipan-linux /home/maze/tools/UTaipan-linux
+COPY --from=build /home/maze/tools/UGemCutter-linux /home/maze/tools/UGemCutter-linux
+COPY --from=build /home/maze/tools/UKojak-linux /home/maze/tools/UKojak-linux
 
 ADD run_ultimate.sh /home/maze/tools/run_ultimate-bug4.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
