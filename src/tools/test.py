@@ -243,7 +243,14 @@ class TargetGenerator(Iterable):
             return 'error' if 'unsat' not in params['t'] else 'safe'
         if 'fuzz' in params['t'] and 'unsat' in params['t']:
             return 'safe'
-
+        if params['m'] == 0 and 's' in params:
+            with open(params['s']) as seedfile:
+                content = seedfile.read()
+                if '(set-info :status unsat)' in content:
+                    return 'safe'
+                if '(set-info :status sat)' in content:
+                    return 'error'
+                return None
         smt_dir = os.path.join(get_temp_dir(), 'smt', str(params['r']))
         for file in os.listdir(smt_dir):
             file = str(file)
