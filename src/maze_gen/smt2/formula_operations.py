@@ -97,21 +97,19 @@ def rename_arrays(formula: FNode):
     """ Introduce fresh variable for every chain of array stores
     """
     constraints = set()
-    subs = {}
 
     for sub in formula.args():
         new_formula, new_constraints = rename_arrays(sub)
-        subs.update({sub: new_formula})
         constraints = constraints.union(new_constraints)
+        formula = formula.substitute({sub: new_formula})
 
     if formula.is_store():
         old = formula.arg(0)
-        if old.is_symbol():
+        if not old.is_store():
             new = FreshSymbol(typename=old.get_type())
             constraints.add(Equals(old,new))
-            subs.update({old : new})
+            formula = formula.substitute({old : new})
 
-    formula = formula.substitute(subs)
     return formula, constraints
 
 
@@ -214,9 +212,6 @@ def constrain_array_size(formula: FNode, logic: str):
     assertions = []
     array_size = max(min_index,2)
     max_size = MAXIMUM_ARRAY_SIZE if 'BV' not in logic else min(MAXIMUM_ARRAY_SIZE, *map(lambda op: 2**(op.arg(0).get_type().index_type.width), array_ops))
-    for op in array_ops:
-        print(op.arg(0).get_type(), get_bv_width_from_array_type(op.arg(0).get_type()))
-    print(max_size)
     sat = all_constant and array_size**max_dim <= max_size
     if sat:
         array_size *= 2

@@ -438,8 +438,8 @@ class Converter():
             cons.write(value)
         elif node.is_symbol():
             dim = ff.get_array_dim(node)
-            cons.write("*"*(dim-1))
-            if dim == 1:
+            # cons.write("*"*(dim-1))
+            if dim >= 1:
                 cons.write("(long *)")
             var = clean_string(str(node))
             if dim == 0 and not has_matching_type(ff.get_bv_width(node)):
