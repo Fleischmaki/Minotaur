@@ -115,7 +115,7 @@ Nr. |Tool | Status | Type
 2 | MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/157) | ITE value propagation
 3 | SeaHorn | [open](https://github.com/seahorn/seahorn/issues/546) | *inter-procedural analysis
 4 | SeaHorn | [open](https://github.com/seahorn/seahorn/issues/550) |
-5 | CPA -smg2 | [open](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1211) | 
+5 | CPA -smg2 | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1211) | 
 6 | MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/177) | Type Casts
 7 | 2ls --k-induction | [confirmed](https://github.com/diffblue/2ls/issues/177)
 8 | MOPSA | [open](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/178)
