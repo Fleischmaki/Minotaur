@@ -330,6 +330,8 @@ def is_shift_constraint_of(cond: str,other: str):
     for cast in [f'({sign} {ctype})' for sign in ('signed', 'unsigned') for ctype in ('char','short','int','long')]:
         index = index.removeprefix(cast)
     index = index.strip().removesuffix('))').removeprefix('(')
+    if '<<' in other and '>>' in other:
+        return index in other.split('<<',1)[1] or index in other.split('>>',1)[1] # Imprecise if multiple splits, but not sure how this is sound otherwise
     if '<<' in other:
         return index in other.split('<<',1)[1] # Imprecise if multiple splits, but not sure how this is sound otherwise
     return index in other.split('>>',1)[1]
