@@ -119,7 +119,7 @@ Nr. |Tool | Status | Type
 6 | MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/177) | Type Casts
 7 | 2ls --k-induction | [confirmed](https://github.com/diffblue/2ls/issues/177)
 8 | MOPSA | [open](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/178)|
-9 | CBMC | [open](https://github.com/diffblue/cbmc/issues/8295) |
+9 | CBMC | [open](https://github.com/diffblue/cbmc/issues/8295) | Pointers
 10| CPA -smg2| [open](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1211#note_1904978360) |
 ### Other
 Tool | Status | Type
