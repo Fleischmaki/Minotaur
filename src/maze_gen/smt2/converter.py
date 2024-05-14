@@ -264,14 +264,11 @@ class Converter():
                 op = '%'
             else:
                 op = '/'
-            cons.write(get_unsigned_cast(node))
             cons.write('(')
             self.write_cast(node,cons,l)
             cons.write(f" {op} ")
             self.write_cast(node,cons,r)
             cons.write(')')
-            if needs_unsigned_cast(node) and not has_matching_type(width):
-                cons.write(')')
 
     def write_node(self, node: FNode, cons: io.TextIOBase):
         curr_symbs = self.symbs
