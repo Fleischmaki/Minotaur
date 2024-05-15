@@ -54,9 +54,6 @@ Before recreating experiments, build the necessary experiment Dockers. Then run 
 python3 Minotaur --e experiment_name outdir
 ```
 Experiment configurations are stored in the [experiments](experiments) folder. 
-#### Recreating paper results
-For more informations on the provided experiment configurations see [this guide](recreate_results.md) on how to recreate the experiment results. 
-
 ### Minimize a maze
 ```
 python3 Minotaur --m report seed-dir out-dir {local,container}
@@ -127,3 +124,6 @@ Tool | Status | Type
  -- | -- | --
  Symbiotic | [open](https://github.com/staticafi/symbiotic/issues/246) | Arrays
  Ultimate Kojak | [fixed](https://github.com/ultimate-pa/ultimate/issues/647#event-10423593364) |
+## Recreating ASE 2024 paper results
+For more informations on the provided experiment configurations see [this guide](recreate_results.md) on how to recreate the experiment results. 
+
