@@ -113,7 +113,7 @@ def rename_arrays(formula: FNode):
     return formula, constraints
 
 
-def get_nodes(formula: FNode, cond: t.Callable[[FNode], bool]):
+def get_nodes(formula: FNode, cond: t.Callable[[FNode], bool]) -> set[FNode]:
     """ Get all nodes that satisfy a condition 
     """
     node_queue = [formula]
@@ -144,26 +144,9 @@ def get_shift_constraints(formula: FNode) -> list[FNode]:
 def get_array_index_calls(formula: FNode):
     """ Collect all array calls and maximum index for formula
     """
-    return get_array_calls_helper(formula, set())
-
-def get_array_calls_helper(formula: FNode, visited_nodes: set):
-    """Helper for get_array_index_calls
-    """
-    visited_nodes.add(formula.node_id())
-    calls = []
-    min_size = 1
-    if formula.is_store() or formula.is_select():
-        if formula.args()[1].is_constant():
-            min_size = max(min_size, formula.arg(1).constant_value())
-        if formula.args()[1].is_bv_zext() and formula.arg(1).arg(0).is_bv_constant():
-            min_size = max(min_size, formula.arg(1).arg(0).constant_value())
-        calls = [formula]
-    for subformula in formula.args():
-        if not (subformula.is_constant() or subformula.is_literal() or subformula.node_id() in visited_nodes):
-            sub_min, sub_calls = get_array_calls_helper(subformula, visited_nodes)
-            calls += sub_calls
-            min_size = max(min_size, sub_min)
-    return min_size, calls
+    calls = get_nodes(formula, lambda n: n.is_store() or n.is_select())
+    max_constant_access = max(map(lambda n: n.constant_value(), filter(lambda n: n.is_constant(), map(lambda n: n.arg(1), calls))))
+    return max_constant_access, calls
 
 def get_indices_for_each_array(array_operations: list[FNode]) -> dict[str,set[int]]:
     """"Get a dict containing the constant indeces used for every array
