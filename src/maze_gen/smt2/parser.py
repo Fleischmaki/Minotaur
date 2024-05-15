@@ -48,7 +48,9 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     converter = get_converter()
     converter.set_well_defined(generate_well_defined)
     if all_arrays_constant and transformations['ca']:
-        converter.set_array_indices(ff.get_indices_for_each_array(ff.get_array_index_calls(formula)[1]))
+        converter.set_array_indices(ff.get_indices_for_each_array(ff.get_array_index_calls(formula)[1]
+                                                                + list(ff.get_nodes(formula, lambda n: n.is_equals() and n.arg(0).get_type().is_array_type())) # type: ignore
+                                                                ))
         array_size = -1
     else:
         converter.set_array_indices({})

@@ -171,13 +171,18 @@ def get_indices_for_each_array(array_operations: list[FNode]) -> dict[str,set[in
     """
     res = {}
     for op in array_operations:
-        name = get_array_name(op.args()[0])
-        index = op.args()[1]
+        name = get_array_name(op.arg(0))
         if get_array_name(op) not in res:
             res[name] = set()
-        if not(index.is_constant()):
-            raise ValueError("Should not be collecting non-constant indeces")
-        res[name].add(index.constant_value())
+        if op.is_equals():
+            name2 = get_array_name(op.arg(1))
+            if name2 not in res:
+                res[name2] = set()
+        else:
+            index = op.args()[1]
+            if not(index.is_constant()):
+                raise ValueError("Should not be collecting non-constant indeces")
+            res[name].add(index.constant_value())
     return res
 
 def label_formula_depth(formula: FNode) -> dict[FNode, int]:
