@@ -95,7 +95,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     return parsed_cons, variables, array_size+1
 
 def get_forced_parameters(file_path, transformations):
-    generate_sat=(transformations['sat'] and not transformations['fuzz']) or not file_path.removesuffix('.smt2').endswith('unsat')
+    generate_sat= transformations['sat'] and not (('fuzz' in transformations or 'yinyang' in transformations) and file_path.removesuffix('.smt2').endswith('unsat'))
     generate_well_defined=transformations['wd'] or not generate_sat
     return generate_sat,generate_well_defined
 
