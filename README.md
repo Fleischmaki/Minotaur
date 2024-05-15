@@ -118,7 +118,7 @@ Nr. |Tool | Status | Type
 8 | MOPSA | [open](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/178)|
 9 | CBMC | [open](https://github.com/diffblue/cbmc/issues/8295) | Pointers
 10| CPA -smg2| [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1211#note_1904978360) |
-11 | CBMC --refine | [open](https://github.com/diffblue/cbmc/issues/8295) 
+11 | CBMC --refine | [open](https://github.com/diffblue/cbmc/issues/8296) 
 ### Other
 Tool | Status | Type
  -- | -- | --
