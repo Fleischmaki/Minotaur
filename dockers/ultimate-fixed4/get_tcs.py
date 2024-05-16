@@ -45,19 +45,30 @@ def main(dest_dir,verbosity,expected_results):
         except Exception as e:
             print("NOTE: Failed to parse file %s: %s" % (file, str(e)))
             continue
-        if ('FALSE' in resfile):
+
+        # True positives
+        if ('Ultimate proved your program to be incorrect' in resfile):
             save_tc(file_dir, respath, start_time, end_time, 'positive', expected_result)
 
-        elif ('TRUE' in resfile):
+        # False negatives
+        elif ('Ultimate proved your program to be correct' in resfile):
             save_tc(file_dir, respath, start_time, end_time, 'negative', expected_result)
 
-        elif ('UNKNOWN' in resfile):
-            save_tc(file_dir, respath, start_time, end_time, 'uk', copy_content = verbosity == 'all')
-        # Timeout
-        elif ('Killed' in resfile):  # Killed by 15
+        elif (len(resfile) == 0 or 'RESULT: Ultimate could not prove your program: Timeout' in resfile): 
             save_tc(file_dir, respath, start_time, end_time, 'to', copy_content = verbosity == 'all')
-        else:
+
+        # Crashes/Errors
+        elif ("ShortDescription: Unsupported Syntax" in resfile or \
+            "ShortDescription: Incorrect Syntax" in resfile or \
+            "Type Error" in resfile or \
+            "InvalidWitnessErrorResult" in resfile or \
+                ("ExceptionOrErrorResult" in resfile and not "ExceptionOrErrorResult: UnsupportedOperationException: Solver said unknown" in resfile)):
             save_tc(file_dir, respath, start_time, end_time, 'er', copy_content = verbosity in ('error','all'))
+
+        else:
+            save_tc(file_dir, respath, start_time, end_time, 'uk', copy_content = verbosity == 'all')
+
+        # Timeout
 
 if __name__ == '__main__':
     dest_dir = sys.argv[1]    
