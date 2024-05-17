@@ -32,10 +32,12 @@ git clone https://github.com/Fleischmaki/Minotaur.git
 ```
 Note that the provided dockers build most tools from source. Building might take up to a few hours and several GBs of memory.
 
+### Install python3 dependencies
 If you want to generate mazes locally you will need to install the packages from [requirements.txt](requirements.txt)
 ```
 pip install -r Minotaur/requirements.txt
 ``` 
+### Download smt-comp-benchmarks
 
 If you want to use STORM update the STORM home in the [config file](Minotaur/src/maze_gen/storm/config.py).
 ## Using Minotaur
