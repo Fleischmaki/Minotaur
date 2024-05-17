@@ -264,14 +264,11 @@ class Converter():
                 op = '%'
             else:
                 op = '/'
-            cons.write(get_unsigned_cast(node))
             cons.write('(')
             self.write_cast(node,cons,l)
             cons.write(f" {op} ")
             self.write_cast(node,cons,r)
             cons.write(')')
-            if needs_unsigned_cast(node) and not has_matching_type(width):
-                cons.write(')')
 
     def write_node(self, node: FNode, cons: io.TextIOBase):
         curr_symbs = self.symbs
@@ -301,9 +298,12 @@ class Converter():
                     else:
                         lname = ff.get_array_name(l)
                         rname = ff.get_array_name(r)
-                        common_indices = self.array_indices[lname].intersection(self.array_indices[rname])
-                        for index in common_indices:
-                            cons.write(f'({lname}_{index}=={rname}_{index})')
+                        all_indices = self.array_indices[lname].union(self.array_indices[rname])
+                        for index in all_indices:
+                            self.symbs.add(f"{lname}_{index}")
+                            self.symbs.add(f"{rname}_{index}")
+                            cons.write(f'({lname}_{index}=={rname}_{index}) && ')
+                        cons.write("1")
                 else:
                     error(1, "Cannot compare array with non-array", node)
             else:
@@ -441,20 +441,19 @@ class Converter():
             cons.write(value)
         elif node.is_symbol():
             dim = ff.get_array_dim(node)
-            cons.write("*"*(dim-1))
-            if dim == 1:
+            if dim >= 1:
                 cons.write("(long *)")
             var = clean_string(str(node))
-            if dim == 0 and not has_matching_type(ff.get_bv_width(node)):
+            if dim == 0 and node.get_type().is_bv_type() and not has_matching_type(ff.get_bv_width(node)):
                 cons.write(get_unsigned_cast(node, always=True))
             cons.write(f'({var})')
-            if dim == 0 and not has_matching_type(ff.get_bv_width(node)):
+            if dim == 0 and node.get_type().is_bv_type() and not has_matching_type(ff.get_bv_width(node)):
                 cons.write(')')
             self.symbs.add(var)
         elif node.is_select():
             (a, p) = node.args()
             dim = ff.get_array_dim(a)
-            if node.get_type().is_bv_type(): #or node.get_type().elem_type.is_bv_type():
+            if node.get_type().is_bv_type():
                 ucast = get_unsigned_cast(node)
                 cons.write(ucast)
             if len(self.array_indices) > 0:

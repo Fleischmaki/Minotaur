@@ -2,7 +2,10 @@
 """
 import sys
 import logging
-from src.tools import test, minimize, generate, experiment, check_files
+from src.tools import test, experiment, generate
+pysmt = 'pysmt' in sys.modules
+if pysmt:
+    from src.tools import minimize, check_files
 LOGGER = logging.getLogger(__name__)
 
 if __name__ == '__main__':
@@ -31,13 +34,13 @@ if __name__ == '__main__':
 
     if mode == "t":
         test.load(argv)
-    elif mode == "m":
+    elif mode == "m" and pysmt:
         minimize.Minimizer(argv).minimize()
     elif mode == "g":
         generate.load(argv)
     elif mode == "e":
         experiment.load(argv)
-    elif mode == "c":
+    elif mode == "c" and pysmt:
         check_files.load(argv)
     else:
-        LOGGER.error("Invalid mode")
+        LOGGER.error("Invalid mode" + ("" if pysmt else "Have you tried installing pysmt?"))

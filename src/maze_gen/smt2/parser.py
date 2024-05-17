@@ -48,7 +48,9 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     converter = get_converter()
     converter.set_well_defined(generate_well_defined)
     if all_arrays_constant and transformations['ca']:
-        converter.set_array_indices(ff.get_indices_for_each_array(ff.get_array_index_calls(formula)[1]))
+        converter.set_array_indices(ff.get_indices_for_each_array(ff.get_array_index_calls(formula)[1]
+                                                                + list(ff.get_nodes(formula, lambda n: n.is_equals() and n.arg(0).get_type().is_array_type())) # type: ignore
+                                                                ))
         array_size = -1
     else:
         converter.set_array_indices({})
@@ -93,7 +95,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     return parsed_cons, variables, array_size+1
 
 def get_forced_parameters(file_path, transformations):
-    generate_sat=(transformations['sat'] and not transformations['fuzz']) or not file_path.removesuffix('.smt2').endswith('unsat')
+    generate_sat= transformations['sat'] and not (('fuzz' in transformations or 'yinyang' in transformations) and file_path.removesuffix('.smt2').endswith('unsat'))
     generate_well_defined=transformations['wd'] or not generate_sat
     return generate_sat,generate_well_defined
 
@@ -330,6 +332,8 @@ def is_shift_constraint_of(cond: str,other: str):
     for cast in [f'({sign} {ctype})' for sign in ('signed', 'unsigned') for ctype in ('char','short','int','long')]:
         index = index.removeprefix(cast)
     index = index.strip().removesuffix('))').removeprefix('(')
+    if '<<' in other and '>>' in other:
+        return index in other.split('<<',1)[1] or index in other.split('>>',1)[1] # Imprecise if multiple splits, but not sure how this is sound otherwise
     if '<<' in other:
         return index in other.split('<<',1)[1] # Imprecise if multiple splits, but not sure how this is sound otherwise
     return index in other.split('>>',1)[1]
