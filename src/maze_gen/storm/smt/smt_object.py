@@ -17,7 +17,6 @@ limitations under the License.
 from ..runner.z3_python_api import check_satisfiability, convert_ast_to_expression, get_model
 from z3 import *
 from termcolor import colored
-import copy
 
 class smtObject(object):
     def __init__(self, file_path, path_to_mutant_folder, track_truth_values=True):

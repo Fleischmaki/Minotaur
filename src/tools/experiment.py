@@ -50,7 +50,12 @@ def load_config(path: str) -> dict:
 def load(argv):
     """ Run experiment. Should be called from __main__.py 
     """
-    conf = load_config(os.path.join(test.get_minotaur_root(),'experiments',argv[0] + '.conf.json'))
+    if argv[0].endswith('.conf.json'):
+        conf_path = argv[0]
+    else:
+        conf_path = os.path.join(test.get_minotaur_root(),'experiments',argv[0] + '.conf.json')
+
+    conf = load_config(conf_path)
     outdir = argv[1]
 
     commands.run_cmd(f'mkdir -p {outdir}')

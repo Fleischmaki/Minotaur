@@ -62,13 +62,13 @@ def parse_transformations(t_type: str) -> dict:
             shuffle = True
         elif transformation.startswith('storm'):
             storm = True
-            max_assert = 5
+            max_assert = 20
             max_depth = 10
             if len(transformation) > 5:
                 max_assert, max_depth = transformation.removeprefix("storm").split('x')
         elif transformation.startswith('fuzz'):
             fuzz = True
-            max_assert = 5
+            max_assert = 10
             max_depth = 10
             if len(transformation) > 4:
                 max_assert, max_depth = transformation.removeprefix("fuzz").split('x')
