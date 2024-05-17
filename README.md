@@ -44,6 +44,7 @@ If you want to use STORM locally, update the STORM home in the [config file](Min
 Minotaur ships only with the seeds needed to reproduce the experiments.
 To perform testing, we recommend installing the SMT-Comp benchmarks.
 They are compressed using zstd, so if you do not have it installed, you will need to install that first.
+WARNING! The benchmarks are very large (48GB) so make sure you have enough storage. 
 ```
 sudo apt-get update && sudo-apt get install zstd
 ./Minotaur/scripts/get_seeds.sh
