@@ -441,7 +441,6 @@ class Converter():
             cons.write(value)
         elif node.is_symbol():
             dim = ff.get_array_dim(node)
-            # cons.write("*"*(dim-1))
             if dim >= 1:
                 cons.write("(long *)")
             var = clean_string(str(node))
@@ -454,7 +453,7 @@ class Converter():
         elif node.is_select():
             (a, p) = node.args()
             dim = ff.get_array_dim(a)
-            if node.get_type().is_bv_type(): #or node.get_type().elem_type.is_bv_type():
+            if node.get_type().is_bv_type():
                 ucast = get_unsigned_cast(node)
                 cons.write(ucast)
             if len(self.array_indices) > 0:
