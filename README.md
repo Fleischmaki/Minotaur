@@ -33,13 +33,23 @@ git clone https://github.com/Fleischmaki/Minotaur.git
 Note that the provided dockers build most tools from source. Building might take up to a few hours and several GBs of memory.
 
 ### Install python3 dependencies
-If you want to generate mazes locally you will need to install the packages from [requirements.txt](requirements.txt)
+If you want to generate mazes locally or perform minimization, you will need to install the packages from [requirements.txt](requirements.txt)
 ```
 pip install -r Minotaur/requirements.txt
+python3 -m pysmt install --confirm-agreement --z3
 ``` 
-### Download smt-comp-benchmarks
+If you want to use STORM locally, update the STORM home in the [config file](Minotaur/src/maze_gen/storm/config.py).
 
-If you want to use STORM update the STORM home in the [config file](Minotaur/src/maze_gen/storm/config.py).
+### Download SMT-COMP benchmarks
+Minotaur ships only with the seeds needed to reproduce the experiments.
+To perform testing, we recommend installing the SMT-Comp benchmarks.
+They are compressed using zstd, so if you do not have it installed, you will need to install that first.
+```
+sudo apt-get update && sudo-apt get install zstd
+./Minotaur/scripts/get_seeds.sh
+```
+The benchmarks will be installed in ./smt_comp_benchmarks
+
 ## Using Minotaur
 ### Test Analyzers
 Runs are configured via conf.json files located in the [test](Minotaur/test) folder.
