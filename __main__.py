@@ -3,10 +3,25 @@
 import sys
 import logging
 from src.tools import test, experiment, generate
-pysmt = 'pysmt' in sys.modules
-if pysmt:
-    from src.tools import minimize, check_files
+
 LOGGER = logging.getLogger(__name__)
+
+PYSMT_INSTALLED = False
+try:
+    from pysmt.exceptions import SolverAPINotFound
+    PYSMT_INSTALLED = True
+except ImportError:
+    LOGGER.warning("WARNING: pySMT not installed, some features are disabled.")
+
+if PYSMT_INSTALLED:
+    try:
+        from pysmt.solvers import z3 
+        PYSMT_INSTALLED = True
+    except SolverAPINotFound:
+        LOGGER.warning("WARNING: Pysmt installed, but cannot find Z3. Try running python3 -m pysmt install --z3")
+        PYSMT_INSTALLED = False
+if PYSMT_INSTALLED:
+    from src.tools import minimize, check_files
 
 if __name__ == '__main__':
     mode = sys.argv[1]
@@ -34,13 +49,13 @@ if __name__ == '__main__':
 
     if mode == "t":
         test.load(argv)
-    elif mode == "m" and pysmt:
+    elif mode == "m" and PYSMT_INSTALLED:
         minimize.Minimizer(argv).minimize()
     elif mode == "g":
         generate.load(argv)
     elif mode == "e":
         experiment.load(argv)
-    elif mode == "c" and pysmt:
+    elif mode == "c" and PYSMT_INSTALLED:
         check_files.load(argv)
     else:
-        LOGGER.error("Invalid mode" + ("" if pysmt else "Have you tried installing pysmt?"))
+        LOGGER.error("Invalid mode %s", "" if PYSMT_INSTALLED else "Have you tried installing pysmt?")
