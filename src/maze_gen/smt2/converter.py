@@ -444,10 +444,10 @@ class Converter():
             if dim >= 1:
                 cons.write("(long *)")
             var = clean_string(str(node))
-            if dim == 0 and not has_matching_type(ff.get_bv_width(node)):
+            if dim == 0 and node.get_type().is_bv_type() and not has_matching_type(ff.get_bv_width(node)):
                 cons.write(get_unsigned_cast(node, always=True))
             cons.write(f'({var})')
-            if dim == 0 and not has_matching_type(ff.get_bv_width(node)):
+            if dim == 0 and node.get_type().is_bv_type() and not has_matching_type(ff.get_bv_width(node)):
                 cons.write(')')
             self.symbs.add(var)
         elif node.is_select():
