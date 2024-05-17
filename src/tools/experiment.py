@@ -53,7 +53,7 @@ def load(argv):
     if argv[0].endswith('.conf.json'):
         conf_path = argv[0]
     else:
-        conf_path = os.path.join(get_minotaur_root(),'experiments',argv[0] + '.conf.json')
+        conf_path = os.path.join(test.get_minotaur_root(),'experiments',argv[0] + '.conf.json')
 
     conf = load_config(conf_path)
     outdir = argv[1]
