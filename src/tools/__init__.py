@@ -1,2 +1,2 @@
-# Contains all the components for handling the commands in the __main__ file
+# Contains the different functionality frontends
 __all__ = ['generate','minimize','test', 'experiment','check_files']

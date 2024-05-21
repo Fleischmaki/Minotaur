@@ -28,7 +28,7 @@ def get_bv_width_from_array_type(array_type: smt_types._ArrayType) -> int:
     raise ValueError(f"Could not compute BVWidth for node of type {node_type}.")
 
 
-def get_bv_width(node: FNode) -> int: # 
+def get_bv_width(node: FNode) -> int:
     """Calculate bit width of a node"""
     res = 0
     if node.get_type().is_int_type():
@@ -37,7 +37,7 @@ def get_bv_width(node: FNode) -> int: #
         if node.is_bool_constant() or node.is_symbol():
             res = 1
         else:
-            res = get_bv_width(node.args()[0]) ## Boolean relations
+            res = get_bv_width(node.args()[0]) # For relations, give width of elements, as relation width is 1
     elif node.get_type().is_array_type():
         return get_bv_width_from_array_type(node.get_type())
     elif not (node.get_type().is_bv_type()):
@@ -279,7 +279,6 @@ def daggify(formula: FNode, limit: int):
                 if seen[sub.node_id()] == limit:
                     if not (sub.is_constant() or sub.is_symbol() or sub.is_function_application() or sub.is_not()):
                         var = FreshSymbol(sub.get_type())
-                        # Compute fixpoint over substitution
                         sub = compute_substitution_fixpoint(subs, sub)
                         subs.update({sub: var})
                         formula = formula.substitute(subs)

@@ -115,7 +115,6 @@ def get_random_params(conf: dict):
     set_default(res,'c',0)
     set_default(res,'g','default_gen')
     set_default(res,'m',int(conf['transforms']))
-    #set_default(res,'u',0) # not included by default
 
     if 'u' in res:
         res['w'] = 1
@@ -201,7 +200,7 @@ class TargetGenerator(Iterable):
                 batch_file.write(f"{docker.HOST_NAME}/{maze_keys[i]}\n")
 
         for tool in self.conf['tool'].keys():
-            variant, flags = pick_tool_flags(self.conf,tool) # Since we run whole batch at once can only pick one flag
+            variant, flags = pick_tool_flags(self.conf,tool)
             for i in range(maze_count):
                 maze = maze_keys[i]
                 params = self.mazes[maze]
@@ -447,8 +446,6 @@ def cleanup(completed: 'list[Target]') -> None:
         procs.append(commands.spawn_cmd(REMOVE_CMD % get_maze_dir(target.maze)))
         procs.append(commands.spawn_cmd(REMOVE_CMD % get_batch_file(target.index)))
         procs.append(commands.spawn_cmd(REMOVE_CMD % get_result_file(target.index)))
-        # if 'storm' in target.params['t'] or 'fuzz' in target.params['t'] or 'yinyang' in target.params['t']:
-            # procs.append(commands.spawn_cmd(REMOVE_CMD % os.path.join(get_temp_dir(), 'smt', str(target.params['r']))))
     commands.wait_for_procs(procs)
 
 def store_coverage(conf,works: list[Target], out_dir: str) -> None:
@@ -474,7 +471,7 @@ def main(conf, out_dir):
     done = False
 
     gen = TargetGenerator(conf)
-    while gen.has_targets() and not done: # -1 for inifinity
+    while gen.has_targets() and not done:
         works, to_remove = fetch_works(conf, gen)
         spawn_containers(conf, works)
         run_tools(conf, works)
@@ -482,8 +479,6 @@ def main(conf, out_dir):
         cleanup(to_remove)
         if conf['coverage']:
             store_coverage(conf,works,out_dir)
-    # commands.run_cmd(REMOVE_CMD % get_temp_dir())
-
 
 def load(argv):
     if argv[0].endswith('.conf.json'):

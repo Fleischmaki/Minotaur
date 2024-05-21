@@ -93,9 +93,9 @@ def generate_mazes(paramss, outdir, workers=1, timeout=-1):
     works = list(filter(lambda w: len(w) > 0, works))
 
     pipes = []
-    for i in range(len(works)):
-        setup_generation_docker(works[i][0], outdir, i)
-        pipes.append(generate_maze_in_docker(works[i][0],i,timeout)) # Can already generate first maze while others spawn in
+    for i, work in enumerate(works):
+        setup_generation_docker(work[0], outdir, i)
+        pipes.append(generate_maze_in_docker(work[0],i,timeout))
 
     longest_work = 0 if len(works) == 0 else max(map(len,works))
     for i in range(1,longest_work):
