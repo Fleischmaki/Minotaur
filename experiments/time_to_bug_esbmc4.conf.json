@@ -8,7 +8,7 @@
 	"transforms" : [0,20,20],
 	"seed": [1,1,1,2,2,2,3,3,3,4,4,4,5,5,5],
 	"batch_size": 1,
-	"maze_gen" : "local",
+	"maze_gen" : "container",
 	"expected_result": "error",
 	"abort_on_error": ["fn"],
 	"gen_time" : 1000,

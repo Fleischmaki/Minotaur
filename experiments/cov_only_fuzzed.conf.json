@@ -7,7 +7,7 @@
 	"memory" : 4,
 	"transforms" : 10,
 	"batch_size": 100,
-	"maze_gen" : "local",
+	"maze_gen" : "container",
 	"expected_result": "error",
 	"gen_time" : 1000,
 	"abort_on_error":0,
