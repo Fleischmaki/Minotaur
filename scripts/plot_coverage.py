@@ -10,6 +10,7 @@ def get_average(coverages, key):
 cols = ['b','g','c','r','m','y']
 linestyles = ['-',':','--','-.']
 tools = ["cbmc","esbmc","seahorn"]
+covtypes = {'l': 'line', 'b': 'branch', 'f': 'function'}
 baselines = ["Fuzzle", "Fuzzle + SMT", "Minotaur 1x1", "Minotaur"]
 num_baselines = int(sys.argv[2])
 total_runs = int(sys.argv[3])
@@ -23,7 +24,6 @@ for baseline in range(num_baselines):
         plt.ylabel("Coverage (%)")
         plt.xlabel("Number of batches (100 mazes per batch)")
         outdir = os.path.join(path,'cov')
-        # print(f"Results for dir {outdir}:")
         for j, tool in enumerate(tools):
             i = 1
             fname = f"{tool}_{i}batches.cov.json"
@@ -42,8 +42,6 @@ for baseline in range(num_baselines):
             all_coverages[baseline][tool]['b'].append(branch_coverage)
             all_coverages[baseline][tool]['l'].append(line_coverage)
             all_coverages[baseline][tool]['f'].append(function_coverage)
-            # print(f"Batch {fname}: b:{cov['branch_covered']}({cov['branch_percent']}%), l:{cov['line_covered']}({cov['line_percent']}%), f:{cov['function_covered']}({cov['function_percent']}%)")
-            # print("---------------------------")
             col = cols[j]
             x = np.arange(len(branch_coverage))
             plt.plot(x, branch_coverage, color=col, linestyle=":", label=f"{tool} b.c.")
@@ -55,10 +53,10 @@ for baseline in range(num_baselines):
 
         print("##############################")
 
-    print(f"Final averages for baseline {baseline}:")
+    print(f"Final averages for baseline {baselines[baseline]}:")
     for tool in tools:
         tool_end_coverage  = end_coverages[tool]
-        print(f"{tool}: b:{get_average(tool_end_coverage ,'branch_covered')}({get_average(tool_end_coverage ,'branch_percent'):.1f}%), l:{get_average(tool_end_coverage ,'line_covered')}({get_average(tool_end_coverage ,'line_percent'):.1f}%), f:{get_average(tool_end_coverage ,'function_covered')}({get_average(tool_end_coverage ,'function_percent'):.1f}%)")
+        print(f"{tool}: {covtypes['b']}:{get_average(tool_end_coverage ,'branch_covered')}({get_average(tool_end_coverage ,'branch_percent'):.1f}%), {covtypes['l']}:{get_average(tool_end_coverage ,'line_covered')}({get_average(tool_end_coverage ,'line_percent'):.1f}%), {covtypes['f']}:{get_average(tool_end_coverage ,'function_covered')}({get_average(tool_end_coverage ,'function_percent'):.1f}%)")
 
 
 for baseline in range(num_baselines):
@@ -70,8 +68,8 @@ for baseline in range(num_baselines):
 for tool in tools:
     for covtype in ('b','l','f'):
         plt.xlim(0,99)
-        plt.ylabel("Coverage (%)")
-        plt.xlabel("Number of batches (100 mazes per batch)")
+        plt.ylabel("Coverage (%)", fontsize=18)
+        plt.xlabel("Number of batches",  fontsize=18)
         for baseline in range(num_baselines):
             if baseline == 2:
                 continue
@@ -79,6 +77,6 @@ for tool in tools:
             lin = linestyles[baseline]
             x = np.arange(len(all_coverages[baseline][tool]['b']))
             plt.plot(x, all_coverages[baseline][tool][covtype], color=col, linestyle=lin, label=f"{baselines[baseline]}")
-        plt.legend()
-        plt.savefig(os.path.join(sys.argv[1], f'{tool}_{covtype}_coverage.png'))
+        plt.legend(loc="lower right" if tool=='seahorn' else "center right", fontsize=18)
+        plt.savefig(os.path.join(sys.argv[1], f'{tool}_{covtypes[covtype]}_coverage.png'))
         plt.close()
