@@ -132,7 +132,7 @@ Nr. |Tool | Status | Type
 9 | CBMC | [open](https://github.com/diffblue/cbmc/issues/8295) | Pointers
 10| CPA -smg2| [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1211#note_1904978360) |
 11 | CBMC --refine | [open](https://github.com/diffblue/cbmc/issues/8296) 
-12 | ESBMC --inteval-analysis | [open](https://github.com/esbmc/esbmc/issues/1844)
+12 | ESBMC --inteval-analysis | [confirmed](https://github.com/esbmc/esbmc/issues/1844)
 ### Other
 Tool | Status | Type
  -- | -- | --
