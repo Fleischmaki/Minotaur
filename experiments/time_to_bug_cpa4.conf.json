@@ -5,8 +5,8 @@
 	"duration" : 30,
 	"workers" : 1,
 	"memory" : 4,
-	"transforms" : [1,20,20],
-	"seed": [1,1,1,2,2,2,3,3,3,4,4,4,5,5,5],
+	"transforms" : [0,1,20,20],
+	"seed": [1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5],
 	"batch_size": 1,
 	"maze_gen" : "local",
 	"expected_result": ["safe"],
@@ -22,6 +22,22 @@
 	},
 	"avg": 1,
 	"parameters" : [{
+		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
+		"w" : {
+			"min" : 4,
+			"max" : 7
+		},
+		"h" : {
+			"min" : 5,
+			"max" : 7
+		},
+		"g": ["default_gen","equality0_gen","equality25_gen","equality50_gen","equality75_gen","equality100_gen"],
+		"r" : {
+			"min" : 0,
+			"max" : 65536
+		}
+	},{
+
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
 		"w" : {
 			"min" : 4,

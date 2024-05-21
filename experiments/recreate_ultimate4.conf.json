@@ -2,18 +2,18 @@
 	"verbosity": "all",
 	"repeats" : 5,
 	"batches" : -1,
-	"duration" : 1000,
-	"workers" : 1,
+	"duration" : 30,
+	"workers" : 5,
 	"memory" : 4,
 	"transforms" : 20,
 	"seed": [1,2,3,4,5],
 	"batch_size": 1,
-	"maze_gen" : "local",
+	"maze_gen" : "container",
 	"expected_result": "infer",
-	"abort_on_error": ["er"],
+	"abort_on_error": ["fn"],
 	"tool" : {
 		"ultimate-bug4": {
-			"variant" : ["ua,ut,uk,ugc"]
+			"variant" : ["Automizer Default","Kojak Default","GemCutter Default","Taipan Default"]
 		}
 	},
 	"check_error": {

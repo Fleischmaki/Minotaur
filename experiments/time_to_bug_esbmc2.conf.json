@@ -2,7 +2,7 @@
 	"verbosity": "summary",
 	"repeats" : 8,
 	"batches": 100,
-	"duration" : 1000,
+	"duration" : 500,
 	"workers" : 1,
 	"memory" : 4,
 	"transforms" : [0,1,20,20],
