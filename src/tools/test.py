@@ -223,7 +223,7 @@ class TargetGenerator(Iterable):
             params = self.mazes[maze]
             res = None
             try:
-                res = self.get_expected_result(params,maze_gen.get_params_from_maze(maze)['m'])
+                res = get_expected_result(params,maze_gen.get_params_from_maze(maze)['m'], self.conf)
                 LOGGER.info("Expected result: %s", res)
             except FileNotFoundError:
                 pass
@@ -235,30 +235,6 @@ class TargetGenerator(Iterable):
                 continue
             expected_results.append(res)
         return expected_results
-
-    def get_expected_result(self,params,maze_id):
-        if self.conf['expected_result'] != 'infer':
-            return self.conf['expected_result']
-        if 'storm' in params['t']:
-            return 'error' if 'unsat' not in params['t'] else 'safe'
-        if 'fuzz' in params['t'] and 'unsat' in params['t']:
-            return 'safe'
-        if params['m'] == 0 and 's' in params:
-            with open(params['s']) as seedfile:
-                content = seedfile.read()
-                if '(set-info :status unsat)' in content:
-                    return 'safe'
-                if '(set-info :status sat)' in content:
-                    return 'error'
-                return None
-        smt_dir = os.path.join(get_temp_dir(), 'smt', str(params['r']))
-        for file in os.listdir(smt_dir):
-            file = str(file)
-            if file == f'mutant_{maze_id - 1}_sat.smt2' or file == f'mutant_{maze_id - 1}_unsat.smt2':
-                res = 'error' if file.removesuffix('.smt2').rsplit('_',1)[1] == 'sat' else 'safe'
-                commands.run_cmd(f"rm {os.path.join(smt_dir, file)}")
-                return res
-        return None
 
     def generate_mazes(self):
         """ Generate more mazes
@@ -282,6 +258,30 @@ class TargetGenerator(Iterable):
         batches_in_parallel = ceil(self.conf['workers']/len(self.conf['tool']))
         return [get_random_params(self.conf) for _ in range(min(self.repeats*mazes_per_batch,batches_in_parallel*mazes_per_batch))]
 
+
+def get_expected_result(params,maze_id,conf):
+    if conf['expected_result'] != 'infer':
+        return conf['expected_result']
+    if 'storm' in params['t']:
+        return 'error' if 'unsat' not in params['t'] else 'safe'
+    if 'fuzz' in params['t'] and 'unsat' in params['t']:
+        return 'safe'
+    if maze_id == 0 and 's' in params:
+        with open(params['s']) as seedfile:
+            content = seedfile.read()
+            if '(set-info :status unsat)' in content:
+                return 'safe'
+            if '(set-info :status sat)' in content:
+                return 'error'
+            return None
+    smt_dir = os.path.join(get_temp_dir(), 'smt', str(params['r']))
+    for file in os.listdir(smt_dir):
+        file = str(file)
+        if file == f'mutant_{maze_id - 1}_sat.smt2' or file == f'mutant_{maze_id - 1}_unsat.smt2':
+            res = 'error' if file.removesuffix('.smt2').rsplit('_',1)[1] == 'sat' else 'safe'
+            commands.run_cmd(f"rm {os.path.join(smt_dir, file)}")
+            return res
+    return None
 
 
 def fetch_works(conf: dict, gen: TargetGenerator) -> tuple[list[Target], list[Target]]:
@@ -317,6 +317,9 @@ def get_result_file(batch: int) -> str:
     return get_maze_dir(docker.RESULT_FILE_FORMAT % batch)
 
 def get_minotaur_root() -> str:
+    """ Get the dir from which __main__ was called, which is likey
+        to be the Minotaur root directory.    
+    """
     mainfile = sys.modules['__main__'].__file__ # pylint: disable=no-member 
     return os.path.dirname(os.path.realpath('' if mainfile is None else mainfile))
 
@@ -389,7 +392,12 @@ def check_error(conf: dict, w: Target, tag: str, out_dir: str):
     out_dir = os.path.join(out_dir, 'check')
     w.params['m'] = maze_gen.get_params_from_maze(w.maze)['m']
     maze = w.maze
-    docker.run_pa(conf['check_error'][w.tool], w.variant, w.flags, 'check', w.params, out_dir, memory=conf['memory'], timeout=conf['duration']*5, maze=get_maze_dir(maze), expected_result=conf['expected_result'])
+    res = get_expected_result(w.params, w.params['m'],conf)
+    if res is None:
+        LOGGER.warning("Could not find expected result when trying to check target %s", w)
+        return
+    docker.run_pa(conf['check_error'][w.tool], w.variant, w.flags, 'check', w.params, out_dir, 
+                  memory=conf['memory'], timeout=conf['duration']*5, maze=get_maze_dir(maze), expected_result=res)
     resdir = os.path.join(out_dir,maze, maze)
     for file in os.listdir(resdir):
         if len(file.split('_')) == 2:
