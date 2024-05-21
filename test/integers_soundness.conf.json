@@ -42,14 +42,15 @@
 			}
 		},
 		"esbmc": {
-			"variant" : [""],
-			"toggle" : ["--smt-during-symex","--array-flattener","--unwind 1024"],
+			"variant" : ["--z3", "--boolector", "--cvc", "--mathsat", "--yices", "--bv", "--ir"],
+			"toggle" : ["--array-flattener","--unwind 1024"],
 			"choose" : {
-				"" : ["--z3", "--boolector", "--cvc", "--mathsat", "--yices", "--bitwuzla", "--bv"],
 				"--incremental-bmc" : [0,""," --falsification"],
 				"--tuple" : [0,"-node-flattener", "-sym-flattener"],
 				"--k-induction": [0,""," --bidirectional"],
-				"--interval-analysis": [0,"", "-wrapped", "-arithmetic","-bitwise", "-modular"]
+				"--interval-analysis": [0,"", "-wrapped","-extrapolate","-ibex-contractor","-simplify","-no-contract","-eval-assumptions", "-arithmetic","-bitwise", "-modular",
+				"-narrowing"],
+				"--smt-during-symex": [0,""," --smt-symex-guard"," --smt-symex-assert"]
 			}
 		},
 		"mopsa": {

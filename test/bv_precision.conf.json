@@ -35,17 +35,13 @@
 			"toggle" : ["--context-sensitive"],
 			"choose" : {
 				"" : ["--intervals", "--octagons", "--equalities", "--havoc", "--heap", "--heap --intervals", "--heap --zones", "--arrays"],
-				"--" : ["bounds-check --pointer-check --div-by-zero-check --signed-overflow-check --undefined-shift-check"]
+				"--" : ["bounds-check --div-by-zero-check --signed-overflow-check --undefined-shift-check"]
 			}
 		},
 		"esbmc": {
-			"variant" : ["","--bv","--ir"],
-			"toggle" : ["--array-flattener","--unwind 1024",
-						"--interval-analysis-extrapolate","--interval-analysis-ibex-contractor","--interval-analysis-simplify","--interval-analysis-no-contract",
-						"--interval-analysis-eval-assumptions", "--interval-analysis-arithmetic","--interval-analysis-bitwise", "--interval-analysis-modular",
-						"--interval-analysis-narrowing", "--interval-analysis-extrapolate-under-approximate"],
+			"variant" : ["--z3", "--boolector", "--cvc", "--mathsat", "--yices", "--bv"],
+			"toggle" : ["--array-flattener","--unwind 1024"],
 			"choose" : {
-				"" : ["--z3", "--boolector", "--mathsat", "--yices", "--bv"],
 				"--incremental-bmc" : [0,""," --falsification"],
 				"--tuple" : [0,"-node-flattener", "-sym-flattener"],
 				"--k-induction": [0,""," --bidirectional"],
@@ -53,6 +49,9 @@
 				"-narrowing"],
 				"--smt-during-symex": [0,""," --smt-symex-guard"," --smt-symex-assert"]
 			}
+		},
+		"symbiotic": {
+			"variant" : [""]
 		}
 	},
 	"parameters" : {
