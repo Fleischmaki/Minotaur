@@ -50,7 +50,7 @@ def run_cmd_in_docker(container,cmd_str):
     return spawn_cmd_in_docker(container,cmd_str).wait()
 
 
-def get_user(): 
+def get_user(tool):
     """ Return the username in the given docker; useful when using a prebuilt docker 
     """
     return 'maze'
