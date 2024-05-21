@@ -96,8 +96,8 @@ def rename_arrays(formula: FNode):
     """ Introduce fresh variable for every chain of array stores
     """
     constraints = set()
-
-    for sub in formula.args():
+    for i in range(len(formula.args())):
+        sub = formula.arg(i)
         new_formula, new_constraints = rename_arrays(sub)
         constraints = constraints.union(new_constraints)
         formula = formula.substitute({sub: new_formula})
