@@ -336,11 +336,11 @@ class Converter():
         elif node.is_bv_ashr():
             self.convert_helper(node, cons, " >> ", True) # Always need to cast for shifts, as we dont only look at left operand
         elif node.is_bv_add():
-            self.convert_helper(node, cons, " + ") # Recast result on all operations that can exceed value ranges
+            self.convert_helper(node, cons, " + ")
         elif node.is_bv_sub():
             self.convert_helper(node, cons, " - ")
         elif node.is_bv_mul():
-            self.convert_helper(node, cons, " * ")# Recast result on all operations that can exceed value ranges
+            self.convert_helper(node, cons, " * ")
         elif node.is_bv_udiv() or node.is_bv_sdiv() or node.is_bv_urem() or node.is_bv_srem():
             self.div_helper(node,cons)
         elif node.is_bv_xor():
