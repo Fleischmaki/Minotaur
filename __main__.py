@@ -16,9 +16,16 @@ except ImportError:
 if PYSMT_INSTALLED:
     try:
         from pysmt.solvers import z3 
-        PYSMT_INSTALLED = True
     except SolverAPINotFound:
         LOGGER.warning("WARNING: Pysmt installed, but cannot find Z3. Try running python3 -m pysmt install --z3")
+        PYSMT_INSTALLED = False
+    try:
+        from distutils.errors import CompileError
+        from pysmt.smtlib.parser import SmtLibParser
+        PYSMT_INSTALLED = True
+    except CompileError as e:
+        LOGGER.warning("WARNING: Pysmt could not compile, is python3.xx-dev installed?")
+        LOGGER.warning(e)
         PYSMT_INSTALLED = False
 if PYSMT_INSTALLED:
     from src.tools import minimize, check_files
