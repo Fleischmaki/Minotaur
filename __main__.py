@@ -19,6 +19,7 @@ if PYSMT_INSTALLED:
     except SolverAPINotFound:
         LOGGER.warning("WARNING: Pysmt installed, but cannot find Z3. Try running python3 -m pysmt install --z3")
         PYSMT_INSTALLED = False
+if PYSMT_INSTALLED:
     try:
         from distutils.errors import CompileError
         from pysmt.smtlib.parser import SmtLibParser
