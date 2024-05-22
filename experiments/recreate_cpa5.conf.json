@@ -3,17 +3,17 @@
 	"repeats" : 5,
 	"batches": -1,
 	"duration" : 1000,
-	"workers" : 5,
+	"workers" : 6,
 	"memory" : 4,
-	"transforms" : 15,
+	"transforms" : 20,
 	"seed": [1,2,3,4,5],
 	"batch_size": 1,
-	"maze_gen" : "local",
-	"expected_result": "safe",
-	"abort_on_error": ["fp"],
+	"maze_gen" : "container",
+	"expected_result": "error",
+	"abort_on_error": ["fn"],
 	"tool" : {
 		"cpa": {
-			"variant" : ["smg2"]
+			"variant" : ["kInduction"]
 		}
 	},
 	"avg": 1,
@@ -33,14 +33,14 @@
 			"max" : 0
 		},
 		"t" : {
-			"storm": [1],
-			"wd": [0],
+			"storm": [0,1,"5x20"],
+			"wd": [0,1],
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4],
-			"unsat": [1]
+			"ca" : [0,1]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/bubble_sort2.c.smt2",
+		"s": "/Minotaur/bug_seeds/app1bench_812.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

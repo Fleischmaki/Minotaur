@@ -39,10 +39,9 @@
 			}
 		},
 		"esbmc": {
-			"variant" : [""],
+			"variant" : ["--cvc","--z3", "--boolector", "--mathsat", "--yices"],
 			"toggle" : ["--array-flattener","--unwind 1024"],
 			"choose" : {
-				"" : ["--z3", "--boolector", "--cvc", "--mathsat", "--yices", "--bitwuzla"],
 				"--incremental-bmc" : [0,""," --falsification"],
 				"--tuple" : [0,"-node-flattener", "-sym-flattener"],
 				"--k-induction": [0,""," --bidirectional"],
@@ -58,6 +57,9 @@
 						"cell-string-length-pack-rel-itv","cell-string-length-pointer-sentinel-itv-congr","cell-string-length-pointer-sentinel-itv","cell-string-length-pointer-sentinel-pack-rel-itv-congr-excluded-powerset-rewrite",
 						"cell-string-length-pointer-sentinel-pack-rel-itv-congr-excluded-powerset","cell-string-length-pointer-sentinel-pack-rel-itv-congr-rewrite","cell-string-length-pointer-sentinel-pack-rel-itv-congr",
 						"cell-string-length-pointer-sentinel-pack-rel-itv","cell-string-length-rel-itv","default"]
+		},
+		"symbiotic": {
+			"variant" : [""]
 		}
 	},
 	"parameters" : {
@@ -79,7 +81,8 @@
 			"storm": [1],
 			"wd": [0,1],
 			"mc": [0,25,50,75,100],
-			"dag": [0,2,3,4]
+			"dag": [0,2,3,4],
+			"ca": [0,1]
 		},
 		"g": ["CVE_gen", "CVE-neg_gen"],
 		"s": "/Minotaur/../seeds",

@@ -35,7 +35,7 @@ ListAElemT = t.TypeVar('ListAElemT')
 ListBElemT = t.TypeVar('ListBElemT')
 
 def coshuffle(list_a: list[ListAElemT],list_b: list[ListBElemT]) -> tuple[list[ListAElemT], list[ListBElemT]]:
-    temp = list(zip(list_a,list_b)) #shuffle groups and vars together
+    temp = list(zip(list_a,list_b))
     random.shuffle(temp)
     r1, r2 = zip(*temp)
     return list(r1), list(r2)
@@ -168,10 +168,8 @@ def run_storm(smt_file: str, mutant_path: str, seed: int, n: int, transformation
 
     fpars = get_parameters_dict(False, 0)
     fpars['number_of_mutants'] = n
-    fpars['max_depth'] = transformations['max_depth'] # Reduce the depth, we want simpler formulas
+    fpars['max_depth'] = transformations['max_depth']
     fpars['max_assert'] = transformations['max_assert']
-
-    # Find the logic of the formula
 
     generate_mutants(smt_obj, mutant_path, fpars['max_depth'],fpars['max_assert'],seed, file_data.logic,fpars)
 

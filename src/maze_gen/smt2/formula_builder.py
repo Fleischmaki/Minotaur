@@ -115,7 +115,6 @@ class FormulaBuilder():
             arrays_for_out_type = set(filter(lambda at: at.elem_type == out_type, self.arrays))
             if len(arrays_for_out_type) > 0:
                 res.extend([(ops.ARRAY_SELECT,[at, at.index_type]) for at in arrays_for_out_type])
-                # Limit array indices to char
                 if out_type.is_bool_type():
                     res.extend([(ops.EQUALS,[at,at]) for at in self.arrays])
                 if out_type.is_array_type():

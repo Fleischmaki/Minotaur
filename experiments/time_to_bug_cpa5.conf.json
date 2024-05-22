@@ -2,13 +2,13 @@
 	"verbosity": "summary",
 	"repeats" : 20,
 	"batches": 100,
-	"duration" : 1000,
+	"duration" : 500,
 	"workers" : 1,
 	"memory" : 4,
 	"transforms" : [0,1,20,20],
 	"seed": [1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5],
 	"batch_size": 1,
-	"maze_gen" : "local",
+	"maze_gen" : "container",
 	"expected_result": "error",
 	"abort_on_error": ["fn"],
 	"gen_time" : 1000,
@@ -50,7 +50,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/bubble_sort2.c.smt2",
+		"s": "/Minotaur/bug_seeds/app1bench_812.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -64,7 +64,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/bubble_sort2.c.smt2",
+		"s": "/Minotaur/bug_seeds/app1bench_812.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -86,7 +86,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/bubble_sort2.c.smt2",
+		"s": "/Minotaur/bug_seeds/app1bench_812.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

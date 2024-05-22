@@ -84,7 +84,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
             if continue_on_error:
                 if clause not in core:
                     continue
-                parsed_cons['(1==0)'] = True if check_neg else "" # Make sure condition remains unsat
+                parsed_cons['0'] = True if check_neg else "" # Add trivially safe clause
                 continue
             else:
                 raise e
@@ -109,7 +109,7 @@ def get_unsat_core(clauses, logic):
     LOGGER.info("Done")
     return core
 
-def add_parsed_cons(check_neg:bool, clauses:list, parsed_cons:OrderedDict, clause:FNode, cons_in_c: str): 
+def add_parsed_cons(check_neg:bool, clauses:list, parsed_cons:OrderedDict, clause:FNode, cons_in_c: str):
     """Add condition to the list of conditions""" 
     if check_neg:
         neg_sat = ff.is_neg_sat(clause, clauses)
@@ -188,7 +188,6 @@ def read_file(file_path: str, limit : int = 0, negate_formula : bool = False) ->
     decls = script.filter_by_command_name("declare-fun")
     for d in decls:
         for arg in d.args:
-            # if (str)(arg) != "model_version":
             decl_arr.append(arg)
     formula = script.get_strict_formula()
     if negate_formula:
@@ -335,7 +334,7 @@ def is_shift_constraint_of(cond: str,other: str):
     if '<<' in other and '>>' in other:
         return index in other.split('<<',1)[1] or index in other.split('>>',1)[1] # Imprecise if multiple splits, but not sure how this is sound otherwise
     if '<<' in other:
-        return index in other.split('<<',1)[1] # Imprecise if multiple splits, but not sure how this is sound otherwise
+        return index in other.split('<<',1)[1]
     return index in other.split('>>',1)[1]
 
 def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: int) -> tuple[list[str],dict[str,str]]:

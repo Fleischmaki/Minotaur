@@ -132,8 +132,8 @@ class Minimizer:
             
             if misses_bug:
                 empty_clauses += 1
-            else: 
-                clauses.insert(pos, clause) # Reinsert clause if no longer 'fn'
+            else:
+                clauses.insert(pos, clause) # Reinsert clause if no longer an error
         return clauses
 
     def result_is_err(self, rm=True):
@@ -153,10 +153,10 @@ class Minimizer:
 
     def is_err(self):
         maze = maze_gen.get_maze_names(self.params)[self.params['m'] - (0 if 'keepId' in self.params['t'] else 1)]
-        resdir = os.path.join(self.outdir,maze,maze) 
+        resdir = os.path.join(self.outdir,maze,maze)
         if os.path.isdir(resdir):
             for file in os.listdir(resdir):
-                if len(file.split('_')) == 2: # Still false negative
+                if len(file.split('_')) == 2:
                     LOGGER.info(file)
                     commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(self.outdir,'runs')))
                     commands.run_cmd('rm -r %s' % os.path.join(self.outdir,maze))
@@ -166,7 +166,7 @@ class Minimizer:
 
     def get_params(self, maze, smt_path = ''):
         self.maze = maze.split('/')[-1][:-2] # Cut .c
-        self.params= maze_gen.get_params_from_maze(self.maze,smt_path=smt_path)  
+        self.params= maze_gen.get_params_from_maze(self.maze,smt_path=smt_path)
         return self.params
 
     def set_fake_params(self):

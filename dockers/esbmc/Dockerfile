@@ -16,6 +16,7 @@ RUN pip3 install gcovr
 USER root
 RUN apt-get update && apt-get install -y \
     cvise \
+    creduce \
 && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/maze/tools
@@ -24,5 +25,8 @@ ADD run_esbmc.sh /home/maze/tools/run_esbmc.sh
 ADD reduce.sh /home/maze/tools/reduce.sh
 ADD reduce_helper.sh /home/maze/tools/reduce_helper.sh
 
+USER root
+RUN chmod +rwx *.sh
+USER maze
 ### Cleanup
 WORKDIR /home/maze/workspace

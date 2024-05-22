@@ -1,21 +1,24 @@
 {
-	"verbosity": "summary",
-	"repeats" : 20,
+	"verbosity": "all",
+	"repeats" : 15,
 	"batches": 100,
 	"duration" : 500,
 	"workers" : 1,
 	"memory" : 4,
-	"transforms" : [0,1,20,20],
-	"seed": [1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5],
+	"transforms" : [1,20,20],
+	"seed": [1,1,1,2,2,2,3,3,3,4,4,4,5,5,5],
 	"batch_size": 1,
 	"maze_gen" : "container",
-	"expected_result": "safe",
-	"abort_on_error": ["fp"],
+	"expected_result": "error",
 	"gen_time" : 1000,
+	"abort_on_error": ["er"],
 	"tool" : {
-		"2ls": {
-			"variant" : ["--k-induction"]
+		"ultimate-bug3": {
+			"variant" : ["uk"]
 		}
+	},
+	"check_error": {
+		"ultimate-bug3": "ultimate-fixed3"
 	},
 	"avg": 1,
 	"parameters" : [{
@@ -28,29 +31,14 @@
 			"min" : 5,
 			"max" : 7
 		},
-		"g": ["default_gen","equality0_gen","equality25_gen","equality50_gen","equality75_gen","equality100_gen"],
-		"r" : {
-			"min" : 0,
-			"max" : 65536
-		}
-	},{
-		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
-		"w" : {
-			"min" : 4,
-			"max" : 7
-		},
-		"h" : {
-			"min" : 5,
-			"max" : 7
-		},
 		"t" : {
 			"neg": [1],
-			"wd": [0,1],
+			"wd": [0],
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/no_init_bubble_sort_safe2.c.smt2",
+		"s": "/Minotaur/bug_seeds/bench_8477.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -59,12 +47,12 @@
 		"u" : [1],
 		"t" : {
 			"storm": [1],
-			"wd": [0,1],
+			"wd": [0],
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/no_init_bubble_sort_safe2.c.smt2",
+		"s": "/Minotaur/bug_seeds/bench_8477.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -81,12 +69,12 @@
 		},
 		"t" : {
 			"storm": [1],
-			"wd": [0,1],
+			"wd": [0],
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/b183test0001.smt2",
+		"s": "/Minotaur/bug_seeds/bench_8477.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

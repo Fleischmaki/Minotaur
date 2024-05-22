@@ -26,6 +26,12 @@ RUN mv *-linux /home/maze/tools
 FROM minotaur-base
 USER maze
 RUN sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java 
+RUN sudo apt-get update && sudo apt-get install -y \
+    cvise \
+    creduce \
+    build-essential \
+&& sudo rm -rf /var/lib/apt/lists/*
+
 
 WORKDIR /home/maze/tools/
 COPY --from=build /home/maze/tools/UAutomizer-linux /home/maze/tools/UAutomizer-linux

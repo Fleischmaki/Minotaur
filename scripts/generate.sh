@@ -92,8 +92,8 @@ if [ -z ${EXIT+x} ]; then
 fi
 
 if [ -z ${GEN+x} ]; then
-    echo "NOTE: The program generator was not specified. Default generator will be used."
-    GEN="default_gen"
+    echo "NOTE: The program generator was not specified. CVE generator will be used."
+    GEN="CVE_gen"
 fi
 
 if [ -z ${T_TYPE} ]; then

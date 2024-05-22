@@ -1,5 +1,4 @@
 """Contains functions that handle formulas (but not files or transforms)"""
-import array
 import math
 import typing as t
 import logging
@@ -29,7 +28,7 @@ def get_bv_width_from_array_type(array_type: smt_types._ArrayType) -> int:
     raise ValueError(f"Could not compute BVWidth for node of type {node_type}.")
 
 
-def get_bv_width(node: FNode) -> int: # 
+def get_bv_width(node: FNode) -> int:
     """Calculate bit width of a node"""
     res = 0
     if node.get_type().is_int_type():
@@ -38,7 +37,7 @@ def get_bv_width(node: FNode) -> int: #
         if node.is_bool_constant() or node.is_symbol():
             res = 1
         else:
-            res = get_bv_width(node.args()[0]) ## Boolean relations
+            res = get_bv_width(node.args()[0]) # For relations, give width of elements, as relation width is 1
     elif node.get_type().is_array_type():
         return get_bv_width_from_array_type(node.get_type())
     elif not (node.get_type().is_bv_type()):
@@ -97,8 +96,8 @@ def rename_arrays(formula: FNode):
     """ Introduce fresh variable for every chain of array stores
     """
     constraints = set()
-
-    for sub in formula.args():
+    for i in range(len(formula.args())):
+        sub = formula.arg(i)
         new_formula, new_constraints = rename_arrays(sub)
         constraints = constraints.union(new_constraints)
         formula = formula.substitute({sub: new_formula})
@@ -145,8 +144,9 @@ def get_array_index_calls(formula: FNode):
     """ Collect all array calls and maximum index for formula
     """
     calls = get_nodes(formula, lambda n: n.is_store() or n.is_select())
-    max_constant_access = max(map(lambda n: n.constant_value(), filter(lambda n: n.is_constant(), map(lambda n: n.arg(1), calls))))
-    return max_constant_access, calls
+    constant_indices = list(map(lambda n: n.constant_value(), filter(lambda n: n.is_constant(), map(lambda n: n.arg(1), calls))))
+    max_constant_access = 2 if len(constant_indices) == 0 else max(constant_indices)
+    return max_constant_access, list(calls)
 
 def get_indices_for_each_array(array_operations: list[FNode]) -> dict[str,set[int]]:
     """"Get a dict containing the constant indeces used for every array
@@ -169,6 +169,9 @@ def get_indices_for_each_array(array_operations: list[FNode]) -> dict[str,set[in
     return res
 
 def label_formula_depth(formula: FNode) -> dict[FNode, int]:
+    """ Collect the depth of the formula and every subformula
+    :returns : a dict mapping each subformula to its depth 
+    """
     node_queue = [formula]
     compute_queue = [formula]
     depths = {}
@@ -216,6 +219,8 @@ def constrain_array_size(formula: FNode, logic: str):
     return array_size, assertions, min_index, all_constant
 
 def get_array_base_type(node_type: smt_types.PySMTType) -> smt_types.PySMTType:
+    """ Get the base element type for a (potentially multi-dimensional) array-type
+    """
     while node_type.is_array_type():
         node_type = node_type.elem_type # type: ignore
     return node_type
@@ -237,8 +242,10 @@ def get_array_dim(node: FNode):
         dim += 1
     return dim
 
-def get_array_constraints(array_ops, array_size) -> list[FNode]:
-    """Helper"""
+def get_array_constraints(array_ops: list[FNode], array_size: int) -> list[FNode]:
+    """ Get constraints ensuring that the indices should be at most the given size.
+    :return: A list of constraints, sorted by the number of array accesses in the constraints.
+    """
     return sorted({And(i <= array_size, i >= 0) for i in filter(lambda index: not index.is_constant(), map(lambda x: x.arg(1), array_ops))},
                   key = lambda op: len(get_array_index_calls(op)[1]))
 
@@ -272,7 +279,6 @@ def daggify(formula: FNode, limit: int):
                 if seen[sub.node_id()] == limit:
                     if not (sub.is_constant() or sub.is_symbol() or sub.is_function_application() or sub.is_not()):
                         var = FreshSymbol(sub.get_type())
-                        # Compute fixpoint over substitution
                         sub = compute_substitution_fixpoint(subs, sub)
                         subs.update({sub: var})
                         formula = formula.substitute(subs)
