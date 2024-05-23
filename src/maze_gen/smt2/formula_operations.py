@@ -4,7 +4,7 @@ import typing as t
 import logging
 
 from pysmt.shortcuts import And, Not, is_sat,\
-    get_env,FreshSymbol, Equals, BV, EqualsOrIff
+    get_env,FreshSymbol, Equals, BV, EqualsOrIff, BVSGE
 from pysmt import typing as smt_types
 from pysmt.fnode import FNode
 from pysmt.solvers.z3 import Z3Solver
@@ -138,7 +138,8 @@ def get_shift_constraints(formula: FNode) -> list[FNode]:
     """ Returns constraints encoding that shifts cannot be larger than the width of the index  
     """
     shifts = get_nodes(formula, lambda f: f.is_bv_ashr() or f.is_bv_lshr() or f.is_bv_lshl())
-    return  [(shift.arg(1) < get_bv_width(shift)) for shift in shifts]
+    return  [(shift.arg(1) < get_bv_width(shift)) for shift in shifts] + \
+            [BVSGE(shift.arg(0),0) for shift in filter(lambda s: s.is_bv_ashr(), shifts)]
 
 def get_array_index_calls(formula: FNode):
     """ Collect all array calls and maximum index for formula
