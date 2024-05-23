@@ -113,11 +113,11 @@ Nr.  | Tool | Status | Type
 14 |ESBMC --mathsat| [confirmed](https://github.com/esbmc/esbmc/issues/1771) | 
 15 | MOPSA congr | [fixed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/179) | 
 16 | Ultimate integer| [closed](https://github.com/ultimate-pa/ultimate/issues/664) | Division-by-zero
-17 | MOPSA excluded-powerset | [open](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/182) |
+17 | MOPSA excluded-powerset | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/182) |
 18 | MOPSA cell-rel-itv | [closed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/183) | Outdated dependency | 
 19 | Ultimate integer| [fixed](https://github.com/ultimate-pa/ultimate/issues/665) | Overflowing shift | 
-20 | MOSPA cell-string-length-pointer-sentinel-pack-rel-itv-congr-rewrite | [open](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/184) | |
-21 | MOPSA congr | [open](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/185) | Modulo? |
+20 | MOSPA cell-string-length-pointer-sentinel-pack-rel-itv-congr-rewrite | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/184) | |
+21 | MOPSA congr | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/185) | Modulo? |
 ### Precision Issues
 Nr. |Tool | Status | Type
 | -- | -- | -- | -- |
