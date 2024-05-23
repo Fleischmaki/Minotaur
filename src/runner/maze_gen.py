@@ -40,20 +40,20 @@ def get_maze_names(p):
     return [f"{p['a']}_{p['w']}x{p['h']}_{p['r']}_0_{p['t']}_t{i}_{p['c']}percent_{generator}_ve.c"\
             for i in range(min_transform,p['m'] + 1)]
 
-def generate_maze_in_docker(params, name: str | int = '0', timeout=-1):
+def generate_maze_in_docker(params, name: int = 0, timeout=-1):
     """Generate a maze in a running docker container"""
     params['o'] = docker.HOST_NAME
     param_string = get_string_from_params(params)
     cmd = './Minotaur/scripts/generate.sh ' + param_string
     return docker.spawn_cmd_in_docker(docker.get_container('gen', name),  cmd, timeout=timeout)
 
-def setup_generation_docker(params, outdir, index):
+def setup_generation_docker(params, outdir, index: int):
     """Spawn a container for maze generation and setup seed and output structure.
     :param params: Generation parameters
     :param outdir: Output directory
     :param index: Maze name"""
     commands.run_cmd('mkdir -p ' + outdir + ' ' + ' '.join([os.path.join(outdir, i) for i in ['src','smt','sln','png','txt','bin',f"smt/{params['r']}"]]) )
-    docker.spawn_docker(1, index, 'gen', outdir).wait()
+    docker.spawn_docker(1, index, 'gen', outdir, cpu=index).wait()
     if 's' in params.keys():
         docker.set_docker_seed(params['s'], index, 'gen').wait()
 
@@ -86,7 +86,9 @@ def get_params_from_string(param_string):
     return params
 
 
-def generate_mazes(paramss, outdir, workers=1, timeout=-1):
+def generate_mazes(paramss, outdir, workers=1, timeout=-1, use_core=-1):
+    if use_core < 0:
+        workers = 1
     works = [[] for _ in range(workers)]
     for i , params in enumerate(paramss):
         works[i % workers].append(params)
@@ -94,7 +96,7 @@ def generate_mazes(paramss, outdir, workers=1, timeout=-1):
 
     pipes = []
     for i, work in enumerate(works):
-        setup_generation_docker(work[0], outdir, i)
+        setup_generation_docker(work[0], outdir, i if use_core < 0 else use_core)
         pipes.append(generate_maze_in_docker(work[0],i,timeout))
 
     longest_work = 0 if len(works) == 0 else max(map(len,works))
@@ -107,8 +109,11 @@ def generate_mazes(paramss, outdir, workers=1, timeout=-1):
                     docker.set_docker_seed(work[i]['s'], j, 'gen').wait()
                 pipes[j] = generate_maze_in_docker(work[i], j, timeout)
     commands.wait_for_procs(pipes)
-    for i in range(len(works)):
-        docker.kill_docker('gen',i)
+    if use_core > 0:
+        docker.kill_docker('gen', use_core)
+    else:
+        for i in range(len(works)):
+            docker.kill_docker('gen',i)
 
 def generate_maze(params, out_dir = '', minotaur = ''):
     if(minotaur == ''):

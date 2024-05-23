@@ -36,6 +36,8 @@ def load_config(path: str) -> dict:
         conf['batch_duration'] = conf['duration']
     if 'check_error' not in conf.keys():
         conf['check_error'] = None
+    if 'use_core' not in conf.keys():
+        conf['use_core'] = -1
 
 
     assert conf['repeats'] > 0
