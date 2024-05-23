@@ -37,7 +37,12 @@ If you want to generate mazes locally or perform minimization, you will need to 
 ```
 pip install -r Minotaur/requirements.txt
 python3 -m pysmt install --confirm-agreement --z3
-``` 
+```
+You'll also need the python dev tools, which for linux you can install e.g. as follows:
+```
+sudo apt-get update && sudo apt-get -y install software-properties-common\
+sudo add-apt-repository ppa:deadsnakes/ppa && sudo apt-get update sudo apt-get -y install python3.10 python3.xx-dev
+```
 If you want to use STORM locally, update the STORM home in the [config file](Minotaur/src/maze_gen/storm/config.py).
 
 ### Download SMT-COMP benchmarks
