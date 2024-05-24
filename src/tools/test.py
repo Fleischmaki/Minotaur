@@ -44,7 +44,7 @@ def load_config(path):
     assert conf['maze_gen'] in ['local', 'container']
     assert conf['verbosity'] in ['all','summary','bug','bug_only']
     assert conf['expected_result'] in ['error','safe','infer']
-    if conf['user_core'] < 0 and conf['workers'] > 1:
+    if conf['use_core'] > 1 and conf['workers'] > 1:
         LOGGER.warning("Using pinned cpu, only using 1 worker instead of %d", conf['workers'])
         conf['workers'] = 1
 
