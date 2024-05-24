@@ -54,7 +54,7 @@
 			"mc": [0,25,50,75,100]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/app12bench_930.smt2",
+		"s": "/Minotaur/bug_seeds/app9bench_930.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -75,7 +75,7 @@
 			"mc": [0,25,50,75,100]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/app12bench_930.smt2",
+		"s": "/Minotaur/bug_seeds/app9bench_930.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
