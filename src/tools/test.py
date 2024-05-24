@@ -32,7 +32,9 @@ def load_config(path):
     set_default(conf,'batch_size',1)
     set_default(conf,'gen_time',120)
     set_default(conf,'coverage',False)
+    set_default(conf,'use_core', -1)
     set_default(conf,'batch_duration', conf['duration']*conf['batch_size'])
+
 
     assert conf['repeats'] != 0
     assert conf['duration'] > 0
@@ -42,6 +44,9 @@ def load_config(path):
     assert conf['maze_gen'] in ['local', 'container']
     assert conf['verbosity'] in ['all','summary','bug','bug_only']
     assert conf['expected_result'] in ['error','safe','infer']
+    if conf['use_core'] >= 0 and conf['workers'] > 1:
+        LOGGER.warning("Using pinned cpu, only using 1 worker instead of %d", conf['workers'])
+        conf['workers'] = 1
 
     return conf
 
@@ -242,7 +247,7 @@ class TargetGenerator(Iterable):
         if self.conf['maze_gen'] == 'container':
             paramss = self.fetch_maze_params()
             LOGGER.info("Generating %d more mazes.", len(paramss))
-            maze_gen.generate_mazes(paramss, get_temp_dir(),self.conf['workers'],self.conf['gen_time'])
+            maze_gen.generate_mazes(paramss, get_temp_dir(),self.conf['workers'],self.conf['gen_time'], use_core=self.conf['use_core'])
             for params in paramss:
                 self.mazes.update({maze: params for maze in maze_gen.get_maze_names(params)})
         else:
@@ -332,7 +337,7 @@ def spawn_containers(conf: dict, works: list[Target]):
     procs = []
     for i in range(get_containers_needed(conf,works)):
         target = works[i*conf['batch_size']]
-        procs.append(docker.spawn_docker(conf['memory'], target.index, target.tool,get_maze_dir(),i,True))
+        procs.append(docker.spawn_docker(conf['memory'], target.index, target.tool,get_maze_dir(),conf['use_core'],True))
     commands.wait_for_procs(procs)
     time.sleep(5)
 
@@ -396,16 +401,17 @@ def check_error(conf: dict, w: Target, tag: str, out_dir: str):
         LOGGER.warning("Could not find expected result when trying to check target %s", w)
         return
     docker.run_pa(conf['check_error'][w.tool], w.variant, w.flags, 'check', w.params, out_dir, 
-                  memory=conf['memory'], timeout=conf['duration']*5, maze=get_maze_dir(maze), expected_result=res)
+                  memory=conf['memory'], timeout=conf['duration']+60, maze=get_maze_dir(maze), expected_result=res) # Add a minute for buffer
     resdir = os.path.join(out_dir,maze, maze)
-    for file in os.listdir(resdir):
-        if len(file.split('_')) == 2:
-            LOGGER.info(file)
-            commands.run_cmd('mkdir -p %s' % os.path.join(out_dir,'runs'))
-            commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(out_dir,'runs')))
-            commands.run_cmd('rm -r %s' % os.path.join(out_dir,maze))
-            if check_tag in file:
-                return True
+    if os.path.isdir(resdir):
+        for file in os.listdir(resdir):
+            if len(file.split('_')) == 2:
+                LOGGER.info(file)
+                commands.run_cmd('mkdir -p %s' % os.path.join(out_dir,'runs'))
+                commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(out_dir,'runs')))
+                commands.run_cmd('rm -r %s' % os.path.join(out_dir,maze))
+                if check_tag in file:
+                    return True
     return False
 
 def write_summary(conf,out_dir, target,tag,runtime):

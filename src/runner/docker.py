@@ -75,7 +75,7 @@ def spawn_docker(memory: int | str, name: int | str, tool: str, maze_dir: str, c
     if cpu >= 0:
         cmd = SPAWN_CMD_CPU % (memory, cpu, get_container(tool,name), os.path.abspath(maze_dir), ',readonly' if host_is_readonly else '', DOCKER_PREFIX + tool)
     else:
-        cmd = SPAWN_CMD_NOCPU % (memory, get_container(tool,name), os.path.abspath(maze_dir), ',readonly' if host_is_readonly else '', DOCKER_PREFIX + tool) 
+        cmd = SPAWN_CMD_NOCPU % (memory, get_container(tool,name), os.path.abspath(maze_dir), ',readonly' if host_is_readonly else '', DOCKER_PREFIX + tool)
     return commands.spawn_cmd(cmd)
 
 def set_docker_seed(path, name, tool):

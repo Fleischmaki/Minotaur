@@ -390,7 +390,7 @@ class Converter():
             mask = binary_to_decimal("1" * (dif))
             newtype = bits_to_utype(dif)
             cons.write("(" + newtype +") (")
-            self.write_cast(l,cons,l, True)
+            self.write_unsigned(l,cons,l, True)
             cons.write(" >> " + str(ext_start))
             if ext_end != m:
                 cons.write(" & " + mask)

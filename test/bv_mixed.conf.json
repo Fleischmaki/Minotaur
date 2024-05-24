@@ -78,7 +78,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen", "CVE-neg_gen"],
-		"s": "/Minotaur/../seeds",
+		"s":["/Minotaur/smt_comp_benchmarks/bv"],
 		"r" : {
 			"min" : 0,
 			"max" : 999999999

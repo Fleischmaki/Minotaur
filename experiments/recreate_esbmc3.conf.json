@@ -1,11 +1,11 @@
 {
-	"verbosity": "summary",
+	"verbosity": "all",
 	"repeats" : 5,
 	"batches": -1,
 	"duration" : 1000,
 	"workers" : 5,
 	"memory" : 4,
-	"transforms" : 20,
+	"transforms" : 100,
 	"seed": [1,2,3,4,5],
 	"batch_size": 1,
 	"maze_gen" : "container",
@@ -38,9 +38,7 @@
 		},
 		"t" : {
 			"storm": [1],
-			"wd": [0,1],
-			"mc": [0,25,50,75,100],
-			"dag": [0,2,3,4]
+			"wd": [0]
 		},
 		"g": ["CVE_gen"],
 		"s": "/Minotaur/bug_seeds/MULTIPLIER_PRIME_2.msat.smt2",
