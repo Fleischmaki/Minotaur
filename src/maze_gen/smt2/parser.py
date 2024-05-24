@@ -43,7 +43,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
         if array_size > ff.MAXIMUM_ARRAY_SIZE:
             raise ValueError("Minimum array size too large!")
         clauses = list(ff.get_array_constraints(array_calls, array_size)) \
-        + list(ff.get_shift_constraints(formula)) \
+        + list(filter(lambda s: not s.arg(1).is_constant(),ff.get_shift_constraints(formula)))\
         + list(formula_clauses)
     converter = get_converter()
     converter.set_well_defined(generate_well_defined)
