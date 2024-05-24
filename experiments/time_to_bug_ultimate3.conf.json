@@ -1,17 +1,18 @@
 {
 	"verbosity": "all",
 	"repeats" : 15,
-	"batches": 100,
-	"duration" : 500,
+	"batches":1000,
+	"duration" : 60,
 	"workers" : 1,
-	"memory" : 4,
-	"transforms" : [1,20,20],
+	"memory" : 2,
+	"transforms" : [0,1,25],
 	"seed": [1,1,1,2,2,2,3,3,3,4,4,4,5,5,5],
 	"batch_size": 1,
 	"maze_gen" : "container",
 	"expected_result": "error",
 	"gen_time" : 1000,
 	"abort_on_error": ["er"],
+	"use_core" : 11,
 	"tool" : {
 		"ultimate-bug3": {
 			"variant" : ["uk"]
@@ -33,20 +34,6 @@
 		},
 		"t" : {
 			"neg": [1],
-			"wd": [0],
-			"mc": [0,25,50,75,100],
-			"dag": [0,2,3,4]
-		},
-		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/bench_8477.smt2",
-		"r" : {
-			"min" : 0,
-			"max" : 65536
-		}
-	},{
-		"u" : [1],
-		"t" : {
-			"storm": [1],
 			"wd": [0],
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
