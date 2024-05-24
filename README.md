@@ -43,7 +43,7 @@ You'll also need the python dev tools, which for linux you can install e.g. as f
 sudo apt-get update && sudo apt-get -y install software-properties-common\
 sudo add-apt-repository ppa:deadsnakes/ppa && sudo apt-get update sudo apt-get -y install python3.10 python3.xx-dev
 ```
-If you want to use STORM locally, update the STORM home in the [config file](Minotaur/src/maze_gen/storm/config.py).
+If you want to use STORM locally, update the STORM home in the [config file](src/maze_gen/storm/config.py).
 
 ### Download SMT-COMP benchmarks
 Minotaur ships only with the seeds needed to reproduce the experiments.
@@ -58,7 +58,7 @@ The benchmarks will be installed in ./smt_comp_benchmarks
 
 ## Using Minotaur
 ### Test Analyzers
-Runs are configured via conf.json files located in the [test](Minotaur/test) folder.
+Runs are configured via conf.json files located in the [test](test) folder.
 To perform a test using the config file test/conf_name.conf.json run 
 ```
 python3 Minotaur --t conf_name outdir
