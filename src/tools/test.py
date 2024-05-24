@@ -258,8 +258,6 @@ class TargetGenerator(Iterable):
     def fetch_maze_params(self) -> list[dict]:
         """ Get as many maze parameters as needed to fully saturate workers
         """
-        if self.conf['use_core'] < 0:
-            return [get_random_params(self.conf)]
         mazes_per_batch = ceil(self.conf['batch_size']/max(1,self.conf['transforms']))
         batches_in_parallel = ceil(self.conf['workers']/len(self.conf['tool']))
         return [get_random_params(self.conf) for _ in range(min(self.repeats*mazes_per_batch,batches_in_parallel*mazes_per_batch))]
