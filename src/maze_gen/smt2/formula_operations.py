@@ -139,7 +139,7 @@ def get_shift_constraints(formula: FNode) -> list[FNode]:
     """
     shifts = get_nodes(formula, lambda f: f.is_bv_ashr() or f.is_bv_lshr() or f.is_bv_lshl())
     return  [(shift.arg(1) < get_bv_width(shift)) for shift in shifts] + \
-            [BVSGE(shift.arg(0),0) for shift in filter(lambda s: s.is_bv_ashr(), shifts)]
+            [BVSGE(shift.arg(0),BV(0,get_bv_width(shift))) for shift in filter(lambda s: s.is_bv_ashr(), shifts)]
 
 def get_array_index_calls(formula: FNode):
     """ Collect all array calls and maximum index for formula
