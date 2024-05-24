@@ -87,7 +87,7 @@ def get_params_from_string(param_string):
 
 
 def generate_mazes(paramss, outdir, workers=1, timeout=-1, use_core=-1):
-    if use_core < 0:
+    if use_core >= 0:
         workers = 1
     works = [[] for _ in range(workers)]
     for i , params in enumerate(paramss):
