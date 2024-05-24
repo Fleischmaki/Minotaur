@@ -97,11 +97,12 @@ def generate_mazes(paramss, outdir, workers=1, timeout=-1, use_core=-1):
     pipes = []
     for i, work in enumerate(works):
         setup_generation_docker(work[0], outdir, i if use_core < 0 else use_core)
-        pipes.append(generate_maze_in_docker(work[0],i,timeout))
+        pipes.append(generate_maze_in_docker(work[0],i if use_core < 0 else use_core,timeout))
 
     longest_work = 0 if len(works) == 0 else max(map(len,works))
     for i in range(1,longest_work):
         for j, work in enumerate(works):
+            j = j if use_core < 0 else use_core
             if i < len(work):
                 pipes[j].wait()
                 commands.run_cmd('mkdir -p ' + os.path.join(outdir, 'smt', str(work[i]['r'])))
