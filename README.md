@@ -20,7 +20,7 @@ flowchart LR
     Minimizer --> |Sat-status| Oracle
 ```
 ## Requirements
-- Python3 >= 3.10
+- Python3.10 or 3.11
 - Docker (or similar)
 
 ## Installation
