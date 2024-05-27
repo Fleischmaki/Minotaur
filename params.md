@@ -23,8 +23,11 @@ The following transformations are supported at the moment:
 - `rwX`: remove X% of walls from the maze
 - `sh`: shuffle gurad constraints
 - `dcX`: remvoe X% of guard constraints
-- `storm`: run STORM (or UNSAT fuzzing) on seed SMT file to produce new gurads. Strongly recommended.
-- `wd`: generate well-defined programs. Recommended for precision tests to avoid false-positives.
-- `unsat`: generate unsat seeds (leading to safe programs)
+- One of the following for fuzzing:
+  - `storm`: run STORM (or UNSAT fuzzing) on seed SMT file to produce new gurads. Strongly recommended.
+  - `fuzz`: run our custom fuzzer
+  - Optionally, you can specify the size of the formulas (number of assertions, maximum depth per assertion) as AxD, e.g. `fuzz5x10` to generate 5 assertions of depth 10 per mutant.
+- `wd`: generate well-defined programs.
+- `unsat`: generate unsat seeds (leading to safe programs). Note that this also sets wd to `True`.
 - `last`: only generate the n-th program that would be generated given the parameters. Useful when recreating bugs/minimizing programs
-- `neg`: Negate formulas that are unsat (useful for soundness without running storm)
+- `neg`: Negate formulas that are unsat (useful to ensure soundness without running storm)
