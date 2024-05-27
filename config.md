@@ -11,7 +11,7 @@ In particular config files accept the following values
 - `batch_duration` Sets the time before a batch gets killed, specified as the average time a maze should have (i.e. the total time for a batch is batch_duration*batch_size) 
 - `maze_gen=['local','container']`: Generate mazes locally one at a time or in parallel in docker
 -  `verbosity=['all','bug','summary','bug_only']`: Container output to keep: `all` keeps all, `bug` only for buggy outputs (fn or fp), `summary` only logs results to `summary.csv`, but keeps no output and `bug_only` only logs bugs to `summary.csv`
--  `expected_results=['error','all']`: `error` expects soundness tests, `safe` precision tests.
+-  `expected_results=['error','safe',`infer`]`: `error` expects soundness tests, `safe` precision tests, `infer` for mixed tests (with `fuzz` or `yinyang`).
 -  `parameters`: Possible values for [generation parameters](parameters.md). Can either be a list of possible values or an object specifiying a `min  and `max` value
     - Transformations (parameter `t`) expects an obejct containing for each transformation their possible values, specified same as other parameters. Please refer to the [list of transformations](params.md#transformations).
 - `tools`: Tools to be tested. It is necessary to add an object specifiying a variant (e.g. Taipan/Kojak/etc. for Ultimate). Flags can be set in two ways:
