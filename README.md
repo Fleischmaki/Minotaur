@@ -26,10 +26,11 @@ flowchart LR
 ## Installation
 ```
 git clone https://github.com/Fleischmaki/Minotaur.git
-./Minotaur/scripts/build_MC_dockers.sh
+./Minotaur/scripts/build_MC_dockers.sh <num_cores>
 # For recreating experiments #
-./Minotaur/scripts/build_experiment_dockers.sh
+./Minotaur/scripts/build_experiment_dockers.sh <num_cores>
 ```
+where <num_cores> is the number of cores available for parallel builds (recommended to keep at least two cores free)
 Note that the provided dockers build most tools from source. Building might take up to a few hours and several GBs of memory.
 
 ### Install python3 dependencies
