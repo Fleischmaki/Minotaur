@@ -33,6 +33,8 @@ git clone https://github.com/Fleischmaki/Minotaur.git
 where <num_cores> is the number of cores available for parallel builds (recommended to keep at least two cores free).
 
 Note that the provided dockers build most tools from source. Building might take up to a few hours and several GBs of memory.
+The builds need to download data from remote mirrors, so it can occassionally occur that the build fails because a connection is terminated.
+In this case rerunning the script usually fixes the problem.
 
 ### Install python3 dependencies
 If you want to generate mazes locally or perform minimization, you will need to install the packages from [requirements.txt](requirements.txt)
