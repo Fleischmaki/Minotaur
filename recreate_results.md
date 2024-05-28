@@ -23,11 +23,11 @@ For precision use 'fp', for crashes 'er'.
 
 ### Coverage
 These give the results for *Table 3* in the paper
-The coverage experiment is provided in [cov_smt_vs_fuzzed.conf.json](experiments/cov_smt_vs_fuzzed.conf.json). Please update the workers and memory according to your system specifications.
+The coverage experiment is provided in [coverage.conf.json](experiments/coverage.conf.json). Please update the workers and memory according to your system specifications.
 Coverage is collected per batch and can be aggregated via [a script](scripts/merge_coverage.py), which creates a coverage files combining the first n batches with n from 1 to the number of generated batches. This script requires the gcovr package 
 The summarized coverage can be printed and plotted via [plot_coverage.py](script/plot_coverage.py) (which again uses pandas), once coverage has been merged.
 ```
-python3 Minotaur --e smt_vs_fuzzed_cov result_dir  // This will take a long time to run 
+python3 Minotaur --e coverage result_dir  // This will take a long time to run 
 pip install gcovr pandas
 python3 Minotaur/scripts/merge_coverage.py result_dir/run*
 python3 Minotaur/scripts/plot_coverage.py result_dir 16 4
