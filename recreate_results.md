@@ -4,14 +4,15 @@ The bug ids are the same as in Table 1 of the experiments section.
 There are several types of experiments:
 
 ### Recreate bug
-Configurations of the form recreate_AnalyzerBugid.conf.json (e.g. recreate_cpa1).
+Configurations of the form `recreate_Bugid.conf.json` (e.g. recreate_1).
 For 5 different seeds (1,2,3,4,5) Run tests until the bug is found on the corresponding version of the analyzer.
 Will use multiple workers (default 5) to try and find the bug as quickly as possible.
 Note that the found bugs might look different from the ones reported, as the reports were also cleaned manually and sometimes a bug can be triggered in various ways using the seed files. 
 
 ### Time to bug
-Configurations of the form time_to_bug_AnalyzerBugid.conf.json (e.g. time_to_bug_cpa1).
-These correspond to *Table 2* in the paper. To get an accurate measure of time, only a single worker is used, so these can take a while to finish. The results are stored in a specified directory `$outdir`. To compute the average times, we used [this script](scripts/get_average_times.py), which uses the pandas package to parse csv:
+Configurations of the form time_to_bug_Bugid.conf.json (e.g. time_to_bug_1).
+These correspond to *Table 2* in the paper. To get an accurate measure of time, only a single worker is used, so these can take a while to finish, however they are set upd so that they can be run in parallel without any conflict.
+The results are stored in a specified directory `$outdir`. To compute the average times, we used [this script](scripts/get_average_times.py), which uses the pandas package to parse csv:
 ```
 pip install pandas
 python3 Minotaur --e time_to_bug_cpa1 cpa1_result_dir
