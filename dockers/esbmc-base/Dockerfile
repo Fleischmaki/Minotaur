@@ -1,5 +1,5 @@
 FROM ubuntu:20.04
-
+ARG CORE_COUNT=4
 RUN groupadd --gid 1000 maze \ 
     && useradd --uid 1000 --gid maze --shell /bin/bash --create-home maze
 
@@ -57,7 +57,7 @@ RUN ./contrib/setup-lingeling.sh
 RUN ./contrib/setup-btor2tools.sh
 RUN ./configure.sh --prefix $PWD/../boolector-release
 WORKDIR /home/maze/tools/boolector/build
-RUN make -j9 && make install
+RUN make -j${CORE_COUNT} && make install
 
 # CVC4
 WORKDIR /home/maze/tools
@@ -66,7 +66,7 @@ RUN git clone https://github.com/CVC4/CVC4.git
 WORKDIR /home/maze/tools/CVC4
 RUN git reset --hard b826fc8ae95fc && ./contrib/get-antlr-3.4 && ./configure.sh --optimized --prefix=../cvc4 --static --no-static-binary 
 WORKDIR /home/maze/tools/CVC4/build
-RUN make -j4 && make install 
+RUN make -j${CORE_COUNT} && make install 
 
 # MathSAT
 WORKDIR /home/maze/tools
@@ -75,11 +75,11 @@ RUN wget http://mathsat.fbk.eu/download.php?file=mathsat-5.5.4-linux-x86_64.tar.
 # Yices
 RUN wget https://gmplib.org/download/gmp/gmp-6.1.2.tar.xz && tar xf gmp-6.1.2.tar.xz && rm gmp-6.1.2.tar.xz
 WORKDIR /home/maze/tools/gmp-6.1.2
-RUN ./configure --prefix $PWD/../gmp --disable-shared ABI=64 CFLAGS=-fPIC CPPFLAGS=-DPIC && make -j4 && make install
+RUN ./configure --prefix $PWD/../gmp --disable-shared ABI=64 CFLAGS=-fPIC CPPFLAGS=-DPIC && make -j${CORE_COUNT} && make install
 WORKDIR /home/maze/tools
 RUN git clone https://github.com/SRI-CSL/yices2.git
 WORKDIR /home/maze/tools/yices2
-RUN git checkout Yices-2.6.1 && autoreconf -fi && ./configure --prefix $PWD/../yices --with-static-gmp=$PWD/../gmp/lib/libgmp.a && make -j9 && make static-lib && make install && cp ./build/x86_64-pc-linux-gnu-release/static_lib/libyices.a ../yices/lib
+RUN git checkout Yices-2.6.1 && autoreconf -fi && ./configure --prefix $PWD/../yices --with-static-gmp=$PWD/../gmp/lib/libgmp.a && make -j${CORE_COUNT} && make static-lib && make install && cp ./build/x86_64-pc-linux-gnu-release/static_lib/libyices.a ../yices/lib
 
 # Z3
 WORKDIR /home/maze/tools

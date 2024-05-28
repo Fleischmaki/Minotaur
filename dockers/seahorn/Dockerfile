@@ -1,4 +1,5 @@
 ARG BASE_IMAGE=jammy-scm 
+ARG CORE_COUNT=4
 # Base image with usual build dependencies
 FROM buildpack-deps:$BASE_IMAGE
 
@@ -75,14 +76,14 @@ RUN cmake .. -GNinja \
   -DCPACK_GENERATOR="TGZ" \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
   -DCMAKE_CXX_OUTPUT_EXTENSION_REPLACE=ON  && \
-  cmake --build . --target extra  && cmake .. && \
-  cmake --build . --target crab  && cmake .. && \
-  cmake --build . --target install && \
-  cmake --build . --target units_z3 && \
-  cmake --build . --target units_yices2 && \
-  cmake --build . --target test_type_checker && \
-  cmake --build . --target test_hex_dump && \
-  cmake --build . --target package && \
+  cmake --build . -j${CORE_COUNT} --target extra  && cmake .. && \
+  cmake --build . -j${CORE_COUNT} --target crab  && cmake .. && \
+  cmake --build . -j${CORE_COUNT} --target install && \
+  cmake --build . -j${CORE_COUNT} --target units_z3 && \
+  cmake --build . -j${CORE_COUNT} --target units_yices2 && \
+  cmake --build . -j${CORE_COUNT} --target test_type_checker && \
+  cmake --build . -j${CORE_COUNT} --target test_hex_dump && \
+  cmake --build . -j${CORE_COUNT} --target package && \
   units/units_z3 && \
   units/units_yices2
 
