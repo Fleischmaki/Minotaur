@@ -43,7 +43,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
         if array_size > ff.MAXIMUM_ARRAY_SIZE:
             raise ValueError("Minimum array size too large!")
         clauses = list(ff.get_array_constraints(array_calls, array_size)) \
-        + list(ff.get_shift_constraints(formula)) \
+        + list(filter(lambda s: not s.arg(1).is_constant(),ff.get_shift_constraints(formula)))\
         + list(formula_clauses)
     converter = get_converter()
     converter.set_well_defined(generate_well_defined)
@@ -270,6 +270,11 @@ class Graph:
         return groups
 
 def independent_formulas(conds: dict[str,bool], variables: dict[str,str], array_size: int) -> tuple[list[list],list[dict]]:
+    """Split conditions into disjoint formulas
+    We can separate two conditions if
+        - They share no variables
+        - One is not constraining the other (e.g. shift ammount or array index constraints)
+    """
     formula = Graph()
     for cond in conds:
         formula.add_edge(cond,cond)
@@ -293,6 +298,7 @@ def independent_formulas(conds: dict[str,bool], variables: dict[str,str], array_
     return groups, vars_by_groups
 
 def extract_vars(cond: str, variables: dict[str,str]):
+    """Get the varibales from the dict used in the condition"""
     used_variables = {}
     for variable, vartype in variables.items():
         if variable + " " in cond or variable + ")" in cond or variable.split('[')[0] in cond:
@@ -338,6 +344,14 @@ def is_shift_constraint_of(cond: str,other: str):
     return index in other.split('>>',1)[1]
 
 def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: int) -> tuple[list[str],dict[str,str]]:
+    """ Get groups which do not share any models with the original group.
+        This is done by negating conditions that are still sat if negated.
+        If this is not possible we add new variables as a fallback
+        :param conds: Dict of all conditions + negated satisfiability
+        :param group: The group for which to get negated forms
+        :param variables: Dict of all variables with type
+        :param numb: Number of negated groups to get
+    """
     negated_groups = []
     new_vars = {}
     n = 0
@@ -383,9 +397,10 @@ def get_negated(conds: dict, group: list[str], variables: dict[str,str], numb: i
 
 def get_subgroup(groups: list[list], vars_by_groups: t.List[t.Dict[str,str]], seed: int)\
     -> tuple[list[str],dict[str,str]] :
+    """ Get a subset of a randomly selected independent group
+    """
     if len(groups) == 0:
         return [],{}
-    # get a subset of a randomly selected independent group
     random.seed(seed)
     rand = random.randint(0, len(groups)-1)
     variables = {}

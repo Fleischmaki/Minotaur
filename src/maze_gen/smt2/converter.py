@@ -80,19 +80,19 @@ def has_matching_type(numb_bits: int) -> bool:
 def needs_signed_children(node: FNode) -> bool:
     """ Check if a function needs signed arguments
     """
-    return node.is_bv_sle() or node.is_bv_slt() or node.is_bv_ashr() or node.is_bv_srem() or node.is_bv_sdiv()
+    return node.is_bv_sle() or node.is_bv_slt() or node.is_bv_srem() or node.is_bv_sdiv()
 
 def needs_downcasting(node: FNode) -> bool:
     """ CHeck if we need to cast down after converting a node
     """
     return node.is_bv_sdiv() or node.is_bv_udiv() or node.is_bv_srem() or node.is_bv_urem() \
-        or node.is_bv_ror() or node.is_bv_rol() \
+        or node.is_bv_ror() or node.is_bv_rol() or node.is_bv_ashr() \
         or node.is_select()
 
 def is_signed(node: FNode) -> str:
     """ Check if a function needs signed arguments
     """
-    return node.is_bv_ashr() or node.is_bv_sext() or node.is_bv_srem() or node.is_bv_sdiv() or node.is_select()
+    return node.is_bv_sext() or node.is_bv_srem() or node.is_bv_sdiv() or node.is_select()
 
 def needs_unsigned_cast(node: FNode):
     """ Checks if a node needs children to be recast. This is the case if:
@@ -332,9 +332,7 @@ class Converter():
         elif node.is_bv_slt() or node.is_bv_ult():
             self.convert_helper(node, cons, " < ")
         elif node.is_bv_lshr():
-            self.convert_helper(node, cons, " >> ", True) # C >> is logical for unsigned, arithmetic for signed
-        elif node.is_bv_ashr():
-            self.convert_helper(node, cons, " >> ", True) # Always need to cast for shifts, as we dont only look at left operand
+            self.convert_helper(node, cons, " >> ", True)
         elif node.is_bv_add():
             self.convert_helper(node, cons, " + ")
         elif node.is_bv_sub():
@@ -356,6 +354,18 @@ class Converter():
             cons.write("(~")
             self.write_cast(node, cons, b, True)
             cons.write(")")
+        elif node.is_bv_ashr():
+            (l,r) = node.args()
+            cons.write("ashift_helper(")
+            self.write_unsigned(node, cons, l, True)
+            cons.write(",")
+            self.write_unsigned(node, cons, r, True)
+            cons.write(f",{ff.get_bv_width(node)})")
+        elif node.is_bv_rol() or node.is_bv_ror():
+            (l,) = node.args()
+            cons.write("rotate_helper(")
+            self.write_unsigned(node,cons,l)
+            cons.write(f",{node.bv_rotation_step()},{'1' if node.is_bv_rol() else '0'},{ff.get_bv_width(node)})")
         elif node.is_bv_sext():
             (l,) = node.args()
             if needs_signed_cast(node):
@@ -425,12 +435,6 @@ class Converter():
             cons.write(' - ')
             self.write_unsigned(node,cons,s)
             cons.write('+ 1U')
-        elif node.is_bv_rol() or node.is_bv_ror():
-            (l,) = node.args()
-            width = ff.get_bv_width(node)
-            cons.write("rotate_helper(")
-            self.write_unsigned(node,cons,l)
-            cons.write(f",{node.bv_rotation_step()},{'1' if node.is_bv_rol() else '0'},{width})")
         elif node.is_bv_constant():
             value =  str(node.constant_value()) + 'U'
             if node.bv_width() > 32:
@@ -523,6 +527,7 @@ class Converter():
 CONVERTER = Converter()
 
 def get_converter() -> Converter:
+    """Use converter as a singleton, so we can reuse the cache"""
     return CONVERTER
 
 def get_array_size_from_dim(dim: int) -> str:
@@ -563,6 +568,13 @@ def get_bv_helpers(well_defined = True) -> str:
     if(left)
         return (bv << ammount) | (bv >> (width-ammount));
     return (bv >> ammount) | (bv << (width-ammount));\n}"""
+    res += """unsigned long ashift_helper(unsigned long bv, unsigned long ammount, int width){
+    if(ammount == 0)
+        return bv;
+    if (((1U << (width-1)) & bv) == 0) // positive ashr == lshr
+        return bv >> ammount;
+    return (((1 << ammount)-1) << (width - ammount)) | (bv >> ammount);\n}\n"""
+
 
     if well_defined:
         res += """signed long sdiv_helper(long l, long r, int width){

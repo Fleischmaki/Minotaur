@@ -21,10 +21,11 @@ USER maze
 WORKDIR /home/maze/tools/
 RUN git clone https://gitlab.com/mopsa/mopsa-analyzer.git
 WORKDIR /home/maze/tools/mopsa-analyzer
-RUN git checkout e8c4c820 
+RUN git checkout a7964f3f
 RUN opam init --yes --disable-sandboxing
 RUN opam switch create 4.14.1
 RUN eval $(opam env)
+
 
 RUN opam install -j${CORE_COUNT} --deps-only --with-doc --with-test --yes .
 RUN opam config exec ./configure
@@ -34,8 +35,8 @@ RUN make install
 ADD svcomp.c /home/maze/tools/mopsa-analyzer/share/mopsa/stubs/c/mopsa/svcomp.c
 
 WORKDIR /home/maze/tools
-ADD run_mopsa.sh /home/maze/tools/run_mopsa-fixed1.sh
-RUN sudo chmod +x run_mopsa-fixed1.sh 
+ADD run_mopsa.sh /home/maze/tools/run_mopsa-bug2.sh
+RUN sudo chmod +x run_mopsa-bug2.sh 
 
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 

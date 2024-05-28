@@ -1,4 +1,5 @@
 FROM minotaur-base
+ARG CORE_COUNT
 
 RUN sudo dpkg --add-architecture i386 
 RUN apt-get update && apt-get install -y \
@@ -26,7 +27,7 @@ RUN opam switch create 4.14.1
 RUN eval $(opam env)
 
 
-RUN opam install --deps-only --with-doc --with-test --yes .
+RUN opam install -j${CORE_COUNT} --deps-only --with-doc --with-test --yes .
 RUN opam config exec ./configure
 RUN make
 RUN make install

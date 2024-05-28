@@ -1,5 +1,6 @@
 FROM minotaur-base
 ARG CORE_COUNT
+
 RUN sudo dpkg --add-architecture i386 
 
 RUN apt-get update && apt-get install -y \
@@ -19,8 +20,10 @@ RUN apt-get update && apt-get install -y \
 
 USER maze
 WORKDIR /home/maze/tools/
+### Install latest apron from dev
 RUN git clone https://github.com/antoinemine/apron.git apron
 WORKDIR /home/maze/tools/apron
+RUN git checkout 4563122
 RUN \
     opam init --disable-sandboxing -y && \
     eval $(opam env) && \
@@ -35,6 +38,7 @@ RUN sudo make install
 WORKDIR /home/maze/tools
 RUN git clone https://gitlab.com/mopsa/mopsa-analyzer.git
 WORKDIR /home/maze/tools/mopsa-analyzer
+RUN git checkout a7964f3f
 RUN \
     eval $(opam env) && \
     opam update -y && \
@@ -46,16 +50,11 @@ RUN make install
 ADD svcomp.c /home/maze/tools/mopsa-analyzer/share/mopsa/stubs/c/mopsa/svcomp.c
 
 WORKDIR /home/maze/tools
-ADD run_mopsa.sh /home/maze/tools/run_mopsa.sh
-RUN sudo chmod +x run_mopsa.sh 
+ADD run_mopsa.sh /home/maze/tools/run_mopsa-fixed2.sh
+RUN sudo chmod +x run_mopsa-fixed2.sh 
 
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 
-USER root
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y install \
-    software-properties-common \
-    cvise \
-&& rm -rf /var/lib/apt/lists/*
 
 ENV PATH=$PATH:/home/maze/tools/mopsa-analyzer/bin
 USER maze
