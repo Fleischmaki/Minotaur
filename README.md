@@ -3,29 +3,13 @@ Minotaur is a generative black-box fuzzer for software model checkers, based on 
 
 ## About
 Minotaur uses sat/unsat SMT-Files to generate programs that are unsafe/safe by construction. Optionally, [STORM](https://github.com/mariachris/storm)'s mutation algorithm can be used to create several satisfiable variants for each seed. UNSAT seeds can also be mutated, as long as the unsat-core remain intact. A minimizer can be used to drop unneccessary clauses for found seeds, which results in concise explanations for PA bugs.  
-```mermaid
-flowchart LR
-    Klee --> |Seed| SMT-Fuzzer
-    SMT-Comp --> |Seed| SMT-Fuzzer
-    SMT-Fuzzer --> |Clauses| Generator 
-    SMT-Fuzzer --> |Sat-status| Oracle
-    Maze --> |Scaffolding| Fuzzle
-    Generator --> |Logic| Fuzzle
-    Fuzzle --> |Populated Code | SMC
-    SMC --> |positive/negative| Oracle
-    Oracle --> |Imprecise/Unsound| Bug 
-    Oracle --> |Bug/No Bug| Minimizer
-    Minimizer --> | Selected Clauses | Generator
-    Minimizer --> | Minimized Code | Bug
-    Minimizer --> |Sat-status| Oracle
-```
+
 ## Requirements
 - Python3.10 or 3.11
 - Docker (or similar)
 
 ## Installation
 ```
-git clone https://github.com/Fleischmaki/Minotaur.git
 ./Minotaur/scripts/build_MC_dockers.sh <num_cores>
 # For recreating experiments #
 ./Minotaur/scripts/build_experiment_dockers.sh <num_cores>
