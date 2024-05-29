@@ -84,7 +84,8 @@ will recursively search for compatible smtfiles for sat/unsat seed generation (=
 Compatible files will be written to outfile. Files can then be collected, e.g. with `mkdir safe_seeds && for f in $(cat outfile); do cp seed_dir/"$f" safe_seeds; done`.
 
 ### Logging
-For all tools the logging level can be set via --LEVEL with LEVEL being one of E(rror), W(arning), I(nfo) or D(ebug). E.g. `python3 --t --D conf outdir` runs tests with log-level `DEBUG`. 
+For all tools the logging level can be set via --LEVEL with LEVEL being one of E(rror), W(arning), I(nfo) or D(ebug). E.g. `python3 --t --D conf outdir` runs tests with log-level `DEBUG`.
+Note that container outputs are only tracked if the logging level is set to Debug
 
 ## Bugs found by Minotaur
 ### Soundness Bugs
