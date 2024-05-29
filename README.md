@@ -49,7 +49,7 @@ The benchmarks will be installed in ./smt_comp_benchmarks
 Runs are configured via conf.json files located in the [test](test) folder.
 To perform a test using the config file test/conf_name.conf.json run 
 ```
-python3 Minotaur --t conf_name outdir
+python Minotaur --t conf_name outdir
 ```
 For more info on config files check [config.md](./config.md) and the example config files provided.
 
@@ -57,22 +57,22 @@ For more info on config files check [config.md](./config.md) and the example con
 Before recreating experiments, build the necessary experiment Dockers. Then run the experiment for a given config similarly to test config: 
 ```
 ./Minotaur/scripts/build_experiment_dockers.sh
-python3 Minotaur --e experiment_name outdir
+python Minotaur --e experiment_name outdir
 ```
 Experiment configurations are stored in the [experiments](experiments) folder. 
 ### Minimize a maze
 ```
-python3 Minotaur --m report seed-dir out-dir {local,container}
+python Minotaur --m report seed-dir out-dir {local,container}
 ```
 'report' the line of the summary.csv file from testing.
 Alternatively if you have the maze file you want to minimize, generate the maze and then run 
 ```
-python3 Minotaur --m maze.c seed-dir out-dir timeout {container,local} {fn,fp,er,...} tool [variant] [params]
+python Minotaur --m maze.c seed-dir out-dir timeout {container,local} {fn,fp,er,...} tool [variant] [params]
 ```
 
 ### Generate a specific maze
 ```
-python3 Minotaur --g {local,container} outdir params...
+python Minotaur --g {local,container} outdir params...
 ```
 Will generate the maze + any transformations specified. For parameter options see [params.md](./params.md)
 
@@ -84,7 +84,7 @@ will start the container, with seeds available under `/seeds`.
 
 ### Filter accepted seed files
 ```
-python3 Minotaur --c seed_dir outfile {sat,unsat}
+python Minotaur --c seed_dir outfile {sat,unsat}
 ```
 will recursively search for compatible smtfiles for sat/unsat seed generation (=> unsafe/safe programs).
 Compatible files will be written to outfile. Files can then be collected, e.g. with `mkdir safe_seeds && for f in $(cat outfile); do cp seed_dir/"$f" safe_seeds; done`.
