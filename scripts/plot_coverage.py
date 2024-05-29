@@ -67,9 +67,14 @@ for baseline in range(num_baselines):
 
 for tool in tools:
     for covtype in ('b','l','f'):
+        plt.figure(figsize=(7.3,5.3))
         plt.xlim(0,99)
-        plt.ylabel("Coverage (%)", fontsize=18)
-        plt.xlabel("Number of batches",  fontsize=18)
+        plt.xticks(fontsize=16)
+        plt.yticks(fontsize=16)
+        if tool == 'cbmc':
+            plt.ylabel("Coverage (%)", fontsize=16)
+        if tool == 'esbmc':
+            plt.xlabel("Input mazes, steps of 100",  fontsize=16)
         for baseline in range(num_baselines):
             if baseline == 2:
                 continue
@@ -77,6 +82,7 @@ for tool in tools:
             lin = linestyles[baseline]
             x = np.arange(len(all_coverages[baseline][tool]['b']))
             plt.plot(x, all_coverages[baseline][tool][covtype], color=col, linestyle=lin, label=f"{baselines[baseline]}")
-        plt.legend(loc="lower right" if tool=='seahorn' else "center right", fontsize=18)
+        if tool=='seahorn':
+            plt.legend(loc="lower right", fontsize=20)
         plt.savefig(os.path.join(sys.argv[1], f'{tool}_{covtypes[covtype]}_coverage.png'))
         plt.close()
