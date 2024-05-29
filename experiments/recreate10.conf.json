@@ -1,5 +1,5 @@
 {
-	"verbosity": "all",
+	"verbosity": "summary",
 	"repeats" : 5,
 	"batches": -1,
 	"duration" : 1000,
@@ -10,14 +10,14 @@
 	"batch_size": 1,
 	"maze_gen" : "container",
 	"expected_result": "error",
-	"abort_on_error": ["fn"],
+	"abort_on_error": [["fn"]],
 	"tool" : {
-		"esbmc-bug4": {
-			"variant" : ["--cvc --smt-during-symex --smt-symex-assert"]
+		"esbmc-bug1": {
+			"variant" : ["--interval-analysis"]
 		}
 	},
 	"check_error": {
-		"esbmc-bug4": "esbmc-fixed4"
+		"esbmc-bug1": "esbmc-fixed1"
 	},
 
 	"avg": 1,
@@ -39,11 +39,10 @@
 		"t" : {
 			"storm": [1],
 			"wd": [0],
-			"mc": [0,25,50,75,100],
-			"dag": [0,2,3,4]
+			"mc": [0,25,50,75,100]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/cvs_vc105353.smt2",
+		"s": "/Minotaur/bug_seeds/app9bench_930.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

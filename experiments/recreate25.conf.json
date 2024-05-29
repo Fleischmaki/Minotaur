@@ -1,25 +1,21 @@
 {
-	"verbosity": "summary",
+	"verbosity": "all",
 	"repeats" : 5,
 	"batches": -1,
-	"duration" : 1000,
-	"workers" : 1,
+	"duration" : 30,
+	"workers" : 5,
 	"memory" : 4,
-	"transforms" : 20,
+	"transforms" : 15,
 	"seed": [1,2,3,4,5],
-	"batch_size": 1,
+	"batch_size": [1],
 	"maze_gen" : "container",
-	"expected_result": "error",
-	"abort_on_error": ["fn"],
+	"expected_result": "safe",
+	"abort_on_error": [["fp"]],
 	"tool" : {
-		"cpa-bug2": {
-			"variant" : ["kInduction"]
+		"seahorn" : {
+			"variant" : ["spf"]
 		}
 	},
-	"check_error": {
-		"cpa-bug2": "cpa-fixed2"
-	},
-
 	"avg": 1,
 	"parameters" : {
 		"u" : [0,1],
@@ -38,12 +34,12 @@
 		},
 		"t" : {
 			"storm": [1],
-			"wd": [0],
+			"unsat": [1],
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/QF_BV_bv_bv_resistance.2.prop1_cc_ref_max.smt2",
+		"s": "/Minotaur/bug_seeds/TODO",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

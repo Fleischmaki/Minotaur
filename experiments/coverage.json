@@ -2,7 +2,7 @@
 	"verbosity": "bug",
 	"repeats" : 20,
 	"batches" : 100,
-	"duration" : 30,
+	"duration" : 60,
 	"workers" : 150,
 	"memory" : 4,
 	"transforms" : [0,1,10,10],

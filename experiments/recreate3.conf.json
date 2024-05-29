@@ -1,7 +1,7 @@
 {
-	"verbosity": "all",
+	"verbosity": "summary",
 	"repeats" : 5,
-	"batches" : -1,
+	"batches": -1,
 	"duration" : 1000,
 	"workers" : 1,
 	"memory" : 4,
@@ -10,14 +10,11 @@
 	"batch_size": 1,
 	"maze_gen" : "container",
 	"expected_result": "infer",
-	"abort_on_error": ["fn"],
+	"abort_on_error": [["fp"]],
 	"tool" : {
-		"mopsa-bug1": {
-			"variant" : ["cell-itv-congr"]
+		"cbmc": {
+			"variant" : ["--refine"]
 		}
-	},
-	"check-error": {
-		"mopsa-bug1": "mopsa-fixed1"
 	},
 	"parameters" : {
 		"u" : [0,1],
@@ -35,14 +32,12 @@
 			"max" : 0
 		},
 		"t" : {
-			"fuzz": ["5x5"],
-			"wd": [0,1],
+			"fuzz": ["10x10","5x20"],
 			"mc": [0,25,50,75,100],
-			"dag": [0,2,3,4],
-			"ca": [0,1]
+			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/app8bench_110.smt2",
+		"s": "/Minotaur/bug_seeds/array-memsafety-openbsd_cstrcpy-alloca-2-test000010.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

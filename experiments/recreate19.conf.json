@@ -1,7 +1,7 @@
 {
-	"verbosity": "summary",
+	"verbosity": "all",
 	"repeats" : 5,
-	"batches": -1,
+	"batches" : -1,
 	"duration" : 1000,
 	"workers" : 1,
 	"memory" : 4,
@@ -9,17 +9,16 @@
 	"seed": [1,2,3,4,5],
 	"batch_size": 1,
 	"maze_gen" : "container",
-	"expected_result": "error",
-	"abort_on_error": ["fn"],
+	"expected_result": "infer",
+	"abort_on_error": [["fn"]],
 	"tool" : {
-		"cpa-bug1": {
-			"variant" : ["kInduction"]
+		"mopsa-bug1": {
+			"variant" : ["cell-itv-congr"]
 		}
 	},
-	"check_error": {
-		"cpa-bug1": "cpa-fixed1"
+	"check-error": {
+		"mopsa-bug1": "mopsa-fixed1"
 	},
-	"avg": 1,
 	"parameters" : {
 		"u" : [0,1],
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
@@ -36,13 +35,14 @@
 			"max" : 0
 		},
 		"t" : {
-			"storm": [1],
-			"wd": [0],
+			"fuzz": ["5x5"],
+			"wd": [0,1],
 			"mc": [0,25,50,75,100],
-			"dag": [0,2,3,4]
+			"dag": [0,2,3,4],
+			"ca": [0,1]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/bench_1081.smt2",
+		"s": "/Minotaur/bug_seeds/app8bench_110.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

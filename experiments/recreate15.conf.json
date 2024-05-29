@@ -1,25 +1,22 @@
 {
-	"verbosity": "all",
+	"verbosity": "summary",
 	"repeats" : 5,
-	"batches" : -1,
-	"duration" : 1000,
-	"workers" : 1,
+	"batches": [-1],
+	"duration" : [600],
+	"workers" : 5,
 	"memory" : 4,
-	"transforms" : 20,
+	"transforms" : [15],
 	"seed": [1,2,3,4,5],
-	"batch_size": 1,
+	"batch_size": [1],
 	"maze_gen" : "container",
-	"expected_result": "error",
-	"abort_on_error": ["fn"],
+	"expected_result": "infer",
+	"abort_on_error": [["fn"]],
 	"tool" : {
-		"ultimate-bug2": {
-			"variant" : ["ut", "ua", "ugc"]
+		"esbmc": {
+			"variant" : ["--mathsat --tuple-node-flattener --smt-during-symex --smt-symex-guard"]
 		}
 	},
-	"check_error": {
-		"ultimate-bug2": "ultimate-fixed2"
-	},
-
+	"avg": 1,
 	"parameters" : {
 		"u" : [0,1],
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
@@ -36,13 +33,13 @@
 			"max" : 0
 		},
 		"t" : {
-			"storm": [1],
+			"fuzz": ["1x100","20x5","10x10"],
 			"wd": [0],
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/bench_8477.smt2",
+		"s": "/Minotaur/bug_seeds/bitvector-gcd_2-test000004.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

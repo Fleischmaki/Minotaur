@@ -9,11 +9,11 @@
 	"seed": [1,2,3,4,5],
 	"batch_size": 1,
 	"maze_gen" : "container",
-	"expected_result": "safe",
-	"abort_on_error": ["fp"],
+	"expected_result": "infer",
+	"abort_on_error": [["fp"]],
 	"tool" : {
-		"2ls": {
-			"variant" : ["--k-induction"]
+		"cbmc": {
+			"variant" : [""]
 		}
 	},
 	"parameters" : {
@@ -32,13 +32,12 @@
 			"max" : 0
 		},
 		"t" : {
-			"storm": [1],
-			"wd": [0],
+			"fuzz": ["10x10","5x20"],
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/no_init_bubble_sort_safe2.c.smt2",
+		"s": "/Minotaur/bug_seeds/s3_clnt.blast.03.i.cil-1.c_2.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

@@ -1,19 +1,19 @@
 {
 	"verbosity": "summary",
 	"repeats" : 5,
-	"batches": -1,
-	"duration" : 1000,
-	"workers" : 6,
+	"batches": [-1],
+	"duration" : [600],
+	"workers" : 5,
 	"memory" : 4,
-	"transforms" : 20,
+	"transforms" : [15],
 	"seed": [1,2,3,4,5],
-	"batch_size": 1,
+	"batch_size": [1],
 	"maze_gen" : "container",
 	"expected_result": "error",
-	"abort_on_error": ["fn"],
+	"abort_on_error": [["fn"]],
 	"tool" : {
-		"cpa": {
-			"variant" : ["kInduction"]
+		"esbmc": {
+			"variant" : ["--mathsat --tuple-node-flattener --smt-during-symex --smt-symex-guard"]
 		}
 	},
 	"avg": 1,
@@ -33,14 +33,13 @@
 			"max" : 0
 		},
 		"t" : {
-			"storm": [0,1,"5x20"],
-			"wd": [0,1],
+			"storm": [1],
+			"wd": [0],
 			"mc": [0,25,50,75,100],
-			"dag": [0,2,3,4],
-			"ca" : [0,1]
+			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/app1bench_812.smt2",
+		"s": "/Minotaur/bug_seeds/bitvector-s3_clnt_3.BV.c.cil-1a-test000036.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
