@@ -76,12 +76,6 @@ python Minotaur --g {local,container} outdir params...
 ```
 Will generate the maze + any transformations specified. For parameter options see [params.md](./params.md)
 
-NOTE: if you did not install python dependencies locally, you can still generate mazes within the container; e.g. running
-```
-docker run -itv /path/to/seeds:/seeds minotaur-gen
-```
-will start the container, with seeds available under `/seeds`.  
-
 ### Filter accepted seed files
 ```
 python Minotaur --c seed_dir outfile {sat,unsat}
