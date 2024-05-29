@@ -1,7 +1,7 @@
 {
 	"verbosity": "bug",
-	"repeats" : 15,
-	"batches":1000,
+	"repeats" : 10,
+	"batches": 1000,
 	"duration" : 60,
 	"workers" : 1,
 	"memory" : 2,
@@ -11,15 +11,15 @@
 	"maze_gen" : "container",
 	"expected_result": "error",
 	"abort_on_error": [["fn"]],
-	"gen_time" : 1000,
-	"use_core" : 9,
+	"gen_time" : 3600,
+	"use_core" : 7,
 	"tool" : {
-		"ultimate-bug1": {
-			"variant" : ["ut", "ua", "ugc"]
+		"esbmc-bug4": {
+			"variant" : ["--cvc --smt-during-symex --smt-symex-assert"]
 		}
 	},
 	"check_error": {
-		"ultimate-bug1": "ultimate-fixed1"
+		"esbmc-bug4": "esbmc-fixed4"
 	},
 	"avg": 1,
 	"parameters" : [{
@@ -54,7 +54,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/bench_12285.smt2",
+		"s": "/Minotaur/bug_seeds/cvs_vc105353.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

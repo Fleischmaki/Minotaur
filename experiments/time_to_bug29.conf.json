@@ -1,7 +1,7 @@
 {
-	"verbosity": "bug",
-	"repeats" : 8,
-	"batches":1000,
+	"verbosity": "summary",
+	"repeats" : 3,
+	"batches": 1000,
 	"duration" : 60,
 	"workers" : 1,
 	"memory" : 2,
@@ -10,16 +10,16 @@
 	"batch_size": 1,
 	"maze_gen" : "container",
 	"expected_result": "error",
-	"abort_on_error": ["fn"],
-	"gen_time" : 1000,
-	"use_core" : 5,
+	"gen_time" : 3600,
+	"abort_on_error": [["fn"]],
+	"use_core" : 10,
 	"tool" : {
-		"esbmc-bug2": {
-			"variant" : ["--interval-analysis"]
+		"ultimate-bug2": {
+			"variant" : ["ua", "ugc"]
 		}
 	},
 	"check_error": {
-		"esbmc-bug2": "esbmc-fixed2"
+		"ultimate-bug2": "ultimate-fixed2"
 	},
 	"avg": 1,
 	"parameters" : [{
@@ -49,11 +49,12 @@
 		},
 		"t" : {
 			"neg": [1],
-			"wd": [0,1],
-			"mc": [0,25,50,75,100]
+			"wd": [0],
+			"mc": [0,25,50,75,100],
+			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/app9bench_1287.smt2",
+		"s": "/Minotaur/bug_seeds/bench_8477.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -70,11 +71,12 @@
 		},
 		"t" : {
 			"storm": [1],
-			"wd": [0,1],
-			"mc": [0,25,50,75,100]
+			"wd": [0],
+			"mc": [0,25,50,75,100],
+			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/app9bench_1287.smt2",
+		"s": "/Minotaur/bug_seeds/bench_8477.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

@@ -1,7 +1,7 @@
 {
 	"verbosity": "bug",
-	"repeats" : 15,
-	"batches":1000,
+	"repeats" : 3,
+	"batches": 1000,
 	"duration" : 60,
 	"workers" : 1,
 	"memory" : 2,
@@ -9,13 +9,17 @@
 	"seed": [1,1,1,2,2,2,3,3,3,4,4,4,5,5,5],
 	"batch_size": 1,
 	"maze_gen" : "container",
-	"expected_result": "safe",
-	"abort_on_error": ["fp"],
-	"gen_time" : 1000,
+	"expected_result": ["error", "error", "infer"],
+	"abort_on_error": [["fn"]],
+	"gen_time" : 3600,
+	"use_core" : 13,
 	"tool" : {
-		"2ls": {
-			"variant" : ["--k-induction"]
+		"mopsa-bug2": {
+			"variant" : ["cell-rel-itv"]
 		}
+	},
+	"check-error": {
+		"mopsa-bug2": "mopsa-fixed2"
 	},
 	"avg": 1,
 	"parameters" : [{
@@ -50,7 +54,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/no_init_bubble_sort_safe2.c.smt2",
+		"s": "/Minotaur/bug_seeds/app12bench_930.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -66,13 +70,13 @@
 			"max" : 7
 		},
 		"t" : {
-			"storm": [1],
-			"wd": [0,1],
+			"fuzz": ["10x10","1x100","5x20"],
+			"wd": [0],
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/b183test0001.smt2",
+		"s": "/Minotaur/bug_seeds/app8bench_110.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

@@ -1,7 +1,7 @@
 {
 	"verbosity": "bug",
 	"repeats" : 15,
-	"batches":1000,
+	"batches": 1000,
 	"duration" : 60,
 	"workers" : 1,
 	"memory" : 2,
@@ -10,18 +10,17 @@
 	"batch_size": 1,
 	"maze_gen" : "container",
 	"expected_result": "error",
-	"abort_on_error": ["fn"],
-	"gen_time" : 1000,
-	"use_core" : 2,
+	"abort_on_error": [["fn"]],
+	"gen_time" : 3600,
+	"use_core" : 1,
 	"tool" : {
-		"cpa-bug3": {
+		"cpa-bug2": {
 			"variant" : ["kInduction"]
 		}
 	},
 	"check_error": {
-		"cpa-bug3": "cpa-fixed3"
+		"cpa-bug2": "cpa-fixed2"
 	},
-
 	"avg": 1,
 	"parameters" : [{
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
@@ -55,7 +54,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/app12bench_5440.smt2",
+		"s": "/Minotaur/bug_seeds/QF_BV_bv_bv_resistance.2.prop1_cc_ref_max.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -77,7 +76,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/app12bench_5440.smt2",
+		"s": "/Minotaur/bug_seeds/QF_BV_bv_bv_resistance.2.prop1_cc_ref_max.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

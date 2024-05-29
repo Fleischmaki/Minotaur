@@ -1,7 +1,7 @@
 {
 	"verbosity": "bug",
 	"repeats" : 15,
-	"batches":1000,
+	"batches": 1000,
 	"duration" : 60,
 	"workers" : 1,
 	"memory" : 2,
@@ -10,12 +10,16 @@
 	"batch_size": 1,
 	"maze_gen" : "container",
 	"expected_result": "error",
-	"abort_on_error": ["fn"],
-	"gen_time" : 1000,
+	"abort_on_error": [["fn"]],
+	"gen_time" : 3600,
+	"use_core" : 9,
 	"tool" : {
-		"cpa-release": {
-			"variant" : ["kInduction"]
+		"ultimate-bug1": {
+			"variant" : ["ut", "ua", "ugc"]
 		}
+	},
+	"check_error": {
+		"ultimate-bug1": "ultimate-fixed1"
 	},
 	"avg": 1,
 	"parameters" : [{
@@ -44,35 +48,13 @@
 			"max" : 7
 		},
 		"t" : {
-			"neg": [1],
-			"wd": [0],
-			"mc": [0,25,50,75,100],
-			"dag": [0,2,3,4]
-		},
-		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/app1bench_812.smt2",
-		"r" : {
-			"min" : 0,
-			"max" : 65536
-		}
-	},{
-		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
-		"w" : {
-			"min" : 4,
-			"max" : 7
-		},
-		"h" : {
-			"min" : 5,
-			"max" : 7
-		},
-		"t" : {
 			"storm": [1],
-			"wd": [0],
+			"wd": [0,1],
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/app1bench_812.smt2",
+		"s": "/Minotaur/bug_seeds/bench_12285.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

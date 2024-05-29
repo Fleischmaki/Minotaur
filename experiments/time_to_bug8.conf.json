@@ -1,25 +1,25 @@
 {
-	"verbosity": "all",
-	"repeats" : 15,
+	"verbosity": "bug",
+	"repeats" : 10,
 	"batches": 1000,
 	"duration" : 60,
 	"workers" : 1,
-	"memory" : 2,
-	"transforms" : [0,1,25],
-	"seed": [1,1,1,2,2,2,3,3,3,4,4,4,5,5,5],
+	"memory" : 6,
+	"transforms" : [1,25],
+	"seed": [1,1,2,2,3,3,4,4,5,5],
 	"batch_size": 1,
 	"maze_gen" : "container",
-	"expected_result": "error",
-	"abort_on_error": ["fn"],
-	"gen_time" : 1000,
-	"use_core" : 7,
+	"expected_result": ["safe"],
+	"abort_on_error": [["fp"]],
+	"gen_time" : 3600,
+	"use_core" : 3,
 	"tool" : {
-		"esbmc-bug4": {
-			"variant" : ["--cvc --smt-during-symex --smt-symex-assert"]
+		"cpa-bug4": {
+			"variant" : ["smg2"]
 		}
 	},
-	"check_error": {
-		"esbmc-bug4": "esbmc-fixed4"
+	"check-error": {
+		"cpa-bug4": "cpa-fixed4"
 	},
 	"avg": 1,
 	"parameters" : [{
@@ -32,7 +32,14 @@
 			"min" : 5,
 			"max" : 7
 		},
-		"g": ["default_gen","equality0_gen","equality25_gen","equality50_gen","equality75_gen","equality100_gen"],
+		"t" : {
+			"unsat": [1],
+			"wd": [1],
+			"mc": [0,25,50,75,100],
+			"dag": [0,2,3,4]
+		},
+		"g": ["CVE_gen"],
+		"s": "/Minotaur/bug_seeds/bubble_sort2.c.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -48,13 +55,14 @@
 			"max" : 7
 		},
 		"t" : {
-			"storm": [1],
-			"wd": [0,1],
+			"fuzz": ["5x5"],
+			"unsat": [1],
+			"wd": [1],
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/cvs_vc105353.smt2",
+		"s": "/Minotaur/bug_seeds/bubble_sort2.c.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

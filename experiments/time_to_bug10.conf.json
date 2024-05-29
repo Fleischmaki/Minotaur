@@ -1,7 +1,7 @@
 {
 	"verbosity": "bug",
 	"repeats" : 15,
-	"batches":1000,
+	"batches": 1000,
 	"duration" : 60,
 	"workers" : 1,
 	"memory" : 2,
@@ -10,13 +10,18 @@
 	"batch_size": 1,
 	"maze_gen" : "container",
 	"expected_result": "error",
-	"abort_on_error": ["fn"],
-	"gen_time" : 1000,
+	"abort_on_error": [["fn"]],
+	"gen_time" : 3600,
+	"use_core" : 4,
 	"tool" : {
-		"esbmc": {
-			"variant" : ["--mathsat --tuple-node-flattener --smt-during-symex --smt-symex-guard"]
+		"esbmc-bug1": {
+			"variant" : ["--interval-analysis"]
 		}
 	},
+	"check_error": {
+		"esbmc-bug1": "esbmc-fixed1"
+	},
+
 	"avg": 1,
 	"parameters" : [{
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
@@ -46,11 +51,10 @@
 		"t" : {
 			"neg": [1],
 			"wd": [0,1],
-			"mc": [0,25,50,75,100],
-			"dag": [0,2,3,4]
+			"mc": [0,25,50,75,100]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/bitvector-s3_clnt_3.BV.c.cil-1a-test000036.smt2",
+		"s": "/Minotaur/bug_seeds/app9bench_930.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -68,11 +72,10 @@
 		"t" : {
 			"storm": [1],
 			"wd": [0,1],
-			"mc": [0,25,50,75,100],
-			"dag": [0,2,3,4]
+			"mc": [0,25,50,75,100]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/bitvector-s3_clnt_3.BV.c.cil-1a-test000036.smt2",
+		"s": "/Minotaur/bug_seeds/app9bench_930.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
