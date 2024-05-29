@@ -80,7 +80,8 @@ def has_matching_type(numb_bits: int) -> bool:
 def needs_signed_children(node: FNode) -> bool:
     """ Check if a function needs signed arguments
     """
-    return node.is_bv_sle() or node.is_bv_slt() or node.is_bv_srem() or node.is_bv_sdiv()
+    return node.is_bv_sle() or node.is_bv_slt() or node.is_bv_srem() or node.is_bv_sdiv() \
+            or node.is_bv_ashr()
 
 def needs_downcasting(node: FNode) -> bool:
     """ CHeck if we need to cast down after converting a node
@@ -92,7 +93,8 @@ def needs_downcasting(node: FNode) -> bool:
 def is_signed(node: FNode) -> str:
     """ Check if a function needs signed arguments
     """
-    return node.is_bv_sext() or node.is_bv_srem() or node.is_bv_sdiv() or node.is_select()
+    return node.is_bv_sext() or node.is_bv_srem() or node.is_bv_sdiv() or node.is_select() \
+            or node.is_bv_ashr()
 
 def needs_unsigned_cast(node: FNode):
     """ Checks if a node needs children to be recast. This is the case if:
@@ -355,6 +357,18 @@ class Converter():
             self.convert_helper(node, cons, " < ")
         elif node.is_bv_lshr():
             self.convert_helper(node, cons, " >> ", True)
+        elif node.is_bv_ashr():
+            if self.well_defined:
+                cons.write(get_unsigned_cast(node, True))
+                cons.write("ashift_helper(")
+                self.write_unsigned(node, cons, node.arg(0), True)
+                cons.write(",")
+                self.write_unsigned(node, cons, node.arg(1), True)
+                cons.write(")")
+                if not has_matching_type(ff.get_bv_width(node)):
+                    cons.write(")")
+            else:
+                self.convert_helper(node, cons, " >> ", True)
         elif node.is_bv_add():
             self.convert_helper(node, cons, " + ")
         elif node.is_bv_sub():
@@ -376,21 +390,6 @@ class Converter():
             cons.write("(~")
             self.write_cast(node, cons, b, True)
             cons.write(")")
-        elif node.is_bv_ashr():
-            (l,r) = node.args()
-            if self.well_defined: # signed negative right shifts are undefined
-                cons.write(get_unsigned_cast(node, True))
-                cons.write("ashift_helper(")
-                self.write_unsigned(node, cons, l, True)
-                cons.write(",")
-                self.write_unsigned(node, cons, r, True)
-                cons.write(f",{ff.get_bv_width(node)})")
-                if not has_matching_type(ff.get_bv_width(node)):
-                    cons.write(get_unsigned_cast(node, True))
-            else:
-                self.write_signed(node,cons,l,True)
-                cons.write(">>")
-                self.write_signed(node,cons,r,True)
         elif node.is_bv_rol() or node.is_bv_ror():
             (l,) = node.args()
             cons.write("rotate_helper(")
