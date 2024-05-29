@@ -24,7 +24,7 @@ In this case rerunning the script usually fixes the problem.
 NOTE: if you only want to run tests or experiments, you can skip this step. Also, generating single mazes is always possible via the container (see below)
 
 If you want to generate mazes locally or perform minimization, you will need to install the packages from [requirements.txt](requirements.txt)
-We recommend using a virtualenv:
+We recommend using a [virtualenv](https://virtualenv.pypa.io/en/latest/):
 ```
 virtualenv --python=/usr/bin/python3.10 venv
 source venv/bin/activate
