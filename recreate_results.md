@@ -3,6 +3,12 @@ All configuration files for the experiments are already provided in the experime
 The bug ids are the same as in Table 1 of the experiments section.
 There are several types of experiments:
 
+### Python dependencies
+If you did not install the python requirements, you will need to install `pandas` and `gcovr` to evaluate experiment results
+```
+pip install pandas
+pip install gcovr pandas
+```
 ### Recreate bug
 Configurations of the form `recreate_Bugid.conf.json` (e.g. recreate_1).
 For 5 different seeds (1,2,3,4,5) Run tests until the bug is found on the corresponding version of the analyzer.
@@ -10,11 +16,11 @@ Will use multiple workers (default 5) to try and find the bug as quickly as poss
 Note that the found bugs might look different from the ones reported, as the reports were also cleaned manually and sometimes a bug can be triggered in various ways using the seed files. 
 
 ### Time to bug
+
 Configurations of the form time_to_bug_Bugid.conf.json (e.g. time_to_bug_1).
 These correspond to *Table 2* in the paper. To get an accurate measure of time, only a single worker is used, so these can take a while to finish, however they are set upd so that they can be run in parallel without any conflict.
 The results are stored in a specified directory `$outdir`. To compute the average times, we used [this script](scripts/get_average_times.py), which uses the pandas package to parse csv:
 ```
-pip install pandas
 python3 Minotaur --e time_to_bug_cpa1 cpa1_result_dir
 python3 Minotaur/scripts/get_average_times cpa1_result_dir 3 fn
 ```
@@ -29,7 +35,6 @@ Coverage is collected per batch and can be aggregated via [a script](scripts/mer
 The summarized coverage can be printed and plotted via [plot_coverage.py](script/plot_coverage.py) (which again uses pandas), once coverage has been merged.
 ```
 python3 Minotaur --e coverage result_dir  // This will take a long time to run 
-pip install gcovr pandas
 python3 Minotaur/scripts/merge_coverage.py result_dir/run*
 python3 Minotaur/scripts/plot_coverage.py result_dir 16 4
 ```
