@@ -6,7 +6,6 @@ There are several types of experiments:
 ### Python dependencies
 If you did not install the python requirements, you will need to install `pandas` and `gcovr` to evaluate experiment results
 ```
-pip install pandas
 pip install gcovr pandas
 ```
 ### Recreate bug
