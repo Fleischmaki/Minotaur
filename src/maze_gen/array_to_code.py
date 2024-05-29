@@ -260,25 +260,31 @@ def main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, uni
             render_program(c_file, graph.graph, size, generator, solution, bugtype, smt_files[t_index],transforms.parse_transformations(""))
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s', style='%')
-    seed = int(sys.argv[1])
-    bugtype = sys.argv[2]
-    t_type = sys.argv[3]
-    t_numb = int(sys.argv[4])
-    output_dir = sys.argv[5]
-    cycle = int(sys.argv[6])
-    unit = int(sys.argv[7])
-    generator_file = sys.argv[8]
+    level = sys.argv[1]
+    LEVEL = logging.ERROR if level == 'E' else \
+            logging.WARNING if level == 'W' else \
+            logging.DEBUG if level == 'D' else \
+            logging.INFO
+            
+    logging.basicConfig(level=LEVEL, format='%(levelname)s: %(message)s', style='%')
+    seed = int(sys.argv[2])
+    bugtype = sys.argv[3]
+    t_type = sys.argv[4]
+    t_numb = int(sys.argv[5])
+    output_dir = sys.argv[6]
+    cycle = int(sys.argv[7])
+    unit = int(sys.argv[8])
+    generator_file = sys.argv[9]
     generator = importlib.import_module(generator_file)
     if "CVE" in generator_file:
-        smt_file = sys.argv[9]
+        smt_file = sys.argv[10]
         CVE_name = os.path.basename(smt_file)
         CVE_name = os.path.splitext(CVE_name)[0] + "_gen"
-        i = 9
+        i = 10
     else:
         smt_file = ""
         CVE_name = generator_file
-        i = 8
+        i = 9
     mazes = []
     while (i+3 < len(sys.argv)):
         maze = dict()

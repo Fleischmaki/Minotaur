@@ -30,7 +30,7 @@ def generate_maze(algorithm, width, height, seed, maze_exit):
     elif algorithm == "Sidewinder":
         m.generator = Sidewinder(height, width)
     else:
-        LOGGER.error("No such algorithm supported")
+        print("ERROR: No such algorithm supported")
         exit(1)
 
     m.solver = ShortestPath()

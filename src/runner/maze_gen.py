@@ -14,7 +14,7 @@ def get_params_from_maze(maze: str,smt_path = '') -> dict:
     *params['g'],_, params['b'] = maze.split('percent')[1][1:].split('_')
 
     params['w'], params['h'] = map(int, size.split('x'))
-    params['m'] = int(params['m'][1:]) # cut 't'    
+    params['m'] = int(params['m'][1:]) # cut 't'
     params['r'] = int(params['r'])
     params['g'] = '_'.join(params['g'])
     params['t'] = '_'.join(params['t'])
@@ -52,6 +52,8 @@ def setup_generation_docker(params, outdir, index: int):
     :param params: Generation parameters
     :param outdir: Output directory
     :param index: Maze name"""
+    if 'r' not in params:
+        params['r'] = 1
     commands.run_cmd('mkdir -p ' + outdir + ' ' + ' '.join([os.path.join(outdir, i) for i in ['src','smt','sln','png','txt','bin',f"smt/{params['r']}"]]) )
     docker.spawn_docker(1, index, 'gen', outdir, cpu=index).wait()
     if 's' in params.keys():
@@ -124,5 +126,4 @@ def generate_maze(params, out_dir = '', minotaur = ''):
     for param, value in params.items():
         param_string += '-%s %s ' % (param, value)
     out_dir = os.path.join(minotaur, 'temp') if out_dir == '' else out_dir
-    return commands.run_cmd(GENERATE_CMD % (minotaur, out_dir, param_string)) 
-
+    return commands.run_cmd(GENERATE_CMD % (minotaur, out_dir, param_string), True)
