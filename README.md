@@ -24,14 +24,11 @@ In this case rerunning the script usually fixes the problem.
 NOTE: if you only want to run tests or experiments, you can skip this step. Also, generating single mazes is always possible via the container (see below)
 
 If you want to generate mazes locally or perform minimization, you will need to install the packages from [requirements.txt](requirements.txt)
+We recommend using a virtualenv:
 ```
+virtualenv --python=/usr/bin/python3.10 venv
+source venv/bin/activate
 pip install -r Minotaur/requirements.txt
-python3 -m pysmt install --confirm-agreement --z3
-```
-You'll also need the python dev tools, which for linux you can install e.g. as follows:
-```
-sudo apt-get update && sudo apt-get -y install software-properties-common\
-sudo add-apt-repository ppa:deadsnakes/ppa && sudo apt-get update sudo apt-get -y install python3.11-dev
 ```
 If you want to use STORM locally, update the STORM home in the [config file](src/maze_gen/storm/config.py).
 
