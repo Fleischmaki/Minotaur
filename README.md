@@ -37,11 +37,7 @@ The builds need to download data from remote mirrors, so it can occassionally oc
 In this case rerunning the script usually fixes the problem.
 
 ### Install python3 dependencies
-NOTE: if you only want to run tests or experiments, you can skip this step. Also, generating single mazes is always possible via the container, e.g.
-```
-docker run -itv /path/to/seeds:/seeds minotaur-gen
-```
-Will start the container, with seeds available under `/seeds`. Then you can continue as below.  
+NOTE: if you only want to run tests or experiments, you can skip this step. Also, generating single mazes is always possible via the container (see below)
 
 If you want to generate mazes locally or perform minimization, you will need to install the packages from [requirements.txt](requirements.txt)
 ```
@@ -98,6 +94,12 @@ python3 Minotaur --m maze.c seed-dir out-dir timeout {container,local} {fn,fp,er
 python3 Minotaur --g {local,container} outdir params...
 ```
 Will generate the maze + any transformations specified. For parameter options see [params.md](./params.md)
+
+NOTE: if you did not install python dependencies locally, you can still generate mazes within the container; e.g. running
+```
+docker run -itv /path/to/seeds:/seeds minotaur-gen
+```
+will start the container, with seeds available under `/seeds`.  
 
 ### Filter accepted seed files
 ```
