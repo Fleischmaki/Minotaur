@@ -392,26 +392,28 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
     return has_bug
 
 def check_error(conf: dict, w: Target, tag: str, out_dir: str):
-    check_tag = 'tn' if tag == 'fp' else 'tp'
+    check_tag = 'tn' if tag == 'fp' else 'tp' if tag == 'fn' else tag
     out_dir = os.path.join(out_dir, 'check')
     w.params['m'] = maze_gen.get_params_from_maze(w.maze)['m']
     maze = w.maze
-    res = get_expected_result(w.params, w.params['m'],conf)
+    res = 'error' if tag == 'fn' else 'safe'
     if res is None:
         LOGGER.warning("Could not find expected result when trying to check target %s", w)
         return
-    docker.run_pa(conf['check_error'][w.tool], w.variant, w.flags, 'check', w.params, out_dir, 
+    docker.run_pa(conf['check_error'][w.tool], w.variant, w.flags, 'check', w.params, out_dir,
                   memory=conf['memory'], timeout=conf['duration']+60, maze=get_maze_dir(maze), expected_result=res) # Add a minute for buffer
     resdir = os.path.join(out_dir,maze, maze)
-    if os.path.isdir(resdir):
-        for file in os.listdir(resdir):
-            if len(file.split('_')) == 2:
-                LOGGER.info(file)
-                commands.run_cmd('mkdir -p %s' % os.path.join(out_dir,'runs'))
-                commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(out_dir,'runs')))
-                commands.run_cmd('rm -r %s' % os.path.join(out_dir,maze))
-                if check_tag in file:
-                    return True
+    if not os.path.isdir(resdir):
+        return True # timeout
+
+    for file in os.listdir(resdir):
+        if len(file.split('_')) == 2:
+            LOGGER.info(file)
+            commands.run_cmd('mkdir -p %s' % os.path.join(out_dir,'runs'))
+            commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(out_dir,'runs')))
+            commands.run_cmd('rm -r %s' % os.path.join(out_dir,maze))
+            if check_tag in file:
+                return True
     return False
 
 def write_summary(conf,out_dir, target,tag,runtime):
