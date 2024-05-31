@@ -8,14 +8,15 @@ If you did not install the python requirements, you will need to install `pandas
 ```
 pip install gcovr pandas
 ```
-### Recreate bug
+### Recreate bug (Table 1)
 Configurations of the form `recreate_Bugid.conf.json` (e.g. recreate_1).
 For 5 different seeds (1,2,3,4,5) Run tests until the bug is found on the corresponding version of the analyzer.
 Will use multiple workers (default 5) and our default test configurations (with fixed SMT seed, analyzer and flags)
 to try and find the bug as quickly as possible.
 NOTE: the found bugs might look different from the ones reported, as the reports were also cleaned manually and sometimes a bug can be triggered in various ways using the seed files. 
+NOTE: might take a while for mixed fuzzing bugs
 
-### Time to bug
+### Time to bug (Table 2)
 
 Configurations of the form time_to_bug_Bugid.conf.json (e.g. time_to_bug_1).
 These correspond to *Table 2* in the paper. To get an accurate measure of time, only a single worker is used, so these can take a while to finish, however they are set upd so that they can be run in parallel without any conflict.
@@ -31,7 +32,7 @@ NOTE: For bug8 we only test against the SMT baseline. To correctly read the resu
 python3 Minotaur/scripts/get_average_times bug8_result_dir 2 fp
 ```
 
-### Coverage
+### Coverage (Table 3)
 These give the results for *Table 3* in the paper
 The coverage experiment is provided in [coverage.conf.json](experiments/coverage.conf.json). Please update the workers and memory according to your system specifications.
 Coverage is collected per batch and can be aggregated via [a script](scripts/merge_coverage.py), which creates a coverage files combining the first n batches with n from 1 to the number of generated batches. This script requires the gcovr package 
