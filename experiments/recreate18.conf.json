@@ -3,13 +3,13 @@
 	"repeats" : 5,
 	"batches" : -1,
 	"duration" : 1000,
-	"workers" : 1,
+	"workers" : 5,
 	"memory" : 4,
-	"transforms" : 20,
+	"transforms" : 30,
 	"seed": [1,2,3,4,5],
-	"batch_size": 1,
+	"batch_size" : 30,
 	"maze_gen" : "container",
-	"expected_result": "infer",
+	"expected_result": "safe",
 	"abort_on_error": [["fp"]],
 	"tool" : {
 		"mopsa-bug1": {
@@ -42,7 +42,7 @@
 			"ca": [0,1]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/TODO_ANYTHING_WITH_DIVISION",
+		"s": "/Minotaur/bug_seeds/app9bench_2496.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
