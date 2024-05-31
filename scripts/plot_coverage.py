@@ -48,7 +48,7 @@ for baseline in range(num_baselines):
             plt.plot(x, line_coverage, color=col,label=f"{tool} l.f.")
             plt.plot(x, function_coverage, color=col,linestyle="-", label=f"{tool} f.c.")
         plt.legend()
-        plt.savefig(os.path.join(path, 'coverage.png'))
+        plt.savefig(os.path.join(path, 'coverage.pdf'), format='pdf')
         plt.close()
 
         print("##############################")
@@ -84,5 +84,5 @@ for tool in tools:
             plt.plot(x, all_coverages[baseline][tool][covtype], color=col, linestyle=lin, label=f"{baselines[baseline]}")
         if tool=='seahorn':
             plt.legend(loc="lower right", fontsize=20)
-        plt.savefig(os.path.join(sys.argv[1], f'{tool}_{covtypes[covtype]}_coverage.png'))
+        plt.savefig(os.path.join(sys.argv[1], f'{tool}_{covtypes[covtype]}_coverage.pdf'), format='pdf')
         plt.close()
