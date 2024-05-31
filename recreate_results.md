@@ -13,7 +13,7 @@ Configurations of the form `recreate_Bugid.conf.json` (e.g. recreate_1).
 For 5 different seeds (1,2,3,4,5) Run tests until the bug is found on the corresponding version of the analyzer.
 Will use multiple workers (default 5) and our default test configurations (with fixed SMT seed, analyzer and flags)
 to try and find the bug as quickly as possible.
-Note that the found bugs might look different from the ones reported, as the reports were also cleaned manually and sometimes a bug can be triggered in various ways using the seed files. 
+NOTE: the found bugs might look different from the ones reported, as the reports were also cleaned manually and sometimes a bug can be triggered in various ways using the seed files. 
 
 ### Time to bug
 
