@@ -384,7 +384,7 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
                         if conf['check_error'] is None:
                             has_bug = True
                         else:
-                            has_bug = check_error(conf, w, tag, out_dir)
+                            has_bug =  not check_error(conf, w, tag, out_dir)
                     commands.run_cmd(CP_CMD % (get_maze_dir(w.maze), out_path)) # Keep buggy mazes
                     write_summary(conf, out_dir, w, tag, runtime)
         if runtime == 'notFound' or tag == 'notFound':
@@ -392,7 +392,6 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
     return has_bug
 
 def check_error(conf: dict, w: Target, tag: str, out_dir: str):
-    check_tag = 'tn' if tag == 'fp' else 'tp' if tag == 'fn' else tag
     out_dir = os.path.join(out_dir, 'check')
     w.params['m'] = maze_gen.get_params_from_maze(w.maze)['m']
     maze = w.maze
@@ -404,7 +403,7 @@ def check_error(conf: dict, w: Target, tag: str, out_dir: str):
                   memory=conf['memory'], timeout=conf['duration']+60, maze=get_maze_dir(maze), expected_result=res) # Add a minute for buffer
     resdir = os.path.join(out_dir,maze, maze)
     if not os.path.isdir(resdir):
-        return True # timeout
+        return False # timeout
 
     for file in os.listdir(resdir):
         if len(file.split('_')) == 2:
@@ -412,7 +411,7 @@ def check_error(conf: dict, w: Target, tag: str, out_dir: str):
             commands.run_cmd('mkdir -p %s' % os.path.join(out_dir,'runs'))
             commands.run_cmd('mv %s %s' % (os.path.join(resdir,file), os.path.join(out_dir,'runs')))
             commands.run_cmd('rm -r %s' % os.path.join(out_dir,maze))
-            if check_tag in file:
+            if tag in file:
                 return True
     return False
 
