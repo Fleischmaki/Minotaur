@@ -11,7 +11,8 @@ pip install gcovr pandas
 ### Recreate bug
 Configurations of the form `recreate_Bugid.conf.json` (e.g. recreate_1).
 For 5 different seeds (1,2,3,4,5) Run tests until the bug is found on the corresponding version of the analyzer.
-Will use multiple workers (default 5) to try and find the bug as quickly as possible.
+Will use multiple workers (default 5) and our default test configurations (with fixed SMT seed, analyzer and flags)
+to try and find the bug as quickly as possible.
 Note that the found bugs might look different from the ones reported, as the reports were also cleaned manually and sometimes a bug can be triggered in various ways using the seed files. 
 
 ### Time to bug
@@ -20,12 +21,15 @@ Configurations of the form time_to_bug_Bugid.conf.json (e.g. time_to_bug_1).
 These correspond to *Table 2* in the paper. To get an accurate measure of time, only a single worker is used, so these can take a while to finish, however they are set upd so that they can be run in parallel without any conflict.
 The results are stored in a specified directory `$outdir`. To compute the average times, we used [this script](scripts/get_average_times.py), which uses the pandas package to parse csv:
 ```
-python3 Minotaur --e time_to_bug_cpa1 cpa1_result_dir
-python3 Minotaur/scripts/get_average_times cpa1_result_dir 3 fn
+python3 Minotaur --e time_to_bug4 bug4_result_dir
+python3 Minotaur/scripts/get_average_times bug4_result_dir 3 fn
 ```
 'fn' is the flag indicating that a soundness bug is found.
 For precision use 'fp', for crashes 'er'.
-
+NOTE: For bug8 we only test against the SMT baseline. To correctly read the results please run
+```
+python3 Minotaur/scripts/get_average_times bug8_result_dir 2 fp
+```
 
 ### Coverage
 These give the results for *Table 3* in the paper
