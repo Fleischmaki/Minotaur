@@ -33,13 +33,12 @@
 			"max" : 0
 		},
 		"t" : {
-			"storm": [1],
+			"fuzz": ["20x7","20x5","10x7","10x5"],
 			"mc": [0,25,50,75,100],
-			"dag": [0,2,3,4],
-			"unsat": [1]
+			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/bubble_sort2.c.smt2",
+		"s": "/Minotaur/bug_seeds/try5_small_difret_functions_flanagansaxe_users.get_quoting_style.il.flanagansaxe.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
