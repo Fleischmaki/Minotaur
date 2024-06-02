@@ -9,7 +9,7 @@
 	"seed": [1,1,2,2,3,3,4,4,5,5],
 	"batch_size": 1,
 	"maze_gen" : "container",
-	"expected_result": ["safe"],
+	"expected_result": ["safe","infer"],
 	"abort_on_error": [["fp"]],
 	"gen_time" : 3600,
 	"use_core" : 3,
@@ -39,7 +39,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/bubble_sort2.c.smt2",
+		"s": "/Minotaur/bug_seeds/try5_small_difret_functions_flanagansaxe_users.get_quoting_style.il.flanagansaxe.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
@@ -55,14 +55,13 @@
 			"max" : 7
 		},
 		"t" : {
-			"fuzz": ["5x5"],
-			"unsat": [1],
+			"fuzz": ["20x7","20x5","10x7","10x5"],
 			"wd": [1],
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/bubble_sort2.c.smt2",
+		"s": "/Minotaur/bug_seeds/try5_small_difret_functions_flanagansaxe_users.get_quoting_style.il.flanagansaxe.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
