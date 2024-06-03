@@ -79,7 +79,7 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/smt_comp_benchmarks/int",
+		"s": "/Minotaur/smt_comp_benchmarks/integer",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

@@ -87,7 +87,9 @@ class Generator:
         if '[' in var: #Arrays
             dim = var.count('[')
             width, vartype = self.vars_all[var].split("_")
-            return "\t{} {};\n\tinit({}{},{},{});\n".format(vartype,var,'*'*(dim-1),var.split('[')[0],width,converter.get_array_size_from_dim(dim))
+            if self.transformations['init_arrays']:
+                return "\t{} {};\n\tinit({}{},{},{});\n".format(vartype,var,'*'*(dim-1),var.split('[')[0],width,converter.get_array_size_from_dim(dim))
+            return "\t{} {};\n".format(vartype,var)
         if self.vars_all[var] == 'bool':
             return "\t_Bool {} = __VERIFIER_nondet_bool();\n".format(var)
         if self.vars_all[var] == 'const bool':

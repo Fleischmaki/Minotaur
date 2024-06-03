@@ -1,6 +1,6 @@
 #!/bin/bash
 
-while getopts a:w:h:o:r:n:c:g:s:e:b:m:t:u option
+while getopts a:w:h:o:r:n:c:g:s:e:b:m:t:uEWID option
 do
     case "${option}"
     in
@@ -17,7 +17,11 @@ do
     b) BUGTYPE=${OPTARG};;
     m) T_NUMB=${OPTARG};;
     t) T_TYPE=${OPTARG};;
-    u) UNIT=1
+    u) UNIT=1;;
+    E) LOG='E';;
+    W) LOG='W';;
+    I) LOG='I';;
+    D) LOG='D'
     esac
 done
 
@@ -107,6 +111,9 @@ if [ -z ${T_NUMB} ]; then
     T_NUMB=1
 fi
 
+if [ -z ${LOG+x} ]; then
+    LOG="D"
+fi
 
 echo "Generating mazes..."
 echo "##############################################"
@@ -143,10 +150,10 @@ done
 if [[ "$GEN" == *"CVE"* ]]; then
     SMT_NAME=$(basename $SMT_PATH .smt2)
     NAME_EXT="_"$CYCLE"percent_"$SMT_NAME"_gen_"$BUGTYPE
-    python3 $MAZEGEN_DIR/array_to_code.py $SEED $BUGTYPE $T_TYPE $T_NUMB $OUTPUT_DIR $CYCLE $UNIT $GEN $SMT_PATH $MAZES
+    python3 $MAZEGEN_DIR/array_to_code.py $LOG $SEED $BUGTYPE $T_TYPE $T_NUMB $OUTPUT_DIR $CYCLE $UNIT $GEN $SMT_PATH $MAZES
 else
     NAME_EXT="_"$CYCLE"percent_"$GEN"_"$BUGTYPE
-    python3 $MAZEGEN_DIR/array_to_code.py $SEED $BUGTYPE $T_TYPE $T_NUMB $OUTPUT_DIR $CYCLE $UNIT $GEN $MAZES
+    python3 $MAZEGEN_DIR/array_to_code.py $LOG $SEED $BUGTYPE $T_TYPE $T_NUMB $OUTPUT_DIR $CYCLE $UNIT $GEN $MAZES
 fi
 
 MIN=1

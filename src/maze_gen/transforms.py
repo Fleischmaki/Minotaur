@@ -45,6 +45,7 @@ def parse_transformations(t_type: str) -> dict:
     shuffle = False
     storm = False
     sat = True
+    init_arrays = True
     well_defined = False
     mc = 0
     keep_id = t_type == 'id'
@@ -94,9 +95,11 @@ def parse_transformations(t_type: str) -> dict:
             neg = True
         elif transformation == 'ca':
             ca = True
+        elif transformation == 'no-init-arrays':
+            init_arrays = False
     return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keep_id, 'wd' : well_defined, 'mc' : mc, 'fuzz': fuzz, \
             'sat' : sat, 'dag': dag, 'last': last, 'neg': neg, 'ca': ca, 'max_assert': int(max_assert), 'max_depth': int(max_depth), \
-            'mutator': mutator, 'yinyang': yinyang}
+            'mutator': mutator, 'yinyang': yinyang, 'init_arrays': init_arrays}
 
 def run_yinyang(smt_file: str, mutant_path: str, seed: int, n: int, transformations) -> list[str]:
     if n <= 0:

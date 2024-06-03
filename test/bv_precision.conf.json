@@ -77,7 +77,7 @@
 			"dag" : [0,2,3,4]
 		},
 		"g": ["CVE_gen","CVE-neg_gen"],
-		"s": "/Minotaur/smt_comp_benchmarks/bv",
+		"s":["/Minotaur/../bitvector"],
 		"r" : {
 			"min" : 0,
 			"max" : 65536

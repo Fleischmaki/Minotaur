@@ -80,19 +80,21 @@ def has_matching_type(numb_bits: int) -> bool:
 def needs_signed_children(node: FNode) -> bool:
     """ Check if a function needs signed arguments
     """
-    return node.is_bv_sle() or node.is_bv_slt() or node.is_bv_srem() or node.is_bv_sdiv()
+    return node.is_bv_sle() or node.is_bv_slt() or node.is_bv_srem() or node.is_bv_sdiv() \
+            or node.is_bv_ashr()
 
 def needs_downcasting(node: FNode) -> bool:
     """ CHeck if we need to cast down after converting a node
     """
     return node.is_bv_sdiv() or node.is_bv_udiv() or node.is_bv_srem() or node.is_bv_urem() \
-        or node.is_bv_ror() or node.is_bv_rol() or node.is_bv_ashr() \
+        or node.is_bv_ror() or node.is_bv_rol() \
         or node.is_select()
 
 def is_signed(node: FNode) -> str:
     """ Check if a function needs signed arguments
     """
-    return node.is_bv_sext() or node.is_bv_srem() or node.is_bv_sdiv() or node.is_select()
+    return node.is_bv_sext() or node.is_bv_srem() or node.is_bv_sdiv() or node.is_select() \
+            or node.is_bv_ashr()
 
 def needs_unsigned_cast(node: FNode):
     """ Checks if a node needs children to be recast. This is the case if:
@@ -136,6 +138,28 @@ def needs_signed_cast(node: FNode) -> bool:
         not all(map(lambda n: ff.get_bv_width(n)<=width,filter(lambda n: n.get_type().is_bv_type(),node.args()))) or \
         width == 32 and any(map(lambda n: n.is_bv_srem() or n.is_bv_urem(), node.args())) or \
         width == 32 and any(map(needs_downcasting, node.args()))
+
+def get_array_size_from_dim(dim: int) -> str:
+    """ Return array_size for a given dimension 
+    """
+    if dim <= 0:
+        return '1'
+    return (f'{ARRAY_SIZE_STRING}*'*dim)[:-1]
+
+
+def get_array_size(node: FNode):
+    """ Get array size from a Node
+    """
+    return get_array_size_from_dim(ff.get_array_dim(node))
+
+def clean_string(s: str | FNode):
+    """Makes sure that the string is a valid varibale name in C"""
+    s = str(s)
+    if s == 'c':
+        return '__original_smt_name_was_c__'
+    if 'func' in s:
+        s = '__' + s
+    return re.sub('[^A-Za-z0-9_]+','_',s)
 
 def type_to_c(ntype: node_type, constant_arrays: bool = False) -> str: # type: ignore
     """ Get corresponding C type for pySMT type 
@@ -333,6 +357,18 @@ class Converter():
             self.convert_helper(node, cons, " < ")
         elif node.is_bv_lshr():
             self.convert_helper(node, cons, " >> ", True)
+        elif node.is_bv_ashr():
+            if self.well_defined:
+                cons.write(get_unsigned_cast(node, True))
+                cons.write("ashift_helper(")
+                self.write_unsigned(node, cons, node.arg(0), True)
+                cons.write(",")
+                self.write_unsigned(node, cons, node.arg(1), True)
+                cons.write(")")
+                if not has_matching_type(ff.get_bv_width(node)):
+                    cons.write(")")
+            else:
+                self.convert_helper(node, cons, " >> ", True)
         elif node.is_bv_add():
             self.convert_helper(node, cons, " + ")
         elif node.is_bv_sub():
@@ -354,13 +390,6 @@ class Converter():
             cons.write("(~")
             self.write_cast(node, cons, b, True)
             cons.write(")")
-        elif node.is_bv_ashr():
-            (l,r) = node.args()
-            cons.write("ashift_helper(")
-            self.write_unsigned(node, cons, l, True)
-            cons.write(",")
-            self.write_unsigned(node, cons, r, True)
-            cons.write(f",{ff.get_bv_width(node)})")
         elif node.is_bv_rol() or node.is_bv_ror():
             (l,) = node.args()
             cons.write("rotate_helper(")
@@ -530,27 +559,6 @@ def get_converter() -> Converter:
     """Use converter as a singleton, so we can reuse the cache"""
     return CONVERTER
 
-def get_array_size_from_dim(dim: int) -> str:
-    """ Return array_size for a given dimension 
-    """
-    if dim <= 0:
-        return '1'
-    return (f'{ARRAY_SIZE_STRING}*'*dim)[:-1]
-
-
-def get_array_size(node: FNode):
-    """ Get array size from a Node
-    """
-    return get_array_size_from_dim(ff.get_array_dim(node))
-
-def clean_string(s: str | FNode):
-    """Makes sure that the string is a valid varibale name in C"""
-    s = str(s)
-    if s == 'c':
-        return '__original_smt_name_was_c__'
-    if 'func' in s:
-        s = '__' + s
-    return re.sub('[^A-Za-z0-9_]+','_',s)
 
 def get_bv_helpers(well_defined = True) -> str:
     """Returns helper functions for BV translation
@@ -568,12 +576,6 @@ def get_bv_helpers(well_defined = True) -> str:
     if(left)
         return (bv << ammount) | (bv >> (width-ammount));
     return (bv >> ammount) | (bv << (width-ammount));\n}"""
-    res += """unsigned long ashift_helper(unsigned long bv, unsigned long ammount, int width){
-    if(ammount == 0)
-        return bv;
-    if (((1U << (width-1)) & bv) == 0) // positive ashr == lshr
-        return bv >> ammount;
-    return (((1 << ammount)-1) << (width - ammount)) | (bv >> ammount);\n}\n"""
 
 
     if well_defined:
@@ -599,6 +601,13 @@ def get_bv_helpers(well_defined = True) -> str:
     if(r == 0)
         return l;
     return l % r;\n}\n"""
+        res += """unsigned long ashift_helper(unsigned long bv, unsigned long ammount, int width){
+    if(ammount == 0)
+        return bv;
+    if (((1U << (width-1)) & bv) == 0) // positive ashr == lshr
+        return bv >> ammount;
+    return (((1 << ammount)-1) << (width - ammount)) | (bv >> ammount);\n}\n"""
+
     return res
 
 def get_array_helpers(size):

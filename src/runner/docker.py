@@ -38,10 +38,11 @@ def spawn_cmd_in_docker(container, cmd_str, timeout=-1) -> subprocess.Popen: #ty
     cmd_args += [cmd_str]
     LOGGER.info('Executing (in container %s): %s', container, ' '.join(cmd_args[3:]))
     try:
-        return subprocess.Popen(cmd_args)
+        if LOGGER.getEffectiveLevel() == logging.DEBUG:
+            return subprocess.Popen(cmd_args, text=True)
+        return subprocess.Popen(cmd_args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except subprocess.SubprocessError as e:
         LOGGER.error(e)
-
 def run_cmd_in_docker(container,cmd_str):
     """Spawns a command in a running docker container and wait for it to finish
     :param container: The container (see get_container)
