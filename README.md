@@ -2,14 +2,17 @@
 Minotaur is a generative black-box fuzzer for software model checkers, based on [STORM](https://github.com/mariachris/storm) and [Fuzzle](https://github.com/SoftSec-KAIST/Fuzzle)
 
 ## About
-Minotaur uses sat/unsat SMT-Files to generate programs that are unsafe/safe by construction. Optionally, [STORM](https://github.com/mariachris/storm)'s mutation algorithm can be used to create several satisfiable variants for each seed. UNSAT seeds can also be mutated, as long as the unsat-core remain intact. A minimizer can be used to drop unneccessary clauses for found seeds, which results in concise explanations for PA bugs.  
+Minotaur uses sat/unsat SMT-Files to generate programs that are unsafe/safe by construction, which can be used to test program anaylzers for soundness/precision issues. 
 
 ## Requirements
 - Python3.10 or 3.11
 - Docker (or similar)
 
 ## Installation
+We tested installation on Ubuntu 22.03 and Debian 12. If you're using a different system, you might need to install
+the dependencies in a different manner.
 ```
+sudo apt install docker
 ./Minotaur/scripts/build_MC_dockers.sh <num_cores>
 # For recreating experiments #
 ./Minotaur/scripts/build_experiment_dockers.sh <num_cores>
@@ -21,29 +24,21 @@ The builds need to download data from remote mirrors, so it can occassionally oc
 In this case rerunning the script usually fixes the problem.
 
 ### Install python3 dependencies
-NOTE: if you only want to run tests or experiments, you can skip this step. Also, generating single mazes is always possible via the container (see below)
+#### NOTE: if you only want to run tests or experiments, you can skip this step. 
 
 If you want to generate mazes locally or perform minimization, you will need to install the packages from [requirements.txt](requirements.txt)
 We recommend using a [virtualenv](https://virtualenv.pypa.io/en/latest/):
 ```
 # python3.10 or python3.11
+sudo apt install python3-virtualenv
 virtualenv --python=/usr/bin/python3.XX venv
 source venv/bin/activate
 pip install -r Minotaur/requirements.txt
 ```
 If you want to use STORM locally, update the STORM home in the [config file](src/maze_gen/storm/config.py).
 
-### Download SMT-COMP benchmarks
-Minotaur ships only with the seeds needed to reproduce the experiments.
-To perform testing, we recommend installing the SMT-Comp benchmarks.
-They are compressed using zstd, so if you do not have it installed, you will need to install that first.
-
-WARNING! The benchmarks are very large (48GB) so make sure you have enough storage. 
-```
-sudo apt-get update && sudo-apt get install zstd
-./Minotaur/scripts/get_seeds.sh
-```
-The benchmarks will be installed in ./smt_comp_benchmarks
+## Recreating ASE 2024 paper results
+For more informations on the provided experiment configurations see [this guide](recreate_results.md) on how to recreate the experiment results. 
 
 ## Using Minotaur
 ### Test Analyzers
@@ -133,6 +128,3 @@ Tool | Status | Type
  -- | -- | --
  Symbiotic | [open](https://github.com/staticafi/symbiotic/issues/246) | Arrays
  Ultimate Kojak | [fixed](https://github.com/ultimate-pa/ultimate/issues/647#event-10423593364) |
-## Recreating ASE 2024 paper results
-For more informations on the provided experiment configurations see [this guide](recreate_results.md) on how to recreate the experiment results. 
-
