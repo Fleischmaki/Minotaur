@@ -55,8 +55,6 @@ def parse_transformations(t_type: str) -> dict:
     neg = False
     ca = False
     fuzz = False
-    yinyang = False
-    mutator = None
     max_assert = max_depth = 0
     for transformation in transformations:
         if transformation == 'sh':
@@ -73,9 +71,6 @@ def parse_transformations(t_type: str) -> dict:
             max_depth = 10
             if len(transformation) > 4:
                 max_assert, max_depth = transformation.removeprefix("fuzz").split('x')
-        elif transformation.startswith('yinyang'):
-            yinyang = True
-            mutator = transformation.split('-')[1]
 
         elif transformation == 'wd':
             well_defined = True
@@ -99,24 +94,7 @@ def parse_transformations(t_type: str) -> dict:
             init_arrays = False
     return {'sh': shuffle, 'dc': dc, 'storm' : storm, 'keepId' : keep_id, 'wd' : well_defined, 'mc' : mc, 'fuzz': fuzz, \
             'sat' : sat, 'dag': dag, 'last': last, 'neg': neg, 'ca': ca, 'max_assert': int(max_assert), 'max_depth': int(max_depth), \
-            'mutator': mutator, 'yinyang': yinyang, 'init_arrays': init_arrays}
-
-def run_yinyang(smt_file: str, mutant_path: str, seed: int, n: int, transformations) -> list[str]:
-    if n <= 0:
-        return []
-    LOGGER.info("Building %s new assertions.", n)
-    subprocess.run(f"{transformations['mutator']} -i {n*2} -ks {mutant_path} -S {seed} {'z3;echo'} {smt_file}".split(), check=False)
-    mutants = []
-    for i, mutant in enumerate(os.listdir(mutant_path)):
-        fmutant = os.path.join(mutant_path, mutant)
-        LOGGER.info("Checking sat on %s", fmutant)
-        fd = parser.read_file(fmutant)
-        sat = 'sat' if is_sat(fd.formula,'z3', fd.logic) else 'unsat'
-        outfile = os.path.join(mutant_path, f"mutant_{i}_{sat}.smt2")
-        subprocess.run(f"mv {fmutant} {outfile}".split(), check=False)
-        mutants.append(outfile)
-    return mutants
-
+            'init_arrays': init_arrays}
 
 def run_formula_builder(smt_file: str, mutant_path: str, seed: int, n: int, transformations) -> list[str]:
     if n <= 0:

@@ -1,15 +1,15 @@
 {
 	"verbosity": "bug",
 	"repeats" : -1,
-	"duration" : 20,
+	"duration" : 60,
 	"workers" : 190,
 	"memory" : 4,
 	"gen_time": 120,
-	"transforms" : 15,
+	"transforms" : 30,
 	"batch_size" : 180,
+	"batch_duration": 1,
 	"maze_gen" : "container",
 	"expected_result": "error",
-	"batch_size" : 60,
 	"tool" : { 
 		"cpa" : {
 			"variant" : ["predicateAnalysis", "valueAnalysis", "kInduction", "symbolicExecution", "invariantGeneration", "smg2","bmc"]
@@ -26,7 +26,6 @@
 		"cbmc": {
 			"variant" : ["--boolector","--mathsat","--cvc4","--yices","--z3"],
 			"choose" : {
-				"--paths " : [0,"fifo","lifo"],
 				"--" : [0,"full-slice","reachability-slice","reachability-slice-fb"]
 			},
 			"toggle" : ["--refine"]

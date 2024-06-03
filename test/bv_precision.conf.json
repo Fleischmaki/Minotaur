@@ -1,10 +1,11 @@
 {
 	"verbosity": "bug",
 	"repeats" : -1,
-	"duration" : 20,
+	"duration" : 60,
+	"batch_duration": 1,
 	"workers" : 120,
 	"memory" : 4,
-	"transforms" : 15,
+	"transforms" : 30,
 	"maze_gen" : "container",
 	"expected_result": "safe",
 	"batch_size" : 180,
@@ -70,7 +71,9 @@
 			"max" : 0
 		},
 		"t" : {
-			"storm": [1],
+			"fuzz": ["5x5","5x7","5x10",
+				"10x5","10x7","10x10",
+				"20x5","20x7","20x10"],
 			"mc": [0,25,50,75,100],
 			"wd": [1],
 			"unsat": [1],

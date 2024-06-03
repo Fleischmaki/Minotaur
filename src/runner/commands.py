@@ -1,3 +1,5 @@
+""" Provides wrappers for handling subprocesses.
+"""
 import subprocess
 import logging
 import sys

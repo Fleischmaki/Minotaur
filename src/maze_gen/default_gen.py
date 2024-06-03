@@ -14,12 +14,6 @@ class Generator:
             logic_c.append("\t\tsigned char c = __VERIFIER_nondet_char();")
         return logic_c
 
-    def get_numb_bytes(self):
-        numb_bytes = list()
-        for idx in range(self.size):
-            numb_bytes.append(1)
-        return numb_bytes
-
     def get_guard(self):
         guard = list()
         for idx in range(self.size):
@@ -35,6 +29,3 @@ class Generator:
                 conds = ["c < -64", "c < 0", "c < 64", "c >= 64"]
             guard.append(conds)
         return guard
-
-    def get_total_bytes(self):
-        return sum(self.get_numb_bytes())

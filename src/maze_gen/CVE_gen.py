@@ -100,20 +100,6 @@ class Generator:
             short_type = 'u' + short_type
         return "\t{} {} = __VERIFIER_nondet_{}();\n".format(self.vars_all[var], var, short_type)
 
-    def get_numb_bytes(self):
-        numb_bytes = []
-        group_idx = 0
-        for idx in range(self.size):
-            if self.insert[idx] == 0:
-                numb_bytes.append(1)
-            else:
-                used_bytes = 0
-                for cnt in range(self.insert[idx]):
-                    used_bytes += len(self.vars[group_idx + cnt])
-                numb_bytes.append(used_bytes + 1)
-                group_idx += self.insert[idx]
-        return numb_bytes
-
     def get_guard(self):
         guard = []
         group_idx = 0
@@ -146,6 +132,3 @@ class Generator:
                 group_idx += 1
                 guard.append(conds)
         return guard
-
-    def get_total_bytes(self):
-        return sum(self.get_numb_bytes())

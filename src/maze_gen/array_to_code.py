@@ -246,8 +246,6 @@ def main(mazes, seed, generator, bugtype, t_type, t_numb, output_dir, cycle, uni
         smt_files = [smt_file] + transforms.run_storm(smt_file, os.path.join(output_dir,'smt',str(seed)), seed, t_numb, transformations)
     elif transformations["fuzz"]:
         smt_files = [smt_file] + transforms.run_formula_builder(smt_file, os.path.join(output_dir,'smt',str(seed)), seed, t_numb, transformations)
-    elif transformations["yinyang"]:
-        smt_files = [smt_file] + transforms.run_yinyang(smt_file, os.path.join(output_dir,'smt',str(seed)), seed, t_numb, transformations)
     else:
         smt_files = [smt_file]*(t_numb+1)
     min = t_numb if transformations['last'] else 0 if transformations['keepId'] == 1 else  1
