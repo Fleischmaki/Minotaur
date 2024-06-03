@@ -78,10 +78,6 @@ def recursively_break_down_an_assertion_into_nodes(assertion, smt_Object, maxDep
         Recusively evaluate a tree and append it in the respective
         true or false lists
     """
-    # TODO:  Put a limit on how deep we want to go. Should be less than max python recursion limit
-    #  Problem:
-    #  Exception while computing tree depthargument 1: <class 'RecursionError'>: maximum recursion depth exceeded
-    #  Fatal Python error: Cannot recover from stack overflow.
     if is_and(assertion) or is_or(assertion):
         tree_depth = get_tree_depth(assertion, maxDepth)
         if tree_depth < maxDepth:

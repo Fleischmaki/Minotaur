@@ -38,7 +38,7 @@ def get_constants_for_type(node_type: types.PySMTType,is_index_or_shift: bool=Fa
 
 class FormulaBuilder():
     """Builds random formulas using subexpressions from a given seed formula
-    :param formula: Seeds formula
+    :param formula: Seed formula
     :param logic: The logic to use for the built formula
     :param rand: A source of randomness
     """
