@@ -5,15 +5,15 @@
 	"duration" : [600],
 	"workers" : 5,
 	"memory" : 4,
-	"transforms" : [15],
+	"transforms" : 300,
 	"seed": [1,2,3,4,5],
-	"batch_size": [1],
+	"batch_size" : 300,
 	"maze_gen" : "container",
 	"expected_result": "infer",
-	"abort_on_error": [["fn"]],
+	"abort_on_error": [["fp"]],
 	"tool" : {
 		"esbmc": {
-			"variant" : ["--mathsat --tuple-node-flattener --smt-during-symex --smt-symex-guard"]
+			"variant" : ["--interval-analysis"]
 		}
 	},
 	"avg": 1,

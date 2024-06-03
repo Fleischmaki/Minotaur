@@ -7,7 +7,7 @@
 	"memory" : 4,
 	"transforms" : 300,
 	"seed": [1,2,3,4,5],
-	"batch_size": 20,
+	"batch_size" : 300,
 	"maze_gen" : "container",
 	"expected_result": "infer",
 	"abort_on_error": [["fp"]],
