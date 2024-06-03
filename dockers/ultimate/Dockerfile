@@ -27,8 +27,6 @@ FROM minotaur-base
 USER maze
 RUN sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java 
 RUN sudo apt-get update && sudo apt-get install -y \
-    cvise \
-    creduce \
     build-essential \
 && sudo rm -rf /var/lib/apt/lists/*
 
@@ -40,8 +38,6 @@ COPY --from=build /home/maze/tools/UGemCutter-linux /home/maze/tools/UGemCutter-
 COPY --from=build /home/maze/tools/UKojak-linux /home/maze/tools/UKojak-linux
 
 ADD run_ultimate.sh /home/maze/tools/run_ultimate.sh
-ADD reduce.sh /home/maze/tools/reduce.sh
-ADD reduce_helper.sh /home/maze/tools/reduce_helper.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
 ADD unreach.prp /home/maze/workspace/unreach.prp
 
