@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN git clone https://github.com/staticafi/symbiotic
 WORKDIR /home/maze/tools/symbiotic
+RUN git checkout 7ba60a1
 RUN yes | scripts/install-ubuntu.sh 
 RUN ./build.sh 
 

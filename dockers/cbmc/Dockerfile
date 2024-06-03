@@ -8,6 +8,7 @@ USER maze
 WORKDIR /home/maze/tools
 RUN git clone https://github.com/diffblue/cbmc.git
 WORKDIR /home/maze/tools/cbmc
+RUN git checkout 6b44128
 RUN git submodule update --init
 RUN cmake -S . -Bbuild -DWITH_JBMC=OFF -DCMAKE_CXX_FLAGS="--coverage -O0" -DCMAKE_C_FLAGS="--coverage -O0" -DCMAKE_EXE_LINKER_FLAGS="--coverage"
 RUN cmake --build build -j${CORE_COUNT}

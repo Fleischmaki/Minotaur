@@ -15,6 +15,7 @@ USER maze
 WORKDIR /home/maze/tools
 RUN git clone http://github.com/diffblue/2ls
 WORKDIR /home/maze/tools/2ls
+RUN git checkout c572aa1
 RUN ./build.sh  
 
 FROM minotaur-base

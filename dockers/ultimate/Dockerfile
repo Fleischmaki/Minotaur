@@ -16,7 +16,8 @@ USER maze
 
 # Add scripts
 RUN git clone https://github.com/ultimate-pa/ultimate.git
-
+WORKDIR /home/maze/tools/ultimate
+RUN git checkout c5dabf3
 RUN sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java 
 
 WORKDIR /home/maze/tools/ultimate/releaseScripts/default

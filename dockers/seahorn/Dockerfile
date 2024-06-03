@@ -56,11 +56,14 @@ RUN mkdir -p /home/maze/workspace
 WORKDIR /home/maze/tools
 RUN git clone https://github.com/seahorn/seahorn.git  seahorn
 # Re-create the build directory that might have been present in the source tree
+WORKDIR /home/maze/tools/seahorn
+RUN git checkout 36a3081
+WORKDIR /home/maze/tools
 RUN rm -rf seahorn/build seahorn/debug seahorn/release && \
   mkdir seahorn/build && \
 # Remove any third-party dependencies that build process clones
   rm -rf seahorn/clam seahorn/sea-dsa seahorn/llvm-seahorn
-WORKDIR /home/maze/tools/seahorn/build
+  WORKDIR /home/maze/tools/seahorn/build
 
 ARG BUILD_TYPE=Coverage
 

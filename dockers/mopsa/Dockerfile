@@ -21,6 +21,7 @@ USER maze
 WORKDIR /home/maze/tools/
 RUN git clone https://github.com/antoinemine/apron.git apron
 WORKDIR /home/maze/tools/apron
+RUN git checkout 66fa6a4
 RUN \
     opam init --disable-sandboxing -y && \
     eval $(opam env) && \
@@ -35,6 +36,7 @@ RUN sudo make install
 WORKDIR /home/maze/tools
 RUN git clone https://gitlab.com/mopsa/mopsa-analyzer.git
 WORKDIR /home/maze/tools/mopsa-analyzer
+RUN git checkout 2429b5d0
 RUN \
     eval $(opam env) && \
     opam update -y && \

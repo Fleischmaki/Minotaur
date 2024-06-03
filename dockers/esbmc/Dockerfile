@@ -3,8 +3,7 @@ ARG CORE_COUNT=4
 
 USER maze
 WORKDIR /home/maze/tools/esbmc
-# Cuold be outdated as we cloned in base
-RUN git pull 
+RUN git checkout c2728f2
 
 RUN mkdir build 
 WORKDIR /home/maze/tools/esbmc/build
