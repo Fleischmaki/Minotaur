@@ -26,7 +26,8 @@ NOTE: if you only want to run tests or experiments, you can skip this step. Also
 If you want to generate mazes locally or perform minimization, you will need to install the packages from [requirements.txt](requirements.txt)
 We recommend using a [virtualenv](https://virtualenv.pypa.io/en/latest/):
 ```
-virtualenv --python=/usr/bin/python3.10 venv
+# python3.10 or python3.11
+virtualenv --python=/usr/bin/python3.XX venv
 source venv/bin/activate
 pip install -r Minotaur/requirements.txt
 ```
