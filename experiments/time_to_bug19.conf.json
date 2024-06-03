@@ -12,7 +12,7 @@
 	"expected_result": ["error", "error", "infer"],
 	"abort_on_error": [["fn"]],
 	"gen_time" : 3600,
-	"use_core" : 8,
+	"use_core" : 10,
 	"tool" : {
 		"mopsa-bug1": {
 			"variant" : ["cell-itv-congr"]
@@ -36,6 +36,10 @@
 		"r" : {
 			"min" : 0,
 			"max" : 65536
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 0
 		}
 	},{
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
@@ -58,6 +62,10 @@
 		"r" : {
 			"min" : 0,
 			"max" : 65536
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 0
 		}
 	},{
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
@@ -80,6 +88,10 @@
 		"r" : {
 			"min" : 0,
 			"max" : 65536
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 0
 		}
 	}]
 }
