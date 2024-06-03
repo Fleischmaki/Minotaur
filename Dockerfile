@@ -23,12 +23,6 @@ ADD dockers/gen/requirements.txt /home/maze/workspace/requirements.txt
 RUN /home/maze/.local/bin/pip3 install -r requirements.txt
 RUN python3 -m pysmt install --confirm-agreement --z3
 WORKDIR /home/maze/tools
-RUN git clone https://github.com/testsmt/yinyang.git yinyang
-WORKDIR /home/maze/tools/yinyang
-RUN git checkout f38bb10
-ADD dockers/gen/yinyang.patch /home/maze/tools/yinyang.patch
-RUN git apply /home/maze/tools/yinyang.patch
-ENV PATH=/home/maze/tools/yinyang/bin:$PATH
 
 WORKDIR /home/maze/workspace
 ADD . /home/maze/workspace/Minotaur
