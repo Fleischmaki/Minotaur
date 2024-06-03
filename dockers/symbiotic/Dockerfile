@@ -10,11 +10,8 @@ RUN apt-get update && apt-get install -y \
 
 RUN git clone https://github.com/staticafi/symbiotic
 WORKDIR /home/maze/tools/symbiotic
-RUN apt-get update && yes | scripts/install-ubuntu.sh 
+RUN yes | scripts/install-ubuntu.sh 
 RUN ./build.sh 
-
-FROM minotaur-base 
-COPY --from=build /home/maze/tools/symbiotic /home/maze/tools/symbiotic
 
 ### Set up directory structure
 USER maze
@@ -22,7 +19,5 @@ RUN mkdir -p /home/maze/tools
 RUN mkdir -p /home/maze/workspace
 ADD run_symbiotic.sh /home/maze/tools/run_symbiotic.sh
 ADD get_tcs.py /home/maze/tools/get_tcs.py
-USER root
-RUN chmod +x /home/maze/tools/run_symbiotic.sh
-USER maze
+RUN sudo chmod +x /home/maze/tools/run_symbiotic.sh
 WORKDIR /home/maze/workspace

@@ -3,21 +3,21 @@
 	"repeats" : 5,
 	"batches" : -1,
 	"duration" : 1000,
-	"workers" : 1,
+	"workers" : 5,
 	"memory" : 4,
-	"transforms" : 20,
+	"transforms" : 30,
 	"seed": [1,2,3,4,5],
-	"batch_size": 1,
+	"batch_size" : 30,
 	"maze_gen" : "container",
 	"expected_result": "error",
-	"abort_on_error": [["fn"]],
+	"abort_on_error": ["er"],
 	"tool" : {
-		"ultimate-bug2": {
-			"variant" : ["ut", "ua", "ugc"]
+		"ultimate-bug3": {
+			"variant" : ["uk"]
 		}
 	},
 	"check_error": {
-		"ultimate-bug2": "ultimate-fixed2"
+		"ultimate-bug3": "ultimate-fixed3"
 	},
 
 	"parameters" : {

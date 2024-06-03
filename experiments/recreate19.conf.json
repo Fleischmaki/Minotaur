@@ -5,9 +5,9 @@
 	"duration" : 1000,
 	"workers" : 1,
 	"memory" : 4,
-	"transforms" : 20,
+	"transforms" : 300,
 	"seed": [1,2,3,4,5],
-	"batch_size": 1,
+	"batch_size" : 300,
 	"maze_gen" : "container",
 	"expected_result": "infer",
 	"abort_on_error": [["fn"]],
@@ -35,7 +35,7 @@
 			"max" : 0
 		},
 		"t" : {
-			"fuzz": ["5x5"],
+			"fuzz": ["10x10","1x100","5x20"],
 			"wd": [0,1],
 			"mc": [0,25,50,75,100],
 			"dag": [0,2,3,4],

@@ -5,15 +5,15 @@
 	"duration" : 30,
 	"workers" : 5,
 	"memory" : 4,
-	"transforms" : 15,
+	"transforms" : 300,
 	"seed": [1,2,3,4,5],
-	"batch_size": [1],
+	"batch_size" : 300,
 	"maze_gen" : "container",
 	"expected_result": "safe",
 	"abort_on_error": [["fp"]],
 	"tool" : {
 		"seahorn" : {
-			"variant" : ["spf"]
+			"variant" : ["pf -m64 --bv-chc"]
 		}
 	},
 	"avg": 1,
@@ -33,13 +33,11 @@
 			"max" : 0
 		},
 		"t" : {
-			"storm": [1],
 			"unsat": [1],
-			"mc": [0,25,50,75,100],
-			"dag": [0,2,3,4]
+			"mc": [0,25,50,75,100]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/TODO",
+		"s": "/Minotaur/bug_seeds/app1bench_1654.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536

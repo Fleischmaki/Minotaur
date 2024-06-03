@@ -5,14 +5,14 @@
 	"duration" : 1000,
 	"workers" : 5,
 	"memory" : 4,
-	"transforms" : 15,
+	"transforms" : 300,
 	"seed": [1,2,3,4,5],
-	"batch_size": 1,
+	"batch_size" : 300,
 	"maze_gen" : "container",
 	"expected_result": "safe",
 	"abort_on_error": [["fp"]],
 	"tool" : {
-		"cpa": {
+		"cpa-bug4": {
 			"variant" : ["smg2"]
 		}
 	},
