@@ -17,8 +17,7 @@ For 5 different seeds (1,2,3,4,5) run tests until the bug is found on the corres
 Will use multiple workers (default 5) and our default test configurations (with fixed SMT seed, analyzer and flags)
 to try and find the bug as quickly as possible.
 
-Test results for each run are logged in a file called `summary.csv`. The files that caused the bugs are stored somewhat
-nested (first by tool, then batch-id, then by the name of the maze), the best way to find them is probably using `find`
+Test results for each run are logged in a file called `summary.csv`. The files that caused the bugs are stored nested (first by tool, then batch-id, then by the name of the maze), the best way to find them is probably using `find`
 
 ```
 find -type f -name *.c runX_0 
