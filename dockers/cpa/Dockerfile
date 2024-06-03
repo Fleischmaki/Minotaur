@@ -1,6 +1,6 @@
 FROM minotaur-cpa-base as build
 # Install
-RUN git checkout 6b44128
+RUN git checkout 0a0997b
 RUN ant
 
 ### Add scripts
