@@ -1,5 +1,5 @@
 {
-	"verbosity": "summary",
+	"verbosity": "bug",
 	"repeats" : 15,
 	"batches": 1000,
 	"duration" : 60,
