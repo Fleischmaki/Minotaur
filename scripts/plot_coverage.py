@@ -51,7 +51,7 @@ for baseline in range(num_baselines):
         plt.savefig(os.path.join(path, 'coverage.pdf'), format='pdf')
         plt.close()
 
-        print("##############################")
+    print("##############################")
 
     print(f"Final averages for baseline {baselines[baseline]}:")
     for tool in tools:
