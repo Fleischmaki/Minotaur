@@ -1,18 +1,19 @@
 ## Recreating experiment results
+This file contains instructions on how to recreate the results for our ASE'24 paper "Constraint-Based Test Oracles for Program Analyzers"
 ### Python dependencies
-If you did not install the python requirements, you will need to install `pandas` and `gcovr` to evaluate experiment results
+If you did not install the python requirements, you will need to install `pandas` and `gcovr` to evaluate experiment results.
 ```bash
 pip install gcovr pandas
 ```
 ### Experiment configurations
 All configuration files for the experiments are already provided in the [experiment folder](experiments). 
-The bug ids are the same as in Table 2 of the experiments section.
+In the following bug ids are the same as in Table 2 of the experiments section.
 
 NOTE: in the following all commands assume that you are working in a folder containing the `Minotaur` folder from our submission. If you are working in a different folder replace `Minotaur` (or `./Minotaur`) with the path to the `Minotaur` folder.
 
 There are several types of experiments:
 ### Run tests (RQ1)
-Our submission includes the seeds we used for our tests (*Table 1*) in the `bitvector` (column BV) and `integer` (column IA/NIA) folders.
+Our submission includes the seeds we used for our tests in the `bitvector` (column BV) and `integer` (column IA/NIA) folders.
 
 We provide the final test configurations we used in the [test folder](test).
 `bv_*` means testing with seeds using bitvector logic, `integer_*` testing with seeds from integer logics.
@@ -45,6 +46,8 @@ NOTE: due to a currently unfixed bug in CPA bug 9 will create a lot of error res
 
 ### Measure time to bug (RQ2/Table 3)
 These correspond to *Table 3* in the paper. 
+
+To measure time to bug e.g. for bug 4 run:
 ```bash
 python Minotaur --e time_to_bug4 <outdir>
 ```
@@ -68,10 +71,10 @@ To get the figures from *Figure 5* run:
 ```bash
 python Minotaur/scripts/plot_coverage.py coverage
 ```
-The figures should appear in the `coverage` folder.
+The figures should appear in the `coverage` folder. E.g. `coverage/seahron_branch_coverage.pdf` shows the branch coverage achieved for the program analyzer seahorn.
 
-#### Recreate experiment
-If you wish to recreate the coverage experiment, the configuration is provided in [coverage.conf.json](experiments/coverage.conf.json). Please update the workers and memory according to your system specifications.
+#### Recreate coverage experiment
+If you wish to recreate the coverage experiment, the configuration is provided in [coverage.conf.json](experiments/coverage.conf.json). Please update the workers and available memory according to your system specifications. See also [config.md](config.md) for more infos on how to read config files.
 
 The commands to obtain the results are: 
 ```bash
