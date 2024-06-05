@@ -94,47 +94,49 @@ For all tools the logging level can be set via --LEVEL with LEVEL being one of E
 Note that container outputs are only tracked if the logging level is set to Debug
 
 ## Bugs found by Minotaur
+In chronological order; ID is the corresponding ID used in Table 2 of the paper.
 ### Soundness Bugs
-Nr.  | Tool | Status | Type
+ID.  | Tool | Status | Cause
 | --  | -- | -- | -- |
-1 | CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1114) | Overflow
-2 | Ultimate integer | [fixed](https://github.com/ultimate-pa/ultimate/issues/642#issuecomment-1661186726) | Overflow
-3 |CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1130) | Bitwise Operations
-4 |CPA - Intervallanalysis | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1132#note_1544904422) | Overflow
-5 |Symbiotic | [open](https://github.com/staticafi/symbiotic/issues/247) | ??
-6 |Ultimate Automizer/Gemcutter integer | [fixed](https://github.com/ultimate-pa/ultimate/issues/646) | Bitwise Operators
-7 |ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1363) | Type Casts
-8 |ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1392) | Type Casts
-9 |CPA -InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1194) | Modulo Operator
-10 |Seahorn - bpf | [closed (without fixing)](https://github.com/seahorn/seahorn/issues/545) | Bound inference
-11 |ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1565) | Boolean Intervals
-12 |ESBMC --cvc4 | [fixed](https://github.com/esbmc/esbmc/issues/1770) | SMT translation
-13 |CPA -InvariantsCPA | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1208) | Division
-14 |ESBMC --mathsat| [confirmed](https://github.com/esbmc/esbmc/issues/1771) | 
-15 | MOPSA congr | [fixed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/179) | 
-16 | Ultimate integer| [closed](https://github.com/ultimate-pa/ultimate/issues/664) | Division-by-zero
-17 | MOPSA excluded-powerset | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/182) |
-18 | MOPSA cell-rel-itv | [closed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/183) | Outdated dependency | 
-19 | Ultimate integer| [fixed](https://github.com/ultimate-pa/ultimate/issues/665) | Overflowing shift | 
-20 | MOSPA cell-string-length-pointer-sentinel-pack-rel-itv-congr-rewrite | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/184) | |
-21 | MOPSA congr | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/185) | Modulo? |
+4 | CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1114) | Overflow
+28 | Ultimate integer | [fixed](https://github.com/ultimate-pa/ultimate/issues/642#issuecomment-1661186726) | Overflow
+5 |CPA - InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1130) | Bitwise Operations
+\-|CPA - Intervallanalysis | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1132#note_1544904422) | Overflow (known)
+26 | Symbiotic | [confirmed](https://github.com/staticafi/symbiotic/issues/246) | Arrays
+27 |Symbiotic | [open](https://github.com/staticafi/symbiotic/issues/247) | Unknown
+29 |Ultimate Automizer/Gemcutter integer | [fixed](https://github.com/ultimate-pa/ultimate/issues/646) | Bitwise Operators
+10 |ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1363) | Type Casts
+11 |ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1392) | Type Casts
+6 |CPA -InvariantsCPA | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1194) | Modulo Operator
+23 |Seahorn - bpf | [closed](https://github.com/seahorn/seahorn/issues/545) | Bound inference
+12 |ESBMC --interval-analysis | [fixed](https://github.com/esbmc/esbmc/issues/1565) | Boolean Intervals
+13 |ESBMC --cvc4 | [fixed](https://github.com/esbmc/esbmc/issues/1770) | Incremental-SMT Translation
+7 |CPA -InvariantsCPA | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1208) | Division
+14 |ESBMC --mathsat| [confirmed](https://github.com/esbmc/esbmc/issues/1771) | Unknown
+19 | MOPSA congr | [fixed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/179) | Modulo
+\- | Ultimate integer| [closed](https://github.com/ultimate-pa/ultimate/issues/664) | Division-by-Zero
+20 | MOPSA excluded-powerset | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/182) | Unknown 
+21 | MOPSA cell-rel-itv | [closed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/183) | Outdated Dependency | 
+31 | Ultimate integer| [fixed](https://github.com/ultimate-pa/ultimate/issues/665) | Overflowing Left Shift | 
+\- | MOSPA cell-string-length-pointer-sentinel-pack-rel-itv-congr-rewrite | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/184) | Negative Right Shift |
+22 | MOPSA congr | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/185) | Modulo |
+
 ### Precision Issues
-Nr. |Tool | Status | Type
+ID. |Tool | Status | Cause
 | -- | -- | -- | -- |
-1 | MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/150) | Type Casts
-2 | MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/157) | ITE value propagation
-3 | SeaHorn | [open](https://github.com/seahorn/seahorn/issues/546) | *inter-procedural analysis
-4 | SeaHorn | [open](https://github.com/seahorn/seahorn/issues/550) |
-5 | CPA -smg2 | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1211) | 
+16 | MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/150) | Type Casts
+17 | MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/157) | Imprecise Overabstraction
+24 | SeaHorn | [open](https://github.com/seahorn/seahorn/issues/546) | Interprocedural Analysis (probably)
+25 | SeaHorn | [open](https://github.com/seahorn/seahorn/issues/550) | Unknown
+8 | CPA -smg2 | [fixed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1211) | Symbolic Constants
 6 | MOPSA | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/177) | Type Casts
-7 | 2ls --k-induction | [confirmed](https://github.com/diffblue/2ls/issues/177)
-8 | MOPSA | [closed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/178)|
-9 | CBMC | [open](https://github.com/diffblue/cbmc/issues/8295) | Pointers
-10| CPA -smg2| [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1211#note_1904978360) |
-11 | CBMC --refine | [open](https://github.com/diffblue/cbmc/issues/8296) 
-12 | ESBMC --inteval-analysis | [confirmed](https://github.com/esbmc/esbmc/issues/1844)
-### Other
-Tool | Status | Type
- -- | -- | --
- Symbiotic | [open](https://github.com/staticafi/symbiotic/issues/246) | Arrays
- Ultimate Kojak | [fixed](https://github.com/ultimate-pa/ultimate/issues/647#event-10423593364) |
+1 | 2ls --k-induction | [confirmed](https://github.com/diffblue/2ls/issues/177) | Unknown
+2 | CBMC | [open](https://github.com/diffblue/cbmc/issues/8295) | Pointers
+9| CPA -smg2| [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1211#note_1904978360) | Symbolic array accesses 
+3 | CBMC --refine | [open](https://github.com/diffblue/cbmc/issues/8296) | Unknown
+15 | ESBMC --inteval-analysis | [confirmed](https://github.com/esbmc/esbmc/issues/1844) | Unary Minus + Casts
+### Crashes
+ID | Tool | Status | Cause
+| -- |-- | -- | -- |
+30 | Ultimate Kojak | [fixed](https://github.com/ultimate-pa/ultimate/issues/647#event-10423593364) | SMT translation
+\- | CPA -smg2 | [open](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1211#note_1907113929) | Unknown
