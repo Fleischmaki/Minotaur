@@ -11,7 +11,7 @@ Minotaur uses sat/unsat SMT-Files to generate programs that are unsafe/safe by c
 ## Installation
 We tested installation on Ubuntu 22.03 and Debian 12. If you're using a different system, you might need to install
 the dependencies in a different manner.
-```
+```bash
 sudo apt install docker
 ./Minotaur/scripts/build_MC_dockers.sh <num_cores>
 # For recreating experiments #
@@ -28,7 +28,7 @@ In this case rerunning the script usually fixes the problem.
 
 If you want to generate mazes locally or perform minimization, you will need to install the packages from [requirements.txt](requirements.txt)
 We recommend using a [virtualenv](https://virtualenv.pypa.io/en/latest/):
-```
+```bash
 # python3.10 or python3.11
 sudo apt install python3-virtualenv
 virtualenv --python=/usr/bin/python3.XX venv
@@ -44,36 +44,36 @@ For more informations on the provided experiment configurations see [this guide]
 ### Test Analyzers
 Runs are configured via conf.json files located in the [test](test) folder.
 To perform a test using the config file test/conf_name.conf.json run 
-```
+```bash
 python Minotaur --t conf_name outdir
 ```
 For more info on config files check [config.md](./config.md) and the example config files provided.
 
 ### Run experiments
 Before recreating experiments, build the necessary experiment Dockers. Then run the experiment for a given config similarly to test config: 
-```
+```bash
 ./Minotaur/scripts/build_experiment_dockers.sh
 python Minotaur --e experiment_name outdir
 ```
 Experiment configurations are stored in the [experiments](experiments) folder. 
 ### Minimize a maze
-```
+```bash
 python Minotaur --m report seed-dir out-dir {local,container}
 ```
 'report' the line of the summary.csv file from testing.
 Alternatively if you have the maze file you want to minimize, generate the maze and then run 
-```
+```bash
 python Minotaur --m maze.c seed-dir out-dir timeout {container,local} {fn,fp,er,...} tool [variant] [params]
 ```
 
 ### Generate a specific maze
-```
+```bash
 python Minotaur --g {local,container} outdir params...
 ```
 Will generate the maze + any transformations specified. For parameter options see [params.md](./params.md)
 
 ### Filter accepted seed files
-```
+```bash
 python Minotaur --c seed_dir outfile {sat,unsat}
 ```
 will recursively search for compatible smtfiles for sat/unsat seed generation (=> unsafe/safe programs).

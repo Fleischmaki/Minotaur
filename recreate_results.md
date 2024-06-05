@@ -7,8 +7,10 @@ pip install gcovr pandas
 ### Experiment configurations
 All configuration files for the experiments are already provided in the [experiment folder](experiments). 
 The bug ids are the same as in Table 2 of the experiments section.
-There are several types of experiments:
 
+NOTE: in the following all commands assume that you are working in a folder containing the `Minotaur` folder from our submission. If you are working in a different folder replace `Minotaur` (or `./Minotaur`) with the path to the `Minotaur` folder.
+
+There are several types of experiments:
 ### Run tests (RQ1)
 Our submission includes the seeds we used for our tests (*Table 1*) in the `bitvector` (column BV) and `integer` (column IA/NIA) folders.
 
@@ -18,7 +20,7 @@ We provide the final test configurations we used in the [test folder](test).
 Before running tests, please adjust the parameters for `workers` and `memory` according to your system.
 You start a test run using e.g. for bitvectors + pure soundness as follows:
 ```bash
-Minotaur --t bv_soundness outdir
+python Minotaur --t bv_soundness outdir
 ```
 NOTE: We do provide a config to use integer seeds to test precision, because most of the analyzers
 complain about overflows, of which we cannot guarantee the absence using integer seeds.
@@ -26,12 +28,12 @@ complain about overflows, of which we cannot guarantee the absence using integer
 ### Recreate a bug (RQ1/Table 2)
 We also provide configurations that try to quickly find a specific bug from *Table 2* on 5 different random integer seeds, by fixing the SMT-seed and analyzer (including the flags). E.g. for bug 1:
 ```bash
-Minotaur --e recreate1 outdir
+python Minotaur --e recreate1 outdir
 ```
 Test results for each run are logged in a file called `summary.csv`. The files that caused the bugs are stored nested (first by tool, then batch-id, then by the name of the maze), the best way to find them is probably using `find`
 
 ```bash
-find -type f -name *.c runX_0 
+find -type f -name *.c outdir/runX_0 
 ```
 NOTE: the found bugs might look different from the ones reported, as the reports were also cleaned manually and sometimes a bug can be triggered in various ways using the seed file. For unfixed bugs there is also the possibility that a new bug is found, as we cannot check against the fixed version to confirm.
 
@@ -46,7 +48,7 @@ python Minotaur --e time_to_bug4 outdir
 ```
 The results are stored in a specified directory `outdir`. To compute the average times, we used [this script](scripts/get_average_times.py):
 ```bash
-python Minotaur/scripts/get_average_times outdir 3 fn/fp/er
+./Minotaur/scripts/get_average_times outdir 3 fn/fp/er
 ```
 Use `fn` if the issue is realted to soundness, for precision use `fp`, for crashes `er`.
 
@@ -54,7 +56,7 @@ NOTE: To get an accurate measure of time, only a single worker is used, so these
 
 NOTE: For bug8 we only test Minotaur, as the baselines are non-applicable. To correctly read the results please run
 ```bash
-python Minotaur/scripts/get_average_times outdir 1 fp
+./Minotaur/scripts/get_average_times outdir 1 fp
 ```
 
 ### Measure coverage (RQ3/Figure 5)
@@ -62,7 +64,8 @@ These give the results for *Figure 5* in the paper.
 The coverage experiment is provided in [coverage.conf.json](experiments/coverage.conf.json). Please update the workers and memory according to your system specifications.
 ```bash
 ./Minotaur/scripts/build_MC_dockers.sh
-python Minotaur --e coverage outdir  # This will take a long time to run 
+python Minotaur --e coverage outdir  
+# ^ This takes more than a day to run on a server 
 python Minotaur/scripts/merge_coverage.py outdir/run*
 python Minotaur/scripts/plot_coverage.py outdir 20 4
 ```
