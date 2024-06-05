@@ -10,21 +10,27 @@ The bug ids are the same as in Table 1 of the experiments section.
 There are several types of experiments:
 
 ### Recreate a bug (Table 1)
+We provide the final test configurations we used in the [test folder](test).
+`bv_*` means testing with seeds using bitvector logic, `integer_*` testing with seeds from integer logics.
+`soundness`, `precision` and `mixed` indicate which fuzzing mode (all2sat, unsat2unsat or all2all is used). 
+Before running tests, please adjust the parameters for `workers` and `memory` according to your system.
+You start a test run using e.g. for BitVectors + pure soundness as follows:
+```
+Minotaur --t bv_soundness outdir
+```
+NOTE: We do provide a config to use integer seeds to test precision, because most of the analyzers
+complain about overflows, of which we cannot guarantee the absence using integer seeds.
+
+We also provide configurations that try to quickly find a specific bug from *Table 1* on 5 different random integer seeds, by fixing the SMT-seed and analyzer (including the flags). E.g. for bug 1:
 ```
 Minotaur --e recreate1 outdir
 ```
-For 5 different seeds (1,2,3,4,5) run tests until the bug is found on the corresponding version of the analyzer.
-Will use multiple workers (default 5) and our default test configurations (with fixed SMT seed, analyzer and flags)
-to try and find the bug as quickly as possible.
-
 Test results for each run are logged in a file called `summary.csv`. The files that caused the bugs are stored nested (first by tool, then batch-id, then by the name of the maze), the best way to find them is probably using `find`
 
 ```
 find -type f -name *.c runX_0 
 ```
-
 NOTE: the found bugs might look different from the ones reported, as the reports were also cleaned manually and sometimes a bug can be triggered in various ways using the seed files.
-
 NOTE: might take a long time for mixed fuzzing bugs.
 
 ### Measure time to bug (Table 2)
