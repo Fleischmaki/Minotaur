@@ -114,11 +114,11 @@ ID.  | Tool | Status | Cause
 7 |CPA -InvariantsCPA | [confirmed](https://gitlab.com/sosy-lab/software/cpachecker/-/issues/1208) | Division
 14 |ESBMC --mathsat| [confirmed](https://github.com/esbmc/esbmc/issues/1771) | Unknown
 19 | MOPSA congr | [fixed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/179) | Modulo
-\- | Ultimate integer| [closed](https://github.com/ultimate-pa/ultimate/issues/664) | Division-by-Zero
+\- | Ultimate integer| [closed](https://github.com/ultimate-pa/ultimate/issues/664) | Division-by-Zero (Undefined)
 20 | MOPSA excluded-powerset | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/182) | Unknown 
 21 | MOPSA cell-rel-itv | [closed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/183) | Outdated Dependency | 
 31 | Ultimate integer| [fixed](https://github.com/ultimate-pa/ultimate/issues/665) | Overflowing Left Shift | 
-\- | MOSPA cell-string-length-pointer-sentinel-pack-rel-itv-congr-rewrite | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/184) | Negative Right Shift |
+\- | MOSPA cell-string-length-pointer-sentinel-pack-rel-itv-congr-rewrite | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/184) | Negative Right Shift (Undefined)|
 22 | MOPSA congr | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/185) | Modulo |
 
 ### Precision Issues
