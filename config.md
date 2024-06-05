@@ -26,11 +26,12 @@ In particular config files accept the following values
 Experiments essentially consists of multiple test configuratinos run in sequence. How many tests can be specified via the following parameter: 
 - `repeats`: This specifies the number of tests to run.
 - `avg` Optinally every test can be run multiple times to collect the average time. However times should mostly be mostly deterministic.
+- `batches`: As the `repeats` parameter is already reserved, use this to specify the `repeats` for each test.
+
 
 The total number of tests run is then `repeats`*`average`
 
 All other parameters are the same as for tests, except they can also be a list of the corresponding type.
 The i-th experiment will then use the i-th element of the list (modulo the length of the list if there are more repeats than list items). 
-As the `repeats` parameter is already reserved, use `batches` to specify the repeats for the test.
 
 If the parameter is not a list it will be kept the same for all tests.
