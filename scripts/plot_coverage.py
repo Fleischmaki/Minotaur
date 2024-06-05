@@ -7,11 +7,11 @@ import numpy as np
 def get_average(coverages, key):
     return np.average(list(map(lambda cov: cov[key], coverages)))
 
-cols = ['b','g','c','r','m','y']
+cols = ['b','g','r']
 linestyles = ['-',':','--','-.']
 tools = ["cbmc","esbmc","seahorn"]
 covtypes = {'l': 'line', 'b': 'branch', 'f': 'function'}
-baselines = ["Fuzzle", "Fuzzle + SMT", "Minotaur 1x1", "Minotaur"]
+baselines = ["Fuzzle", "Fuzzle + SMT", "Minotaur"]
 num_baselines = int(sys.argv[2])
 total_runs = int(sys.argv[3])
 all_coverages = [{tool: {'f': [], 'b': [], 'l': []} for tool in tools} for _ in range(num_baselines)]
@@ -76,8 +76,6 @@ for tool in tools:
         if tool == 'esbmc':
             plt.xlabel("Input mazes, steps of 100",  fontsize=16)
         for baseline in range(num_baselines):
-            if baseline == 2:
-                continue
             col = cols[baseline]
             lin = linestyles[baseline]
             x = np.arange(len(all_coverages[baseline][tool]['b']))
