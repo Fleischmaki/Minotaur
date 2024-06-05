@@ -72,7 +72,7 @@ For parameter options see [params.md](./params.md).
 ```
 python Minotaur --m <report> <seed-dir> <outdir> {local,container}
 ```
-`<report>` is the line from the `summary.csv` corresponding to the test case you want to minimize, e.g.
+`<report>` is the line from the `summary.csv` (wrapped in single quotes) corresponding to the test case you want to minimize, e.g.
 ```
 esbmc-bug1,23695,--interval-analysis,,2,1,storm_mc100_dag3,CVE_gen,app12bench_930.smt2,3666,00000.11000,fn
 ```
