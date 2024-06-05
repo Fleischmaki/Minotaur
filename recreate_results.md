@@ -36,7 +36,7 @@ Test results for each run are logged in a file called `summary.csv`. The files t
 ```
 find -type f -name *.c <dir> 
 ```
-which looks for regular files ending in `.c` int the given directory (and subdirectories) 
+which looks for regular files ending in `.c` in the given directory (and subdirectories). 
 
 NOTE: the found bugs might look different from the ones reported, as the reports were also cleaned manually and sometimes a bug can be triggered in various ways using the seed file. For unfixed bugs there is also the possibility that a new bug is found, as we cannot check against the fixed version to confirm.
 
