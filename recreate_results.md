@@ -67,7 +67,7 @@ The coverage experiment is provided in [coverage.conf.json](experiments/coverage
 python Minotaur --e coverage outdir  
 # ^ This takes more than a day to run on a server 
 python Minotaur/scripts/merge_coverage.py outdir/run*
-python Minotaur/scripts/plot_coverage.py outdir 15 3
+python Minotaur/scripts/plot_coverage.py outdir 3 15
 ```
 
 Coverage is collected per batch and can be aggregated via [a script](scripts/merge_coverage.py), which creates a coverage files combining the first n batches with n from 1 to the number of generated batches. The summarized coverage can be printed and plotted via [plot_coverage.py](script/plot_coverage.py) once coverage has been merged.
