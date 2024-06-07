@@ -383,7 +383,7 @@ def store_outputs(conf: dict, out_dir: str, works: list[Target]):
                     if tag in conf['abort_on_error']:
                         if conf['check_error'] is None:
                             has_bug = True
-                        else:
+                        elif not has_bug:
                             has_bug =  not check_error(conf, w, tag, out_dir)
                     commands.run_cmd(CP_CMD % (get_maze_dir(w.maze), out_path)) # Keep buggy mazes
                     write_summary(conf, out_dir, w, tag, runtime)
