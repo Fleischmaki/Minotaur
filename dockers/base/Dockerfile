@@ -1,8 +1,7 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 ### Prepare apt
-RUN sed -i 's/archive.ubuntu.com/ftp.daumkakao.com/g' /etc/apt/sources.list
-RUN sed -i 's/# deb-src/deb-src/g' /etc/apt/sources.list
+RUN sed -i 's/htt[p|ps]:\/\/archive.ubuntu.com\/ubuntu\//mirror:\/\/mirrors.ubuntu.com\/mirrors.txt/g' /etc/apt/sources.list
 ENV DEBIAN_FRONTEND="noninteractive"
 
 ### Create maze account 
