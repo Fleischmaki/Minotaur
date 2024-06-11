@@ -1,1 +1,1 @@
-__all__ = ["runner","scripts","maze-gen"]
+__all__ = ["runner","tools","maze_gen"]
