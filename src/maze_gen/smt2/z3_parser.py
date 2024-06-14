@@ -1,26 +1,20 @@
 """ Handles reading and writing SMT Files and similar operation  
 """
+from multiprocessing import Value
 import sys
 import random
 import logging
 import typing as t
 from collections import defaultdict, OrderedDict, namedtuple
 
-from pysmt.smtlib.parser import SmtLibParser
-from pysmt.shortcuts import is_sat, And, Not, get_env
-from pysmt.solvers.z3 import Z3Solver
-from pysmt.oracles import get_logic
-from pysmt.smtlib.commands import SET_LOGIC
-from pysmt.fnode import FNode
-from pysmt.smtlib.script import smtlibscript_from_formula
-import pysmt.exceptions
+from z3 import ExprRef,SortRef, is_const, is_eq, And, Not, parse_smt2_file
+from z3.z3consts import Z3_ARRAY_SORT, Z3_BV_SORT
 
-
-from . import formula_operations as ff
-from .converter import get_converter, clean_string, type_to_c
+from . import z3_fops as ff
+from .z3_converter import get_converter, type_to_c
 LOGGER = logging.getLogger(__name__)
 
-SmtFileData = namedtuple('SmtFileData',['decl_arr','formula', 'logic', 'clauses'])
+SmtFileData = namedtuple('SmtFileData',['formula', 'logic', 'clauses'])
 
 def parse(file_path: str, transformations: dict, check_neg: bool = False, continue_on_error = True)\
     -> tuple[OrderedDict[str,bool],dict[str,str],int]:
@@ -34,7 +28,8 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     limit=transformations['dag']
     negate_formula=transformations['neg']
     LOGGER.info("Converting %s: ", file_path)
-    declarations, formula, logic, formula_clauses = read_file(file_path, limit, negate_formula)
+    formula, logic, formula_clauses = read_file(file_path, limit, negate_formula)
+    ff.clauses_to_smtlib(formula_clauses, logic)
     all_arrays_constant = False
     if generate_sat:
         clauses, array_size, all_arrays_constant = run_checks(formula, logic, formula_clauses, generate_well_defined)
@@ -43,35 +38,29 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
         if array_size > ff.MAXIMUM_ARRAY_SIZE:
             raise ValueError("Minimum array size too large!")
         clauses = list(ff.get_array_constraints(array_calls, array_size)) \
-        + list(filter(lambda s: not s.arg(1).is_constant(),ff.get_shift_constraints(formula)))\
+        + list(filter(lambda s: not is_const(s.arg(1)), ff.get_shift_constraints(formula)))\
         + list(formula_clauses)
     converter = get_converter()
     converter.set_well_defined(generate_well_defined)
     if all_arrays_constant and transformations['ca']:
         converter.set_array_indices(ff.get_indices_for_each_array(ff.get_array_index_calls(formula)[1]
-                                                                + list(ff.get_nodes(formula, lambda n: n.is_equals() and n.arg(0).get_type().is_array_type())) # type: ignore
+                                                                + list(ff.get_nodes(formula, lambda n: is_eq(n) and n.arg(0).sort_kind() == Z3_ARRAY_SORT)) # type: ignore
                                                                 ))
         array_size = -1
     else:
         converter.set_array_indices({})
-    try:
-        core = set() if generate_sat else get_unsat_core(clauses, logic)
-    except pysmt.exceptions.SolverStatusError as e:
-        LOGGER.warning("Could not find core, will abort if any clause fails: %s", e)
-        continue_on_error = False
+        core = set() if generate_sat else ff.get_unsat_core(clauses)
     parsed_cons = OrderedDict()
     variables = {}
 
     for c, clause in enumerate(clauses,start=1):
-        local_declarations = declarations
 
         if logic.split('_')[-1].startswith('A') and not (transformations['ca'] and all_arrays_constant):
             LOGGER.debug("Renaming array stores")
             clause, constraints = ff.rename_arrays(clause)
             if len(constraints) > 0:
                 LOGGER.info("Added %d new arrays", len(constraints)//2)
-            clause = And(*constraints, clause) # Make sure to render constraints first
-            local_declarations.extend(map(lambda c: c.args()[1],constraints))
+                clause: ExprRef = And(*constraints, clause) # Make sure to render constraints first #type: ignore
 
         symbs = set()
 
@@ -86,11 +75,12 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
                     continue
                 parsed_cons['0'] = True if check_neg else "" # Add trivially safe clause
                 continue
-            raise e
+            else:
+                raise e
         LOGGER.debug("Done.")
 
         add_parsed_cons(check_neg, clauses, parsed_cons, clause, clause_in_c)
-        add_used_variables(variables, local_declarations, symbs, all_arrays_constant and transformations['ca'])
+        add_used_variables(variables, symbs, all_arrays_constant and transformations['ca'])
     return parsed_cons, variables, array_size+1
 
 def get_forced_parameters(file_path, transformations):
@@ -98,17 +88,7 @@ def get_forced_parameters(file_path, transformations):
     generate_well_defined=transformations['wd'] or not generate_sat
     return generate_sat,generate_well_defined
 
-def get_unsat_core(clauses, logic):
-    """Copmutes the unsat core"""
-    LOGGER.info('Computing unsat core')
-    solver = Z3Solver(get_env(),logic,unsat_cores_mode='all')
-    solver.add_assertions(clauses)
-    LOGGER.debug("Solver returned %s", str(solver.solve()))
-    core = set(solver.get_unsat_core())
-    LOGGER.info("Done")
-    return core
-
-def add_parsed_cons(check_neg:bool, clauses:list, parsed_cons:OrderedDict, clause:FNode, cons_in_c: str):
+def add_parsed_cons(check_neg:bool, clauses:list, parsed_cons:OrderedDict, clause:ExprRef, cons_in_c: str):
     """Add condition to the list of conditions""" 
     if check_neg:
         neg_sat = ff.is_neg_sat(clause, clauses)
@@ -116,28 +96,17 @@ def add_parsed_cons(check_neg:bool, clauses:list, parsed_cons:OrderedDict, claus
     else:
         parsed_cons[cons_in_c] = ""
 
-def add_used_variables(variables: dict, ldecl_arr: list[FNode], symbs: t.Set[str], constant_arrays:bool):
+def add_used_variables(variables: dict, symbs: dict[str,SortRef], constant_arrays:bool):
     """Add a variable to the variable dict"""
-    for symb in symbs:
-        decls = list(map(clean_string, ldecl_arr))
-        if symb in decls:
-            decl = symb
-        elif 'c' in decls and symb == '__original_smt_name_was_c__':
-            decl = 'c'
-        else:
-            decl = symb.rsplit("_",1)[0]
-            while decl not in decls:
-                decl = decl.rsplit("_",1)[0]
-        i = decls.index(decl)
-        vartype = ldecl_arr[i].get_type()
-        type_in_c = type_to_c(vartype, constant_arrays)
-        if vartype.is_array_type() and not constant_arrays:
+    for symb, smt_type in symbs.items():
+        type_in_c = type_to_c(smt_type, constant_arrays)
+        if smt_type.kind() == Z3_ARRAY_SORT and not constant_arrays:
             first_bracket = type_in_c.find('[')
             symb += type_in_c[first_bracket:]
-            type_in_c = f"{ff.get_bv_width_from_array_type(vartype)}_{type_in_c[:first_bracket]}"
+            type_in_c = f"{ff.get_bv_width_from_array_type(smt_type)}_{type_in_c[:first_bracket]}"
         variables[symb] = type_in_c
 
-def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode], well_defined: bool):
+def run_checks(formula: ExprRef, logic: str, formula_clauses: t.Set[ExprRef], well_defined: bool):
     """Check whether the translated formula is going to have valid soltuions"""
     constraints = set()
     clauses = list(formula_clauses)
@@ -167,12 +136,12 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode], well_d
     LOGGER.info("Generating shift constraints")
     shift_constraints = ff.get_shift_constraints(formula)
     if well_defined:
-        clauses =  list(filter(lambda s: not s.arg(1).is_constant(),shift_constraints)) + clauses
+        clauses =  list(filter(lambda s: not is_const(s.arg(1)),shift_constraints)) + clauses
     constraints.update(shift_constraints)
 
     if len(constraints) > len(array_constraints):
         LOGGER.info("Checking satisfiability with global constraints")
-        if not is_sat(And(*constraints, formula), solver_name='z3'):
+        if not ff.is_sat(And(*constraints, formula)):
             raise ValueError("Cannot guarantee a valid solution")
         LOGGER.info("Done.")
     
@@ -181,56 +150,33 @@ def run_checks(formula: FNode, logic: str, formula_clauses: t.Set[FNode], well_d
 
 def read_file(file_path: str, limit : int = 0, negate_formula : bool = False) -> SmtFileData:
     """Read an SMTfile and extract important fields"""
-    parser = SmtLibParser()
-    script = parser.get_script_fname(file_path)
-    decl_arr = []
-    decls = script.filter_by_command_name("declare-fun")
-    for d in decls:
-        for arg in d.args:
-            decl_arr.append(arg)
-    formula = script.get_strict_formula()
+    formula: ExprRef = And(*parse_smt2_file(file_path)) #type: ignore
     if negate_formula:
-        formula = formula if is_sat(formula, solver_name='z3') else Not(formula)
+        formula = formula if ff.is_sat(formula) else Not(formula) # type: ignore
     if limit > 0:
-        formula, new_decls = ff.daggify(formula, limit)
-        decl_arr.extend(new_decls)
+        formula = ff.daggify(formula, limit)
+    clauses = ff.conjunction_to_clauses(formula)
+    logic = get_logic_from_file(file_path)
+    if logic == "":
+        LOGGER.warning("Could not determine logic for file %s, will try to overgeneralize.", file_path)
+        raise ValueError("Could not determine logic!")
     
-    logic = get_logic_from_script(script)
-    clauses = conjunction_to_clauses(formula)
-    return SmtFileData(decl_arr,formula,logic,clauses)
+    return SmtFileData(formula,logic,clauses)
 
-def get_logic_from_script(script):
+def get_logic_from_file(file):
     """Read logic from an pysmt script, or guess minimal logic if none is provided"""
-    if script.contains_command(SET_LOGIC):
-        logic = str(next(script.filter_by_command_name(SET_LOGIC)).args[0])
-    else:
-        formula = script.get_strict_formula()
-        logic = str(get_logic(formula))
-        LOGGER.info('Logic not found in script. Using logic from formula: %s', logic)
-    return logic
+    with open(file, "r") as file:
+        lines = file.readlines()
+        for line in lines:
+            if "(set-logic" in line:
+                logic = line.split('set-logic')[1].strip()
+                logic = logic.strip('()')
+                return logic
+    return ""
 
-def conjunction_to_clauses(node: FNode) -> set[FNode]:
-    """Transform top-level conjuncts of a formula into a set of clauses"""
-    clauses = set()
-    node_queue = [node]
-    while len(node_queue) > 0:
-        node = node_queue.pop()
-        if node.is_and():
-            for subnode in node.args():
-                node_queue.append(subnode)
-        else:
-            clauses.add(node)
-    return clauses
-
-def write_to_file(formula : FNode | t.Iterable[FNode], logic: str, file: str):
-    """Write a formula to a file
-    :param formula: If an iterable is provided, takes a conjunction of those clauses
-    """
-    if isinstance(formula,t.Iterable):
-        formula = And(*formula)
-    with open(file, "w") as fout:
-        script = smtlibscript_from_formula(formula, logic)
-        script.serialize(fout)
+def write_to_file(clauses: ExprRef | list[ExprRef], logic: str, filepath: str):
+    with open(filepath, "w") as outfile:
+        outfile.write(ff.clauses_to_smtlib(clauses, logic))
 
 class Graph:
     """Graph helper for separating variable disjoint subformulas"""

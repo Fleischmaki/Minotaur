@@ -1,7 +1,7 @@
 import random 
 import logging
 
-from smt2 import parser, converter # pylint: disable=import-error
+from smt2 import z3_parser as parser, converter # pylint: disable=import-error
 import transforms # pylint: disable=import-error
 
 LOGGER = logging.getLogger(__name__)
