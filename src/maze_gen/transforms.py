@@ -17,6 +17,7 @@ from smt2 import z3_parser as parser, z3_formula_builder as fb, formula_operatio
 LOGGER = logging.getLogger(__name__)
 
 def remove_constraints(constraints: dict, dc: int):
+    """Remove dc% of constraints"""
     curr = len(constraints)
     rm = m.ceil(curr*(dc/100))
     while rm > 0:
@@ -25,6 +26,7 @@ def remove_constraints(constraints: dict, dc: int):
         rm -= 1
 
 def make_const(variables: dict, mc: int):
+    """Make mc% of variables constant"""
     symbols = list(filter(lambda t: '[' not in t, variables.keys()))
     goal = m.ceil(len(symbols)*(mc/100))
     for _ in range(goal):
@@ -35,12 +37,20 @@ ListAElemT = t.TypeVar('ListAElemT')
 ListBElemT = t.TypeVar('ListBElemT')
 
 def coshuffle(list_a: list[ListAElemT],list_b: list[ListBElemT]) -> tuple[list[ListAElemT], list[ListBElemT]]:
+    """Shuffle two lists together, i.e. x=l1[i] and y=l2[i] <=> x=l1'[j] and y=l2'[j] for some j"""
     temp = list(zip(list_a,list_b))
     random.shuffle(temp)
     r1, r2 = zip(*temp)
     return list(r1), list(r2)
 
 def parse_transformations(t_type: str) -> dict:
+    """ Parse the transformation parameter.
+    :param t_type:  the string after the -t parameter, containing the transformations separated by '_'
+    :returns:       a dict containing the values for the transformations specified by 't_type' or default 
+                    values if no explicit values was set.
+                    In particular this means that all the keys will be set to some value, so they are
+                    always safe to call.
+    """
     transformations = t_type.split('_')
     shuffle = False
     storm = False
@@ -57,6 +67,7 @@ def parse_transformations(t_type: str) -> dict:
     fuzz = False
     yinyang = False
     mutator = None
+    assume = False
     max_assert = max_depth = 0
     for transformation in transformations:
         if transformation == 'sh':
