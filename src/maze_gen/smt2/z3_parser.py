@@ -29,7 +29,6 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
     negate_formula=transformations['neg']
     LOGGER.info("Converting %s: ", file_path)
     formula, logic, formula_clauses = read_file(file_path, limit, negate_formula)
-    ff.clauses_to_smtlib(formula_clauses, logic)
     all_arrays_constant = False
     if generate_sat:
         clauses, array_size, all_arrays_constant = run_checks(formula, logic, formula_clauses, generate_well_defined)
@@ -75,8 +74,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
                     continue
                 parsed_cons['0'] = True if check_neg else "" # Add trivially safe clause
                 continue
-            else:
-                raise e
+            raise e
         LOGGER.debug("Done.")
 
         add_parsed_cons(check_neg, clauses, parsed_cons, clause, clause_in_c)
