@@ -26,7 +26,7 @@ UNARY_BV_OPS = frozenset([lambda x: ~x, lambda x: -x, z3.RotateLeft,z3.RotateRig
 BV_SHIFTS = frozenset([lambda x,y: x << y, lambda x,y: x >> y, z3.LShR])
 BINARY_BV_OPS = frozenset([lambda x,y: x&y, lambda x,y: x|y, lambda x,y: x^y]+list(BINARY_IA_OPS)+list(BV_SHIFTS))
 OTHER_BV_OPS = frozenset([z3.ZeroExt, z3.SignExt, z3.Extract, z3.Concat])
-BV_RELATIONS = frozenset([z3.ULE,z3.ULT,z3.UGT,z3.UGE] + list(IA_RELATIONS)) 
+BV_RELATIONS = frozenset([z3.ULE,z3.ULT,z3.UGT,z3.UGE] + list(IA_RELATIONS))
 
 
 ARRAY_OPERATORS = frozenset([z3.Select, z3.Store])
@@ -65,7 +65,7 @@ class FormulaBuilder():
             LOGGER.warning("No valid bv z3consts in seed!")
         self.variables_depths = formula_operations.label_formula_depth(formula)
         self.random = rand
-        self.arrays = set(filter(lambda t: t.is_array_type(), self.variables_by_type.keys()))
+        self.arrays = set(filter(lambda t: t.kind() == z3consts.Z3_ARRAY_SORT, self.variables_by_type.keys()))
         
     def get_random_assertion(self, max_depth: int):
         """ Build a random boolean formulas of maximum depth 
@@ -141,19 +141,17 @@ class FormulaBuilder():
             return res
         return list(self.variables_by_type[node_type])
 
-    def get_payload_for_op(self,op: Callable, node_type: z3.SortRef, argz3consts: list[z3.SortRef]):
+    def get_payload_for_op(self,op: Callable, node_type: z3.SortRef, args: list[z3.SortRef]):
         """ Returns the necessary additional information pySMT needs to create a node """
         if op in (z3.ZeroExt, z3.SignExt):
-            return (node_type.size(), node_type.size()-argz3consts[0].size()) #type: ignore
-        if op == z3.Concat: # pylint: disable=W0143
-            return (argz3consts[0].size() + argz3consts[1].size(),) # type: ignore
+            return (node_type.size()-args[0].size(),) #type: ignore
         if op == z3.Extract: # pylint: disable=W0143
-            diff = argz3consts[0].size() - node_type.size()#type: ignore
+            diff = args[0].size() - node_type.size()#type: ignore
             offset = self.random.get_random_integer(0,diff) # type: ignore #
-            return (node_type.size(), offset, node_type.size()+offset-1) #type: ignore
+            return ( node_type.size()+offset-1,offset) #type: ignore
         if op in (z3.RotateLeft, z3.RotateRight):
-            return (self.random.get_random_integer(0,node_type.size()-1)) #type: ignore
-        return None
+            return (self.random.get_random_integer(0,node_type.size()-1),) #type: ignore
+        return []
 
 def has_params_first(op: Callable):
-    return op in (z3.SignExt, z3.ZeroExt)
+    return op in (z3.SignExt, z3.ZeroExt, z3.Extract)

@@ -90,7 +90,7 @@ def needs_downcasting(node: ExprRef) -> bool:
     """ CHeck if we need to cast down after converting a node
     """
     return is_app_of(node, Z3_OP_BSDIV) or is_app_of(node, Z3_OP_BUDIV) or is_app_of(node, Z3_OP_BSREM) or is_app_of(node, Z3_OP_BUREM) \
-        or is_app_of(node, Z3_OP_ROTATE_RIGHT) or is_app_of(node, Z3_OP_ROTATE_LEFT) or is_app_of(node, Z3_OP_BASHR) \
+        or is_app_of(node, Z3_OP_EXT_ROTATE_RIGHT) or is_app_of(node, Z3_OP_EXT_ROTATE_LEFT) or is_app_of(node, Z3_OP_BASHR) \
         or is_app_of(node, Z3_OP_SELECT)
 
 def is_signed(node: ExprRef) -> bool:
@@ -404,11 +404,11 @@ class Converter():
             cons.write("(~")
             self.write_cast(node, cons, b, True)
             cons.write(")")
-        elif is_app_of(node, Z3_OP_ROTATE_LEFT) or is_app_of(node, Z3_OP_ROTATE_RIGHT):
+        elif is_app_of(node, Z3_OP_EXT_ROTATE_LEFT) or is_app_of(node, Z3_OP_EXT_ROTATE_RIGHT):
             l = node.arg(0)
             cons.write("rotate_helper(")
             self.write_unsigned(node,cons,l)
-            cons.write(f",{node.arg(1)},{'1' if is_app_of(node, Z3_OP_ROTATE_LEFT) else '0'},{ff.get_bv_width(node)})")
+            cons.write(f",{node.arg(1)},{'1' if is_app_of(node, Z3_OP_EXT_ROTATE_LEFT) else '0'},{ff.get_bv_width(node)})")
         elif is_app_of(node,Z3_OP_SIGN_EXT):
             l = node.arg(0)
             if needs_signed_cast(node):
@@ -464,6 +464,17 @@ class Converter():
             self.write_node(l,cons)
             cons.write(" | ")
             self.write_node(r,cons)
+        elif is_app_of(node, Z3_OP_XOR):
+            (l, r) = (node.arg(0), node.arg(1))
+            cons.write("(!")
+            self.write_node(l,cons)
+            cons.write(" && ")
+            self.write_node(r,cons)
+            cons.write(") || (")
+            self.write_node(l,cons)
+            cons.write(" && !")
+            self.write_node(r,cons)
+            cons.write(")")
         elif is_app_of(node, Z3_OP_ITE):
             (g,p,n) = (node.arg(0), node.arg(1), node.arg(2))
             self.write_node(g,cons)
