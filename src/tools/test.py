@@ -479,13 +479,19 @@ def main(conf, out_dir):
 
     gen = TargetGenerator(conf)
     while gen.has_targets() and not done:
-        works, to_remove = fetch_works(conf, gen)
-        spawn_containers(conf, works)
-        run_tools(conf, works)
-        done = store_outputs(conf, out_dir, works)
-        cleanup(to_remove)
-        if conf['coverage']:
-            store_coverage(conf,works,out_dir)
+        try:
+            works, to_remove = fetch_works(conf, gen)
+            spawn_containers(conf, works)
+            run_tools(conf, works)
+            done = store_outputs(conf, out_dir, works)
+            cleanup(to_remove)
+            if conf['coverage']:
+                store_coverage(conf,works,out_dir)
+        except KeyboardInterrupt:
+            for work in works:
+                docker.kill_docker(work.tool, work.index)
+            done=True
+    
 
 def load(argv):
     if argv[0].endswith('.conf.json'):

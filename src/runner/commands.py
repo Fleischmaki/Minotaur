@@ -5,8 +5,12 @@ import sys
 LOGGER = logging.getLogger(__name__)
 
 def wait_for_procs(procs: list[subprocess.Popen[str]]):
-    for p in procs:
-        p.wait()
+    try:
+        for p in procs:
+            p.wait()
+    except KeyboardInterrupt as e:
+        LOGGER.warning("Received interrupt signal, exiting")
+        raise e
 
 def spawn_cmd(cmd_str: str, always_pipe_output=False):
     LOGGER.info('Executing: %s', cmd_str)
