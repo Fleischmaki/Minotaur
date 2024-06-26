@@ -71,7 +71,7 @@ class Generator:
                     
                 if len(self.edges[idx]) > 1:
                     buggy_constraints += "\tchar c = __VERIFIER_nondet_char();\n"
-                buggy_constraints += "\tint flag = 0;\n"
+                buggy_constraints += f"\tint flag = {1 if self.transformations['assume'] else 0};\n"
                 if not self.transformations['assume']:
                     for constraint in constraints:
                         buggy_constraints += "\t"*tab_cnt + "\tif{}{{\n".format(constraint)
@@ -80,7 +80,7 @@ class Generator:
                     for k in range(len(constraints)-1, -1, -1):
                         buggy_constraints += "\t"*k + "\t}\n"
                 else:
-                    for i, constraint in enumerate(constraints):
+                    for constraint in constraints:
                         buggy_constraints += "\t"*tab_cnt + "\t__VERIFIER_assume({});\n".format(constraint)
 
                 logic_c.append(buggy_constraints)
