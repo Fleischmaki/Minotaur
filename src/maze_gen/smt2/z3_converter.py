@@ -308,8 +308,8 @@ class Converter():
         """ Converts a formula into C-expression.
         :param node: Root node of the formula
         """
-        if node.get_id() in self.node_cache:
-            return self.node_cache[node.get_id()]
+        if node.hash() in self.node_cache:
+            return self.node_cache[node.hash()]
         cons = io.StringIO()
         self.symbs = {}
         cons.write('(')
@@ -336,7 +336,7 @@ class Converter():
                     error(1, "Cannot compare array with non-array", node)
             else:
                 self.convert_helper(node, cons, " == ", keep_arg_size=is_app_of(node, Z3_OP_BCOMP)) 
-        elif is_int_value(node) and node.sort_kind() == Z3_INT_SORT:
+        elif is_int_value(node):
             value = str(node)
             if int(value) > 2**32:
                 value += 'LL'
@@ -497,7 +497,7 @@ class Converter():
         elif is_true(node) or is_false(node):            
             value =  "1" if is_true(node) else "0"
             cons.write(value)
-        elif is_const(node):
+        elif ff.is_declared_variable(node):
             dim = ff.get_array_dim(node)
             if dim >= 1:
                 cons.write("(long *)")
@@ -562,7 +562,7 @@ class Converter():
             cons.write(")")
         elif is_app_of(node, Z3_OP_UNINTERPRETED):
             for n in node.children():
-                if not ((is_const(n) and n.sort_kind() == Z3_BV_SORT) or (is_const(node) and node.sort_kind() == Z3_INT_SORT)):
+                if not ff.is_constant_value(n):
                     error(1, "Non-constant function call: ", node)
             index = "".join(["_" + str(n) for n in node.children()])
             fn = clean_string(node.decl().name())
@@ -574,7 +574,7 @@ class Converter():
         cons.write(')')
         cons.seek(0)
         node_in_c = cons.read()
-        self.node_cache[node.get_id()] = (node_in_c,self.symbs)
+        self.node_cache[node.hash()] = (node_in_c,self.symbs)
         cons.close()
         return node_in_c, self.symbs
 
