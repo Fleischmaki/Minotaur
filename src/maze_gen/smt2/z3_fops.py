@@ -1,5 +1,6 @@
 """Contains functions that handle formulas (but not files or transforms)"""
 import math
+import random
 import typing as t
 import logging
 import io
@@ -54,16 +55,16 @@ def get_bv_width(node: ExprRef) -> int:
         raise ValueError(f"Could not compute BVWidth for node {node} of type {node.sort()}.")
     else:
         res = node.size() #type: ignore
+
     if res <= 0 or res > 64:
         raise ValueError(f"Invalid bv width: {res}({node})")
     return res
 
 def needs_declaration(formula):
-    return (is_const(formula) and not is_supported_value(formula)) or is_app_of(formula, Z3_OP_UNINTERPRETED) or (is_array(formula) and formula.num_args() == 0)
+    return (is_declared_variable(formula)) or is_app_of(formula, Z3_OP_UNINTERPRETED) or (is_array(formula) and formula.num_args() == 0)
 
-def is_supported_value(formula):
-    return  is_int_value(formula) or \
-            is_bv_value(formula) 
+def is_declared_variable(formula):
+    return is_const(formula) and not is_constant_value(formula)
 
 def is_neg_sat(c, clauses):
     """Check if negation of a c is sat
@@ -99,7 +100,7 @@ def rename_arrays(formula: ExprRef):
     if is_app_of(formula, Z3_OP_STORE):
         old = formula.arg(0)
         if not is_app_of(old, Z3_OP_STORE):
-            new = Array(str(old) + '__store', old.sort().domain(),old.sort().range()) #type: ignore
+            new = Array(str(old) + '__' + str(random.randint(0,2**16)), old.sort().domain(),old.sort().range()) #type: ignore # TODO: figure out something for this
             constraints.add(old == new)
             formula = substitute(formula, (old, new))
 
@@ -280,7 +281,7 @@ def daggify(formula: ExprRef, limit: int):
                 seen[sub.get_id()] += 1
                 if seen[sub.get_id()] == limit:
                     if sub.num_args() > 1:
-                        var = Const(sub.get_id(),sub.sort())
+                        var = Const('dag__' + str(random.randint(0,2**16)),sub.sort())
                         sub = compute_substitution_fixpoint(subs, sub)
                         subs.append((sub, var))
                         formula = substitute(formula,*subs)
@@ -288,17 +289,15 @@ def daggify(formula: ExprRef, limit: int):
                 seen[sub.get_id()] = 0
                 node_queue.append(sub)
     formula = And(*[sub == var for (sub,var) in subs], formula) #type: ignore
-    print(is_sat(formula))
     return formula
 
-def compute_substitution_fixpoint(current_subs: dict, new_sub: ExprRef):
+def compute_substitution_fixpoint(current_subs: list[tuple[ExprRef, ExprRef]], new_sub: ExprRef):
     """ Add a new substitution to a list of substitutions and compute fixpoint
     Ensures that the new subsitution is in turn applied to all previous ones, if possible
     """
     old = new_sub
     new_sub = substitute(old, *current_subs)
     while not old.eq(new_sub):
-        print(old, new_sub)
         old = new_sub
         new_sub = substitute(new_sub, *current_subs)
     return new_sub
