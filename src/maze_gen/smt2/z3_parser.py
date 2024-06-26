@@ -8,7 +8,7 @@ import typing as t
 from collections import defaultdict, OrderedDict, namedtuple
 
 from z3 import ExprRef,SortRef, is_const, is_eq, And, Not, parse_smt2_file
-from z3.z3consts import Z3_ARRAY_SORT, Z3_BV_SORT
+from z3.z3consts import Z3_ARRAY_SORT
 
 from . import z3_fops as ff
 from .z3_converter import get_converter, type_to_c
@@ -24,6 +24,7 @@ def parse(file_path: str, transformations: dict, check_neg: bool = False, contin
                 The minimal array size for the clauses to be valid
     """
     sys.setrecursionlimit(10000)
+    ff.reset_free_variables()
     generate_sat, generate_well_defined = get_forced_parameters(file_path, transformations)
     limit=transformations['dag']
     negate_formula=transformations['neg']

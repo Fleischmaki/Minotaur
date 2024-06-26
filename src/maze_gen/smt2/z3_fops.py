@@ -1,6 +1,5 @@
 """Contains functions that handle formulas (but not files or transforms)"""
 import math
-import random
 import typing as t
 import logging
 import io
@@ -9,7 +8,11 @@ from z3.z3consts import *
 
 LOGGER = logging.getLogger(__name__)
 MAXIMUM_ARRAY_SIZE = 2**32
+FV_COUNT = 0
 
+def reset_free_variables():
+    global FV_COUNT
+    FV_COUNT = 0
 
 def conjunction_to_clauses(node: ExprRef) -> set[ExprRef]:
     """Transform top-level conjuncts of a formula into a set of clauses"""
@@ -98,9 +101,11 @@ def rename_arrays(formula: ExprRef):
         formula = substitute(formula, (sub, new_formula))
 
     if is_app_of(formula, Z3_OP_STORE):
+        global FV_COUNT
         old = formula.arg(0)
         if not is_app_of(old, Z3_OP_STORE):
-            new = Array(str(old) + '__' + str(random.randint(0,2**16)), old.sort().domain(),old.sort().range()) #type: ignore # TODO: figure out something for this
+            FV_COUNT += 1
+            new = Array(f'{str(old)}__{FV_COUNT}', old.sort().domain(),old.sort().range()) #type: ignore # TODO: figure out something for this
             constraints.add(old == new)
             formula = substitute(formula, (old, new))
 
@@ -271,6 +276,7 @@ def daggify(formula: ExprRef, limit: int):
     """ Replace subexpression that occur often with new variables
     :param limit:   How often a subexpression needs to occur before it is replaced
     """
+    global FV_COUNT
     node_queue = [formula]
     seen = {}
     subs = []
@@ -281,7 +287,8 @@ def daggify(formula: ExprRef, limit: int):
                 seen[sub.get_id()] += 1
                 if seen[sub.get_id()] == limit:
                     if sub.num_args() > 1:
-                        var = Const('dag__' + str(random.randint(0,2**16)),sub.sort())
+                        FV_COUNT += 1
+                        var = Const(f'dag__{FV_COUNT}', sub.sort())
                         sub = compute_substitution_fixpoint(subs, sub)
                         subs.append((sub, var))
                         formula = substitute(formula,*subs)
