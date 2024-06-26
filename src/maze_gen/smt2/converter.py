@@ -616,7 +616,7 @@ def get_array_helpers(size):
     :param size: Array size for the program
     """
     res = "\n\n//Array support\n"
-    res += f"#define {ARRAY_SIZE_STRING} {size}\n"
+    res += f"const int {ARRAY_SIZE_STRING} = {size};\n"
     res += """long* value_store(long* a,long pos,long v){
     a[pos] = v;
     return a;\n}\n"""
