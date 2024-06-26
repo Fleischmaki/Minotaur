@@ -99,7 +99,7 @@ def rename_arrays(formula: ExprRef):
     if is_app_of(formula, Z3_OP_STORE):
         old = formula.arg(0)
         if not is_app_of(old, Z3_OP_STORE):
-            new = Array(old.var_name() + '__store', old.sort().domain(),old.sort().range()) #type: ignore
+            new = Array(str(old) + '__store', old.sort().domain(),old.sort().range()) #type: ignore
             constraints.add(old == new)
             formula = substitute(formula, (old, new))
 
@@ -272,7 +272,7 @@ def daggify(formula: ExprRef, limit: int):
     """
     node_queue = [formula]
     seen = {}
-    subs = {}
+    subs = []
     while len(node_queue) > 0:
         node = node_queue.pop()
         for sub in node.children():
@@ -280,14 +280,15 @@ def daggify(formula: ExprRef, limit: int):
                 seen[sub.get_id()] += 1
                 if seen[sub.get_id()] == limit:
                     if sub.num_args() > 1:
-                        var = Var(sub.get_id(),sub.sort())
+                        var = Const(sub.get_id(),sub.sort())
                         sub = compute_substitution_fixpoint(subs, sub)
-                        subs.update({sub: var})
+                        subs.append((sub, var))
                         formula = substitute(formula,*subs)
             else:
                 seen[sub.get_id()] = 0
                 node_queue.append(sub)
-    formula = And(*[sub == var for (sub,var) in subs.items()], formula) #type: ignore
+    formula = And(*[sub == var for (sub,var) in subs], formula) #type: ignore
+    print(is_sat(formula))
     return formula
 
 def compute_substitution_fixpoint(current_subs: dict, new_sub: ExprRef):
@@ -296,7 +297,8 @@ def compute_substitution_fixpoint(current_subs: dict, new_sub: ExprRef):
     """
     old = new_sub
     new_sub = substitute(old, *current_subs)
-    while old != new_sub: #type: ignore
+    while not old.eq(new_sub):
+        print(old, new_sub)
         old = new_sub
         new_sub = substitute(new_sub, *current_subs)
     return new_sub
