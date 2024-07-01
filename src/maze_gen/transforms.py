@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 from z3 import BoolVal, And, Not
+from z3.z3types import Z3Exception
 
 from storm.smt.smt_object import smtObject # pylint: disable=import-error
 from storm.fuzzer.fuzzer import generate_mutants # pylint: disable=import-error
@@ -86,7 +87,9 @@ def parse_transformations(t_type: str) -> dict:
                 max_assert, max_depth = transformation.removeprefix("fuzz").split('x')
         elif transformation.startswith('yinyang'):
             yinyang = True
-            mutator = transformation.split('-')[1]
+            mutator = 'opfuzz'
+            if '-' in transformation:
+                mutator = transformation.split('-')[1]
 
         elif transformation == 'wd':
             well_defined = True
@@ -117,17 +120,26 @@ def parse_transformations(t_type: str) -> dict:
 def run_yinyang(smt_file: str, mutant_path: str, seed: int, n: int, transformations) -> list[str]:
     if n <= 0:
         return []
-    LOGGER.info("Building %s new assertions.", n)
-    subprocess.run(f"{transformations['mutator']} -i {n*2} -ks {mutant_path} -S {seed} {'z3;echo'} {smt_file}".split(), check=False)
     mutants = []
-    for i, mutant in enumerate(os.listdir(mutant_path)):
-        fmutant = os.path.join(mutant_path, mutant)
-        LOGGER.info("Checking sat on %s", fmutant)
-        fd = parser.read_file(fmutant)
-        sat = 'sat' if ff.is_sat(fd.formula) else 'unsat'
-        outfile = os.path.join(mutant_path, f"mutant_{i}_{sat}.smt2")
-        subprocess.run(f"mv {fmutant} {outfile}".split(), check=False)
-        mutants.append(outfile)
+    while len(mutants) < n:
+        LOGGER.info("Building %s new assertions.", n)
+        subprocess.run(f"{transformations['mutator']} -i {n*2} -ks {mutant_path} -S {seed} {'z3;echo'} {smt_file}".split(), check=False)
+        offset = len(mutants)
+        for i, mutant in enumerate(os.listdir(mutant_path)):
+            if mutant in mutants:
+                break
+            fmutant = os.path.join(mutant_path, mutant)
+            LOGGER.info("Checking sat on %s", fmutant)
+            try:
+                fd = parser.read_file(fmutant)
+                sat = 'sat' if ff.is_sat(fd.formula) else 'unsat'
+                outfile = os.path.join(mutant_path, f"mutant_{i+offset}_{sat}.smt2")
+                subprocess.run(f"mv {fmutant} {outfile}".split(), check=False)
+                mutants.append(outfile)
+            except Z3Exception as e:
+                LOGGER.warning("Z3 could not parse mutant %s", fmutant)
+                LOGGER.debug(e)
+                subprocess.run(['rm', os.path.join(mutant_path,mutant)])
     return mutants
 
 
