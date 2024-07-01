@@ -335,7 +335,17 @@ class Converter():
                 else:
                     error(1, "Cannot compare array with non-array", node)
             else:
-                self.convert_helper(node, cons, " == ", keep_arg_size=is_app_of(node, Z3_OP_BCOMP)) 
+                self.convert_helper(node, cons, " == ", keep_arg_size=is_app_of(node, Z3_OP_BCOMP))
+        elif is_app_of(node, Z3_OP_DISTINCT):
+            comps = [(n1,n2) for n1 in node.children() for n2 in node.children() if n1.get_id() > n2.get_id()] # type: ignore
+            cons.write('(')
+            for i,(n1,n2) in enumerate(comps):
+                self.write_cast(node, cons, n1)
+                cons.write(' != ')
+                self.write_cast(node, cons, n2)
+                if i  != len(comps)-1:
+                    cons.write('&&')
+            cons.write(')')
         elif is_int_value(node):
             value = str(node)
             if int(value) > 2**32:
@@ -371,7 +381,6 @@ class Converter():
             self.convert_helper(node, cons, " >= ")
         elif is_app_of(node, Z3_OP_SGT) or is_app_of(node, Z3_OP_UGT):
             self.convert_helper(node, cons, " > ")
-
         elif is_app_of(node, Z3_OP_BLSHR):
             self.convert_helper(node, cons, " >> ", True)
         elif is_app_of(node, Z3_OP_BASHR):
@@ -380,7 +389,7 @@ class Converter():
             self.write_unsigned(node, cons, node.arg(0), True)
             cons.write(",")
             self.write_unsigned(node, cons, node.arg(1), True)
-            cons.write(")")
+            cons.write(f",{ff.get_bv_width(node)})")
             if not has_matching_type(ff.get_bv_width(node)):
                 cons.write(")")
         elif is_app_of(node, Z3_OP_BADD):
@@ -403,6 +412,11 @@ class Converter():
             b = node.arg(0)
             cons.write("(~")
             self.write_cast(node, cons, b, True)
+            cons.write(")")
+        elif is_app_of(node, Z3_OP_BNOR):
+            l,r = node.arg(0),node.arg(1)
+            cons.write("~(")
+            self.convert_helper(node,cons,'|')
             cons.write(")")
         elif is_app_of(node, Z3_OP_EXT_ROTATE_LEFT) or is_app_of(node, Z3_OP_EXT_ROTATE_RIGHT):
             l = node.arg(0)
