@@ -56,7 +56,10 @@
 						"cell-string-length-itv-congr","cell-string-length-itv-powerset-zero","cell-string-length-itv-zero","cell-string-length-itv","cell-string-length-pack-rel-itv-congr",
 						"cell-string-length-pack-rel-itv","cell-string-length-pointer-sentinel-itv-congr","cell-string-length-pointer-sentinel-itv","cell-string-length-pointer-sentinel-pack-rel-itv-congr-excluded-powerset-rewrite",
 						"cell-string-length-pointer-sentinel-pack-rel-itv-congr-excluded-powerset","cell-string-length-pointer-sentinel-pack-rel-itv-congr-rewrite","cell-string-length-pointer-sentinel-pack-rel-itv-congr",
-						"cell-string-length-pointer-sentinel-pack-rel-itv","cell-string-length-rel-itv","default"]
+						"cell-string-length-pointer-sentinel-pack-rel-itv","cell-string-length-rel-itv","default"],
+			"choose" : {
+				"-numeric=": ["lineq","polyhedra","octagon"]
+			}
 		},
 		"symbiotic": {
 			"variant" : [""]
