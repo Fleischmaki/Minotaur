@@ -170,8 +170,24 @@ def get_logic_from_file(file):
             if "(set-logic" in line:
                 logic = line.split('set-logic')[1].strip()
                 logic = logic.strip('()')
+                LOGGER.debug("Found logic %s", logic)
                 return logic
-    return ""
+        # Try to guess logic
+        file.seek(0)
+        content = file.read()
+        logic = ''
+        if not ('forall' in content or 'exists' in content):
+            logic+="QF_"
+        if 'Array' in content:
+            logic+='A'
+        if True: # TODO: find some way to determine this
+            logic+='UF'
+        if 'Int' in content:
+            logic+='NIA' # TODO maybe find a way to check for LIA, e.g. by trying to parse
+        if 'BitVec' in content:
+            logic+='BV'
+    LOGGER.debug("Guessed logic %s", logic)
+    return logic
 
 def write_to_file(clauses: ExprRef | list[ExprRef], logic: str, filepath: str):
     with open(filepath, "w") as outfile:
