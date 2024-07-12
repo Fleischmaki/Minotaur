@@ -111,8 +111,8 @@ Nr.  | Tool | Status | Type
 17 | MOPSA excluded-powerset | [fixed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/182) |
 18 | MOPSA cell-rel-itv | [closed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/183) | Outdated dependency | 
 19 | Ultimate integer| [fixed](https://github.com/ultimate-pa/ultimate/issues/665) | Overflowing shift | 
-20 | MOSPA cell-string-length-pointer-sentinel-pack-rel-itv-congr-rewrite | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/184) | |
-21 | MOPSA congr | [fixed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/185) | Modulo? |
+20 | MOSPA cell-string-length-pointer-sentinel-pack-rel-itv-congr-rewrite | [fixed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/184) | |
+21 | MOPSA congr | [confirmed](https://gitlab.com/mopsa/mopsa-analyzer/-/issues/185) | Modulo? |
 ### Precision Issues
 Nr. |Tool | Status | Type
 | -- | -- | -- | -- |
