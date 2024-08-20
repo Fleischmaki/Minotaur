@@ -5,14 +5,14 @@ Minotaur is a generative black-box fuzzer for software model checkers, based on 
 Minotaur uses sat/unsat SMT-Files to generate programs that are unsafe/safe by construction, which can be used to test program anaylzers for soundness/precision issues. 
 
 ## Requirements
-- Python3.10 or 3.11
-- Docker (or similar)
+- Python 3.10 or 3.11
+- [Docker](https://docs.docker.com/engine/install/) (or similar)
 
 ## Installation
 We tested installation on Ubuntu 22.03 and Debian 12. If you're using a different system, you might need to install
 the dependencies in a different manner.
 ```bash
-sudo apt install docker
+sudo apt update && sudo apt install docker.io
 ./Minotaur/scripts/build_MC_dockers.sh <num_cores>
 # For recreating experiments #
 ./Minotaur/scripts/build_experiment_dockers.sh <num_cores>
@@ -30,7 +30,7 @@ If you want to generate mazes locally or perform minimization, you will need to 
 We recommend using a [virtualenv](https://virtualenv.pypa.io/en/latest/):
 ```bash
 # python3.10 or python3.11
-sudo apt install python3-virtualenv
+sudo apt update && sudo apt install python3-virtualenv
 virtualenv --python=/usr/bin/python3.XX venv
 source venv/bin/activate
 pip install -r Minotaur/requirements.txt
