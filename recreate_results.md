@@ -53,7 +53,7 @@ python Minotaur --e time_to_bug4 <outdir>
 ```
 The results are stored in the specified directory `<outdir>`. To compute the average times, we used [this script](scripts/get_average_times.py):
 ```bash
-./Minotaur/scripts/get_average_times <outdir> 3 fn/fp/er
+./Minotaur/scripts/get_average_times.sh <outdir> 3 fn/fp/er
 ```
 Use `fn` if the issue is realted to soundness, for precision use `fp`, for crashes `er`.
 
@@ -61,7 +61,7 @@ NOTE: To get an accurate measure of time, only a single worker is used, so these
 
 NOTE: For bug8 we only test Minotaur, as the baselines are non-applicable. To correctly read the results please run
 ```bash
-./Minotaur/scripts/get_average_times <outdir> 1 fp
+./Minotaur/scripts/get_average_times.sh <outdir> 1 fp
 ```
 
 ### Measure coverage (RQ3/Figure 5)
@@ -69,7 +69,7 @@ These give the results for *Figure 5* in the paper.
 As the experiment takes a long time to run we include the (summarized) data from our experiment in the submission.
 To get the figures from *Figure 5* run:
 ```bash
-python Minotaur/scripts/plot_coverage.py coverage
+python3 Minotaur/scripts/plot_coverage.py coverage 3 15
 ```
 The figures should appear in the `coverage` folder. E.g. `coverage/seahron_branch_coverage.pdf` shows the branch coverage achieved for the program analyzer seahorn.
 
