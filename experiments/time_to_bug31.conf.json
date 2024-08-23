@@ -1,5 +1,5 @@
 {
-	"verbosity": "summary",
+	"verbosity": "bug",
 	"repeats" : 15,
 	"batches": 1000,
 	"duration" : 60,
@@ -12,7 +12,7 @@
 	"expected_result": ["error","error","infer"],
 	"gen_time" : 3600,
 	"abort_on_error": [["fn"]],
-	"use_core" : 12,
+	"use_core" : 15,
 	"tool" : {
 		"ultimate-bug4": {
 			"variant" : ["Automizer Default",
@@ -39,6 +39,10 @@
 		"r" : {
 			"min" : 0,
 			"max" : 65536
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 0
 		}
 	},{
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
@@ -61,6 +65,10 @@
 		"r" : {
 			"min" : 0,
 			"max" : 65536
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 0
 		}
 	},{	
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
@@ -83,6 +91,10 @@
 		"r" : {
 			"min" : 0,
 			"max" : 65536
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 0
 		}
 	}]
 }

@@ -12,13 +12,13 @@
 	"expected_result": ["error", "error", "infer"],
 	"abort_on_error": [["fn"]],
 	"gen_time" : 3600,
-	"use_core" : 8,
+	"use_core" : 10,
 	"tool" : {
 		"mopsa-bug1": {
 			"variant" : ["cell-itv-congr"]
 		}
 	},
-	"check-error": {
+	"check_error": {
 		"mopsa-bug1": "mopsa-fixed1"
 	},
 	"avg": 1,
@@ -36,6 +36,10 @@
 		"r" : {
 			"min" : 0,
 			"max" : 65536
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 0
 		}
 	},{
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
@@ -54,10 +58,14 @@
 			"dag": [0,2,3,4]
 		},
 		"g": ["CVE_gen"],
-		"s": "/Minotaur/bug_seeds/app12bench_930.smt2",
+		"s": "/Minotaur/bug_seeds/app8bench_110.smt2",
 		"r" : {
 			"min" : 0,
 			"max" : 65536
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 0
 		}
 	},{
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
@@ -80,6 +88,10 @@
 		"r" : {
 			"min" : 0,
 			"max" : 65536
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 0
 		}
 	}]
 }

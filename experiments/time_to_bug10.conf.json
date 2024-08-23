@@ -12,7 +12,7 @@
 	"expected_result": "error",
 	"abort_on_error": [["fn"]],
 	"gen_time" : 3600,
-	"use_core" : 4,
+	"use_core" : 6,
 	"tool" : {
 		"esbmc-bug1": {
 			"variant" : ["--interval-analysis"]
@@ -37,6 +37,10 @@
 		"r" : {
 			"min" : 0,
 			"max" : 65536
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 0
 		}
 	},{
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
@@ -58,6 +62,10 @@
 		"r" : {
 			"min" : 0,
 			"max" : 65536
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 0
 		}
 	},{
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
@@ -79,6 +87,10 @@
 		"r" : {
 			"min" : 0,
 			"max" : 65536
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 0
 		}
 	}]
 }

@@ -12,7 +12,7 @@
 	"expected_result": "error",
 	"abort_on_error": [["fn"]],
 	"gen_time" : 3600,
-	"use_core" : 15,
+	"use_core" : 2,
 	"tool" : {
 		"cpa-bug1": {
 			"variant" : ["kInduction"]
@@ -36,6 +36,10 @@
 		"r" : {
 			"min" : 0,
 			"max" : 65536
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 0
 		}
 	},{
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
@@ -58,6 +62,10 @@
 		"r" : {
 			"min" : 0,
 			"max" : 65536
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 0
 		}
 	},{
 		"a": ["Backtracking","Kruskal","Prims","Wilsons","Sidewinder"],
@@ -80,6 +88,10 @@
 		"r" : {
 			"min" : 0,
 			"max" : 65536
+		},
+		"c" : {
+			"min" : 0,
+			"max" : 0
 		}
 	}]
 }
